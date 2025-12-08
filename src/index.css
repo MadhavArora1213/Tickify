@@ -1,0 +1,194 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  
+  --color-bg-primary: var(--color-bg-primary);
+  --color-bg-secondary: var(--color-bg-secondary);
+  --color-bg-surface: var(--color-bg-surface);
+  --color-bg-input: var(--color-bg-input);
+  --color-bg-hover: var(--color-bg-hover);
+  
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-muted: var(--color-text-muted);
+  --color-text-link: var(--color-text-link);
+  --color-text-link-hover: var(--color-text-link-hover);
+  
+  --color-accent-primary: var(--color-accent-primary);
+  --color-accent-secondary: var(--color-accent-secondary);
+  
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-error: var(--color-error);
+  --color-info: var(--color-info);
+}
+
+:root {
+  /* Default to Dark Theme */
+  color-scheme: dark;
+  
+  /* Background */
+  --color-bg-primary: #111827;
+  --color-bg-secondary: #1F2937;
+  --color-bg-surface: #1F2937;
+  --color-bg-input: #374151;
+  --color-bg-hover: #374151;
+
+  /* Text */
+  --color-text-primary: #F9FAFB;
+  --color-text-secondary: #D1D5DB;
+  --color-text-muted: #9CA3AF;
+  --color-text-link: #60A5FA;
+  --color-text-link-hover: #3B82F6;
+
+  /* Accent */
+  --color-accent-primary: #2563EB;
+  --color-accent-secondary: #7C3AED;
+
+  /* Status */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Background */
+  --color-bg-primary: #FFFFFF;
+  --color-bg-secondary: #F9FAFB;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-input: #FFFFFF;
+  --color-bg-hover: #F3F4F6;
+
+  /* Text */
+  --color-text-primary: #1F2937;
+  --color-text-secondary: #6B7280;
+  --color-text-muted: #9CA3AF;
+  --color-text-link: #2563EB;
+  --color-text-link-hover: #1D4ED8;
+
+  /* Accent */
+  --color-accent-primary: #2563EB;
+  --color-accent-secondary: #7C3AED;
+
+  /* Status */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
+}
+
+body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-600, #4B5563);
+  border-radius: 4px;
+}
+
+/* Utilities */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+
+@keyframes scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+.animate-scroll {
+  animation: scroll 30s linear infinite;
+}
+
+@keyframes shine {
+  0% { background-position: 100%; }
+  100% { background-position: -100%; }
+}
+.animate-shine {
+  animation: shine 5s linear infinite;
+}
+
+
+
+/* Neo-Brutalism / Cartoon Styles */
+.neo-card {
+  border: 3px solid #000;
+  box-shadow: 6px 6px 0px 0px #000;
+  transition: all 0.2s ease-in-out;
+  border-radius: 12px;
+}
+.neo-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0px 0px #000;
+}
+.neo-card:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px 0px #000;
+}
+
+.neo-btn {
+  border: 2px solid #000;
+  box-shadow: 4px 4px 0px 0px #000;
+  transition: all 0.1s ease;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transform: translate(-2px, -2px);
+}
+.neo-btn:hover {
+  transform: translate(-4px, -4px);
+  box-shadow: 6px 6px 0px 0px #000;
+}
+.neo-btn:active {
+  transform: translate(0, 0);
+  box-shadow: 0px 0px 0px 0px #000;
+}
+
+.neo-input {
+  border: 3px solid #000;
+  box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.2);
+  border-radius: 8px;
+  padding: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.neo-input:focus {
+  outline: none;
+  box-shadow: 6px 6px 0px 0px #000;
+  transform: translate(-2px, -2px);
+}
+
+/* Light/Dark Mode Adjustments for Neo Brutalism */
+[data-theme="dark"] .neo-card,
+[data-theme="dark"] .neo-btn,
+[data-theme="dark"] .neo-input {
+  border-color: #fff;
+  box-shadow: 6px 6px 0px 0px #fff;
+}
+[data-theme="dark"] .neo-card:hover {
+    box-shadow: 8px 8px 0px 0px #fff;
+}
+[data-theme="dark"] .neo-btn:hover {
+    box-shadow: 6px 6px 0px 0px #fff;
+}
+[data-theme="dark"] .neo-input:focus {
+    box-shadow: 6px 6px 0px 0px #fff;
+}
