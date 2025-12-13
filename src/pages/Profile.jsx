@@ -1,55 +1,306 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { db, auth } from '../config/firebase';
 
 const Profile = () => {
     const [activeTab, setActiveTab] = useState('info');
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [message, setMessage] = useState({ type: '', text: '' });
+
+    // User profile data
+    const [profileData, setProfileData] = useState({
+        displayName: '',
+        email: '',
+        phone: '',
+        bio: '',
+        firstName: '',
+        lastName: ''
+    });
+
+    // Password change
+    const [passwordData, setPasswordData] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+
+    const { currentUser, logout } = useAuth();
+    const navigate = useNavigate();
+
+    // Fetch user data from Firestore
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (!currentUser) {
+                navigate('/login');
+                return;
+            }
+
+            try {
+                const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    const nameParts = (data.displayName || '').split(' ');
+                    setProfileData({
+                        displayName: data.displayName || '',
+                        email: data.email || currentUser.email || '',
+                        phone: data.phone || '',
+                        bio: data.bio || '',
+                        firstName: nameParts[0] || '',
+                        lastName: nameParts.slice(1).join(' ') || ''
+                    });
+                } else {
+                    // If no Firestore doc, use Firebase Auth data
+                    const nameParts = (currentUser.displayName || '').split(' ');
+                    setProfileData({
+                        displayName: currentUser.displayName || '',
+                        email: currentUser.email || '',
+                        phone: '',
+                        bio: '',
+                        firstName: nameParts[0] || '',
+                        lastName: nameParts.slice(1).join(' ') || ''
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+                setMessage({ type: 'error', text: 'Failed to load profile data.' });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUserData();
+    }, [currentUser, navigate]);
+
+    // Handle profile update
+    const handleProfileUpdate = async (e) => {
+        e.preventDefault();
+        setMessage({ type: '', text: '' });
+        setSaving(true);
+
+        try {
+            const fullName = `${profileData.firstName} ${profileData.lastName}`.trim();
+
+            await updateDoc(doc(db, 'users', currentUser.uid), {
+                displayName: fullName,
+                phone: profileData.phone,
+                bio: profileData.bio,
+                updatedAt: serverTimestamp()
+            });
+
+            setProfileData(prev => ({ ...prev, displayName: fullName }));
+            setMessage({ type: 'success', text: 'Profile updated successfully!' });
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            setMessage({ type: 'error', text: 'Failed to update profile. Please try again.' });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // Handle password change
+    const handlePasswordChange = async (e) => {
+        e.preventDefault();
+        setMessage({ type: '', text: '' });
+
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            setMessage({ type: 'error', text: 'New passwords do not match.' });
+            return;
+        }
+
+        if (passwordData.newPassword.length < 8) {
+            setMessage({ type: 'error', text: 'Password must be at least 8 characters long.' });
+            return;
+        }
+
+        setSaving(true);
+
+        try {
+            // Re-authenticate user first
+            const credential = EmailAuthProvider.credential(
+                currentUser.email,
+                passwordData.currentPassword
+            );
+            await reauthenticateWithCredential(auth.currentUser, credential);
+
+            // Update password
+            await updatePassword(auth.currentUser, passwordData.newPassword);
+
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+            setMessage({ type: 'success', text: 'Password updated successfully!' });
+        } catch (error) {
+            console.error('Error changing password:', error);
+            if (error.code === 'auth/wrong-password') {
+                setMessage({ type: 'error', text: 'Current password is incorrect.' });
+            } else if (error.code === 'auth/requires-recent-login') {
+                setMessage({ type: 'error', text: 'Please log out and log in again before changing password.' });
+            } else {
+                setMessage({ type: 'error', text: 'Failed to change password. Please try again.' });
+            }
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // Handle logout
+    const handleLogout = async () => {
+        try {
+            await logout();
+            navigate('/login');
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    };
+
+    // Get member since date
+    const getMemberSince = () => {
+        if (currentUser?.metadata?.creationTime) {
+            return new Date(currentUser.metadata.creationTime).getFullYear();
+        }
+        return new Date().getFullYear();
+    };
 
     const renderContent = () => {
         switch (activeTab) {
             case 'info':
                 return (
-                    <div className="space-y-6 animate-fade-in-up">
+                    <form onSubmit={handleProfileUpdate} className="space-y-6 animate-fade-in-up">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-xs font-black uppercase text-[var(--color-text-secondary)]">First Name</label>
-                                <input type="text" defaultValue="John" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-black rounded-lg px-4 py-3 font-bold text-[var(--color-text-primary)]" />
+                                <input
+                                    type="text"
+                                    value={profileData.firstName}
+                                    onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
+                                    className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-black rounded-lg px-4 py-3 font-bold text-[var(--color-text-primary)]"
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Last Name</label>
-                                <input type="text" defaultValue="Doe" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-black rounded-lg px-4 py-3 font-bold text-[var(--color-text-primary)]" />
+                                <input
+                                    type="text"
+                                    value={profileData.lastName}
+                                    onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
+                                    className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-black rounded-lg px-4 py-3 font-bold text-[var(--color-text-primary)]"
+                                />
                             </div>
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Email Address</label>
-                            <input type="email" defaultValue="john.doe@example.com" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-black rounded-lg px-4 py-3 font-bold text-[var(--color-text-primary)]" />
+                            <input
+                                type="email"
+                                value={profileData.email}
+                                disabled
+                                className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-black rounded-lg px-4 py-3 font-bold text-[var(--color-text-muted)] cursor-not-allowed opacity-60"
+                            />
+                            <p className="text-xs text-[var(--color-text-muted)]">Email cannot be changed</p>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Phone Number</label>
+                            <input
+                                type="tel"
+                                value={profileData.phone}
+                                onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
+                                placeholder="+1 234 567 8900"
+                                className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-black rounded-lg px-4 py-3 font-bold text-[var(--color-text-primary)]"
+                            />
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Bio</label>
-                            <textarea defaultValue="Music lover, tech enthusiast, and weekend traveler." rows="4" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-black rounded-lg px-4 py-3 font-bold text-[var(--color-text-primary)]"></textarea>
+                            <textarea
+                                value={profileData.bio}
+                                onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
+                                placeholder="Tell us about yourself..."
+                                rows="4"
+                                className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-black rounded-lg px-4 py-3 font-bold text-[var(--color-text-primary)]"
+                            ></textarea>
                         </div>
-                        <button className="neo-btn bg-[var(--color-accent-primary)] text-white px-6 py-3 shadow-[4px_4px_0_black]">SAVE CHANGES</button>
-                    </div>
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="neo-btn bg-[var(--color-accent-primary)] text-white px-6 py-3 shadow-[4px_4px_0_black] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {saving ? (
+                                <>
+                                    <span className="animate-spin">⏳</span>
+                                    SAVING...
+                                </>
+                            ) : (
+                                'SAVE CHANGES'
+                            )}
+                        </button>
+                    </form>
                 );
             case 'security':
                 return (
-                    <div className="space-y-6 animate-fade-in-up">
+                    <form onSubmit={handlePasswordChange} className="space-y-6 animate-fade-in-up">
                         <div className="space-y-2">
                             <label className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Current Password</label>
-                            <input type="password" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-black rounded-lg px-4 py-3 font-bold text-[var(--color-text-primary)]" />
+                            <input
+                                type="password"
+                                value={passwordData.currentPassword}
+                                onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                                required
+                                className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-black rounded-lg px-4 py-3 font-bold text-[var(--color-text-primary)]"
+                            />
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-black uppercase text-[var(--color-text-secondary)]">New Password</label>
-                            <input type="password" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-black rounded-lg px-4 py-3 font-bold text-[var(--color-text-primary)]" />
+                            <input
+                                type="password"
+                                value={passwordData.newPassword}
+                                onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                                required
+                                minLength={8}
+                                className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-black rounded-lg px-4 py-3 font-bold text-[var(--color-text-primary)]"
+                            />
+                            <p className="text-xs text-[var(--color-text-muted)]">Minimum 8 characters</p>
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Confirm New Password</label>
-                            <input type="password" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-black rounded-lg px-4 py-3 font-bold text-[var(--color-text-primary)]" />
+                            <input
+                                type="password"
+                                value={passwordData.confirmPassword}
+                                onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                                required
+                                className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-black rounded-lg px-4 py-3 font-bold text-[var(--color-text-primary)]"
+                            />
                         </div>
-                        <button className="neo-btn bg-[var(--color-warning)] text-white px-6 py-3 shadow-[4px_4px_0_black]">UPDATE PASSWORD</button>
-                    </div>
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="neo-btn bg-[var(--color-warning)] text-white px-6 py-3 shadow-[4px_4px_0_black] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {saving ? (
+                                <>
+                                    <span className="animate-spin">⏳</span>
+                                    UPDATING...
+                                </>
+                            ) : (
+                                'UPDATE PASSWORD'
+                            )}
+                        </button>
+
+                        {/* Danger Zone */}
+                        <div className="mt-10 pt-6 border-t-2 border-dashed border-[var(--color-error)]">
+                            <h4 className="font-black text-[var(--color-error)] uppercase mb-4">Danger Zone</h4>
+                            <button
+                                type="button"
+                                onClick={handleLogout}
+                                className="neo-btn bg-[var(--color-error)] text-white px-6 py-3 shadow-[4px_4px_0_black]"
+                            >
+                                🚪 LOGOUT
+                            </button>
+                        </div>
+                    </form>
                 );
             case 'history':
                 return (
                     <div className="space-y-4 animate-fade-in-up">
+                        <p className="text-[var(--color-text-secondary)] font-bold mb-4">Your recent orders will appear here.</p>
                         {[1, 2, 3].map((order) => (
                             <div key={order} className="neo-card p-4 border-2 border-black bg-[var(--color-bg-secondary)] flex justify-between items-center group hover:translate-x-1 transition-transform">
                                 <div>
@@ -66,6 +317,21 @@ const Profile = () => {
         }
     };
 
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[var(--color-bg-primary)] flex items-center justify-center">
+                <div className="text-center">
+                    <div className="text-6xl animate-bounce mb-4">👤</div>
+                    <p className="font-black uppercase text-[var(--color-text-secondary)]">Loading profile...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!currentUser) {
+        return null;
+    }
+
     return (
         <div className="min-h-screen bg-[var(--color-bg-primary)] pt-36 pb-24">
             <div className="container mx-auto px-4">
@@ -74,16 +340,40 @@ const Profile = () => {
                     <span className="hidden dark:block drop-shadow-[4px_4px_0_var(--color-accent-primary)]">My Profile</span>
                 </h1>
 
+                {/* Message Display */}
+                {message.text && (
+                    <div className={`max-w-5xl mx-auto mb-6 p-4 border-2 font-bold ${message.type === 'success'
+                            ? 'bg-green-100 dark:bg-green-900/30 border-[var(--color-success)] text-[var(--color-success)]'
+                            : 'bg-red-100 dark:bg-red-900/30 border-[var(--color-error)] text-[var(--color-error)]'
+                        }`}>
+                        <span className="mr-2">{message.type === 'success' ? '✅' : '⚠️'}</span>
+                        {message.text}
+                    </div>
+                )}
+
                 <div className="flex flex-col lg:flex-row gap-8 max-w-5xl mx-auto">
                     {/* Sidebar */}
                     <div className="w-full lg:w-1/4">
                         <div className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-black shadow-[8px_8px_0_black]">
                             <div className="flex flex-col items-center mb-6">
-                                <div className="w-24 h-24 rounded-full border-4 border-black bg-[var(--color-accent-secondary)] mb-3 overflow-hidden">
-                                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=John" alt="Avatar" className="w-full h-full object-cover" />
+                                <div className="w-24 h-24 rounded-full border-4 border-black bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-accent-secondary)] mb-3 overflow-hidden flex items-center justify-center">
+                                    {currentUser.photoURL ? (
+                                        <img src={currentUser.photoURL} alt="Avatar" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="text-white font-black text-4xl">
+                                            {profileData.firstName?.charAt(0)?.toUpperCase() || profileData.email?.charAt(0)?.toUpperCase() || '?'}
+                                        </span>
+                                    )}
                                 </div>
-                                <h2 className="font-black text-xl text-[var(--color-text-primary)] uppercase">John Doe</h2>
-                                <p className="text-xs font-bold text-[var(--color-text-secondary)]">Member since 2024</p>
+                                <h2 className="font-black text-xl text-[var(--color-text-primary)] uppercase text-center">
+                                    {profileData.displayName || profileData.email?.split('@')[0] || 'User'}
+                                </h2>
+                                <p className="text-xs font-bold text-[var(--color-text-secondary)]">Member since {getMemberSince()}</p>
+
+                                {/* Email badge */}
+                                <div className="mt-2 px-3 py-1 bg-[var(--color-success)]/20 border border-[var(--color-success)] rounded-full">
+                                    <span className="text-xs font-bold text-[var(--color-success)]">✓ Verified</span>
+                                </div>
                             </div>
 
                             <nav className="space-y-2">
@@ -96,7 +386,7 @@ const Profile = () => {
                                 ].map((tab) => (
                                     <button
                                         key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
+                                        onClick={() => { setActiveTab(tab.id); setMessage({ type: '', text: '' }); }}
                                         className={`w-full text-left px-4 py-3 font-black uppercase text-sm border-2 border-black transition-all flex items-center gap-3
                                         ${activeTab === tab.id
                                                 ? 'bg-[var(--color-accent-primary)] text-white shadow-[4px_4px_0_black] translate-x-[-2px] translate-y-[-2px]'

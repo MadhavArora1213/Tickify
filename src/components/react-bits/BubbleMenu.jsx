@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const DEFAULT_ITEMS = [
     {
@@ -54,6 +56,8 @@ export default function BubbleMenu({
 }) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showOverlay, setShowOverlay] = useState(false);
+
+    const { currentUser } = useAuth();
 
     const overlayRef = useRef(null);
     const bubblesRef = useRef([]);
@@ -246,61 +250,101 @@ export default function BubbleMenu({
                     </span>
                 </div>
 
-                {/* Menu Toggle Bubble */}
-                <button
-                    type="button"
-                    className={[
-                        'bubble toggle-bubble menu-btn',
-                        isMenuOpen ? 'open bg-black border-white' : 'bg-black dark:bg-white border-black dark:border-white',
-                        'inline-flex flex-col items-center justify-center',
-                        'rounded-xl',
-                        'shadow-[4px_4px_0_black] dark:shadow-[4px_4px_0_white]',
-                        'pointer-events-auto',
-                        'w-12 h-12 md:w-14 md:h-14',
-                        'border-2',
-                        'cursor-pointer p-0',
-                        'will-change-transform',
-                        'hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_black] dark:hover:shadow-[6px_6px_0_white] transition-all'
-                    ].join(' ')}
-                    onClick={handleToggle}
-                    aria-label={menuAriaLabel}
-                    aria-pressed={isMenuOpen}
-                >
-                    <span
-                        className="menu-line block mx-auto rounded-[2px] transition-colors"
-                        style={{
-                            width: 26,
-                            height: 3,
-                            // If open, white (on black). If closed, white (on black) in light mode, black (on white) in dark mode.
-                            // We can use a CSS variable or class. Let's use class for base color and let open state override if needed.
-                            backgroundColor: isMenuOpen ? 'white' : 'var(--line-color)',
-                            transform: isMenuOpen ? 'translateY(4px) rotate(45deg)' : 'none'
-                        }}
+                {/* Right Side - Avatar + Menu Toggle */}
+                <div className="flex items-center gap-3">
+                    {/* User Avatar - Shows when logged in (left of menu icon) */}
+                    {currentUser && (
+                        <Link
+                            to="/profile"
+                            className={[
+                                'bubble user-avatar-bubble',
+                                'inline-flex items-center justify-center relative',
+                                'rounded-xl',
+                                'bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-accent-secondary)]',
+                                'shadow-[4px_4px_0_black]',
+                                'pointer-events-auto',
+                                'w-12 h-12 md:w-14 md:h-14',
+                                'border-2 border-black',
+                                'will-change-transform',
+                                'hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_black] transition-all',
+                                'overflow-hidden',
+                                'group'
+                            ].join(' ')}
+                            aria-label="User Profile"
+                            title={currentUser.displayName || currentUser.email}
+                        >
+                            {currentUser.photoURL ? (
+                                <img
+                                    src={currentUser.photoURL}
+                                    alt="User Avatar"
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <span className="text-white font-black text-xl md:text-2xl group-hover:scale-110 transition-transform">
+                                    {currentUser.displayName
+                                        ? currentUser.displayName.charAt(0).toUpperCase()
+                                        : currentUser.email?.charAt(0).toUpperCase() || '?'
+                                    }
+                                </span>
+                            )}
+                            {/* Online indicator */}
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-black rounded-full animate-pulse"></span>
+                        </Link>
+                    )}
+
+                    {/* Menu Toggle Bubble */}
+                    <button
+                        type="button"
+                        className={[
+                            'bubble toggle-bubble menu-btn',
+                            isMenuOpen ? 'open bg-black border-white' : 'bg-black dark:bg-white border-black dark:border-white',
+                            'inline-flex flex-col items-center justify-center',
+                            'rounded-xl',
+                            'shadow-[4px_4px_0_black] dark:shadow-[4px_4px_0_white]',
+                            'pointer-events-auto',
+                            'w-12 h-12 md:w-14 md:h-14',
+                            'border-2',
+                            'cursor-pointer p-0',
+                            'will-change-transform',
+                            'hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_black] dark:hover:shadow-[6px_6px_0_white] transition-all'
+                        ].join(' ')}
+                        onClick={handleToggle}
+                        aria-label={menuAriaLabel}
+                        aria-pressed={isMenuOpen}
                     >
-                        <style jsx>{`
-                            .menu-btn {
-                                --line-color: white;
-                            }
-                            :global([data-theme="dark"]) .menu-btn {
-                                --line-color: black;
-                            }
-                            /* When open, we force black bg, so always white lines */
-                            .menu-btn.open {
-                                --line-color: white;
-                            }
-                        `}</style>
-                    </span>
-                    <span
-                        className="menu-line short block mx-auto rounded-[2px] transition-colors"
-                        style={{
-                            marginTop: '6px',
-                            width: 26,
-                            height: 3,
-                            backgroundColor: isMenuOpen ? 'white' : 'var(--line-color)',
-                            transform: isMenuOpen ? 'translateY(-4px) rotate(-45deg)' : 'none'
-                        }}
-                    />
-                </button>
+                        <span
+                            className="menu-line block mx-auto rounded-[2px] transition-colors"
+                            style={{
+                                width: 26,
+                                height: 3,
+                                backgroundColor: isMenuOpen ? 'white' : 'var(--line-color)',
+                                transform: isMenuOpen ? 'translateY(4px) rotate(45deg)' : 'none'
+                            }}
+                        >
+                            <style jsx>{`
+                                .menu-btn {
+                                    --line-color: white;
+                                }
+                                :global([data-theme="dark"]) .menu-btn {
+                                    --line-color: black;
+                                }
+                                .menu-btn.open {
+                                    --line-color: white;
+                                }
+                            `}</style>
+                        </span>
+                        <span
+                            className="menu-line short block mx-auto rounded-[2px] transition-colors"
+                            style={{
+                                marginTop: '6px',
+                                width: 26,
+                                height: 3,
+                                backgroundColor: isMenuOpen ? 'white' : 'var(--line-color)',
+                                transform: isMenuOpen ? 'translateY(-4px) rotate(-45deg)' : 'none'
+                            }}
+                        />
+                    </button>
+                </div>
             </nav>
 
             {/* Menu Overlay */}

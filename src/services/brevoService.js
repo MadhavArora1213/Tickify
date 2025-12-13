@@ -1,0 +1,174 @@
+// Brevo Email Service for OTP Verification
+// API Documentation: https://developers.brevo.com/
+
+const BREVO_API_KEY = import.meta.env.VITE_BREVO_API_KEY || '';
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
+
+// Store OTPs temporarily (in production, use backend/Redis)
+const otpStore = new Map();
+
+/**
+ * Generate a 6-digit OTP
+ * @returns {string} 6-digit OTP
+ */
+export const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+/**
+ * Send OTP email via Brevo API
+ * @param {string} email - Recipient email address
+ * @param {string} name - Recipient name
+ * @returns {Promise<{success: boolean, message: string, otp?: string}>}
+ */
+export const sendOTPEmail = async (email, name = 'User') => {
+    const otp = generateOTP();
+    
+    // Store OTP with expiration (10 minutes)
+    otpStore.set(email, {
+        otp,
+        expiresAt: Date.now() + 10 * 60 * 1000,
+        attempts: 0
+    });
+
+    const emailData = {
+        sender: {
+            name: 'Tickify',
+            email: 'aroramadhav1312@gmail.com' // Replace with your verified Brevo sender email
+        },
+        to: [
+            {
+                email: email,
+                name: name
+            }
+        ],
+        subject: 'Your Tickify Verification Code',
+        htmlContent: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background-color: #111827;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+                    <div style="background-color: #1F2937; border: 4px solid #F9FAFB; padding: 40px; box-shadow: 8px 8px 0 #374151;">
+                        <!-- Logo -->
+                        <div style="text-align: center; margin-bottom: 32px;">
+                            <div style="display: inline-block; width: 60px; height: 60px; background-color: #2563EB; border: 3px solid #F9FAFB; box-shadow: 4px 4px 0 #F9FAFB;">
+                                <span style="font-size: 28px; line-height: 54px; color: #F9FAFB; font-weight: 900;">T</span>
+                            </div>
+                        </div>
+                        
+                        <h1 style="color: #F9FAFB; font-size: 28px; text-align: center; margin: 0 0 24px 0; text-transform: uppercase; letter-spacing: 2px; font-weight: 900;">
+                            Verify Your Email
+                        </h1>
+                        
+                        <p style="color: #D1D5DB; font-size: 16px; text-align: center; margin: 0 0 32px 0; line-height: 1.6;">
+                            Hello <strong style="color: #F9FAFB;">${name}</strong>,<br>
+                            Use the code below to complete your registration.
+                        </p>
+                        
+                        <!-- OTP Box -->
+                        <div style="background-color: #111827; border: 4px solid #2563EB; padding: 24px; text-align: center; margin-bottom: 32px; box-shadow: 6px 6px 0 #2563EB;">
+                            <span style="font-family: 'Courier New', monospace; font-size: 48px; font-weight: 900; color: #2563EB; letter-spacing: 12px;">
+                                ${otp}
+                            </span>
+                        </div>
+                        
+                        <p style="color: #9CA3AF; font-size: 14px; text-align: center; margin: 0 0 24px 0;">
+                            This code expires in <strong style="color: #F59E0B;">10 minutes</strong>
+                        </p>
+                        
+                        <div style="border-top: 2px dashed #374151; padding-top: 24px; text-align: center;">
+                            <p style="color: #6B7280; font-size: 12px; margin: 0;">
+                                If you didn't request this code, please ignore this email.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <p style="color: #6B7280; font-size: 12px; text-align: center; margin-top: 24px;">
+                        © 2025 Tickify. All rights reserved.
+                    </p>
+                </div>
+            </body>
+            </html>
+        `
+    };
+
+    try {
+        // In development without API key, simulate success
+        if (!BREVO_API_KEY) {
+            console.log('📧 DEV MODE - OTP for', email, ':', otp);
+            return { success: true, message: 'OTP sent successfully (DEV MODE)', otp };
+        }
+
+        const response = await fetch(BREVO_API_URL, {
+            method: 'POST',
+            headers: {
+                'accept': 'application/json',
+                'api-key': BREVO_API_KEY,
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify(emailData)
+        });
+
+        if (response.ok) {
+            return { success: true, message: 'OTP sent successfully' };
+        } else {
+            const error = await response.json();
+            console.error('Brevo API Error:', error);
+            return { success: false, message: error.message || 'Failed to send OTP' };
+        }
+    } catch (error) {
+        console.error('Error sending OTP:', error);
+        return { success: false, message: 'Network error. Please try again.' };
+    }
+};
+
+/**
+ * Verify OTP
+ * @param {string} email - Email address
+ * @param {string} inputOtp - OTP entered by user
+ * @returns {{success: boolean, message: string}}
+ */
+export const verifyOTP = (email, inputOtp) => {
+    const stored = otpStore.get(email);
+    
+    if (!stored) {
+        return { success: false, message: 'OTP expired or not found. Please request a new one.' };
+    }
+    
+    if (Date.now() > stored.expiresAt) {
+        otpStore.delete(email);
+        return { success: false, message: 'OTP has expired. Please request a new one.' };
+    }
+    
+    if (stored.attempts >= 5) {
+        otpStore.delete(email);
+        return { success: false, message: 'Too many failed attempts. Please request a new OTP.' };
+    }
+    
+    if (stored.otp === inputOtp) {
+        otpStore.delete(email);
+        return { success: true, message: 'Email verified successfully!' };
+    }
+    
+    stored.attempts += 1;
+    return { success: false, message: `Invalid OTP. ${5 - stored.attempts} attempts remaining.` };
+};
+
+/**
+ * Clear OTP for an email (for resend functionality)
+ * @param {string} email - Email address
+ */
+export const clearOTP = (email) => {
+    otpStore.delete(email);
+};
+
+export default {
+    sendOTPEmail,
+    verifyOTP,
+    generateOTP,
+    clearOTP
+};

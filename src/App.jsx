@@ -10,6 +10,7 @@ import MyTickets from './pages/MyTickets';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 import OrganizerLogin from './pages/organizer/OrganizerLogin';
 import OrganizerDashboard from './pages/organizer/OrganizerDashboard';
 import CreateEvent from './pages/organizer/CreateEvent';
@@ -42,17 +43,19 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import BubbleMenu from './components/react-bits/BubbleMenu';
 import ThemeToggle from './components/ThemeToggle';
+import { UserRoute, AdminRoute, PublicRoute, AdminPublicRoute } from './components/ProtectedRoutes';
 
 
 function App() {
     const location = useLocation();
-    const hideUiElements = location.pathname.startsWith('/organizer') || location.pathname.startsWith('/scanner') || location.pathname.startsWith('/admin');
+    const hideUiElements = location.pathname.startsWith('/organizer') || location.pathname.startsWith('/scanner') || location.pathname.startsWith('/admin') || location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/forgot-password';
 
     return (
         <div className="min-h-screen flex flex-col font-sans bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] transition-colors duration-300">
             {/* <Header /> */}
             <main className="flex-grow">
                 <Routes>
+                    {/* Public Routes */}
                     <Route path="/" element={<Home />} />
                     <Route path="/events" element={<Events />} />
                     <Route path="/events/:id" element={<EventDetails />} />
@@ -60,10 +63,37 @@ function App() {
                     <Route path="/cart" element={<Cart />} />
                     <Route path="/checkout" element={<Checkout />} />
                     <Route path="/payment/success" element={<PaymentSuccess />} />
-                    <Route path="/my-tickets" element={<MyTickets />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
+
+                    {/* User Auth Routes - Redirect if already logged in */}
+                    <Route path="/login" element={
+                        <PublicRoute>
+                            <Login />
+                        </PublicRoute>
+                    } />
+                    <Route path="/register" element={
+                        <PublicRoute>
+                            <Register />
+                        </PublicRoute>
+                    } />
+                    <Route path="/forgot-password" element={
+                        <PublicRoute>
+                            <ForgotPassword />
+                        </PublicRoute>
+                    } />
+
+                    {/* Protected User Routes */}
+                    <Route path="/my-tickets" element={
+                        <UserRoute>
+                            <MyTickets />
+                        </UserRoute>
+                    } />
+                    <Route path="/profile" element={
+                        <UserRoute>
+                            <Profile />
+                        </UserRoute>
+                    } />
+
+                    {/* Organizer Routes */}
                     <Route path="/organizer/login" element={<OrganizerLogin />} />
                     <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
                     <Route path="/organizer/events" element={<ManageEvents />} />
@@ -71,17 +101,56 @@ function App() {
                     <Route path="/organizer/events/:eventId/analytics" element={<EventAnalytics />} />
                     <Route path="/organizer/settlements" element={<Settlements />} />
                     <Route path="/organizer/profile" element={<OrganizerProfile />} />
+
+                    {/* Scanner Routes */}
                     <Route path="/scanner/login" element={<ScannerLogin />} />
                     <Route path="/scanner/events" element={<ScannerEvents />} />
                     <Route path="/scanner/scan" element={<ScannerInterface />} />
                     <Route path="/scanner/results" element={<ScanResult />} />
-                    <Route path="/admin/login" element={<AdminLogin />} />
-                    <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                    <Route path="/admin/events/pending" element={<AdminEventApproval />} />
-                    <Route path="/admin/settlements" element={<AdminSettlements />} />
-                    <Route path="/admin/users" element={<AdminUsers />} />
-                    <Route path="/admin/analytics" element={<AdminAnalytics />} />
-                    <Route path="/admin/settings" element={<AdminSettings />} />
+
+                    {/* Admin Auth Route - Redirect if already admin */}
+                    <Route path="/admin/login" element={
+                        <AdminPublicRoute>
+                            <AdminLogin />
+                        </AdminPublicRoute>
+                    } />
+
+                    {/* Protected Admin Routes */}
+                    <Route path="/admin/dashboard" element={
+                        <AdminRoute>
+                            <AdminDashboard />
+                        </AdminRoute>
+                    } />
+                    <Route path="/admin/events" element={
+                        <AdminRoute>
+                            <AdminEventApproval />
+                        </AdminRoute>
+                    } />
+                    <Route path="/admin/events/pending" element={
+                        <AdminRoute>
+                            <AdminEventApproval />
+                        </AdminRoute>
+                    } />
+                    <Route path="/admin/settlements" element={
+                        <AdminRoute>
+                            <AdminSettlements />
+                        </AdminRoute>
+                    } />
+                    <Route path="/admin/users" element={
+                        <AdminRoute>
+                            <AdminUsers />
+                        </AdminRoute>
+                    } />
+                    <Route path="/admin/analytics" element={
+                        <AdminRoute>
+                            <AdminAnalytics />
+                        </AdminRoute>
+                    } />
+                    <Route path="/admin/settings" element={
+                        <AdminRoute>
+                            <AdminSettings />
+                        </AdminRoute>
+                    } />
 
                     {/* Public Info Pages */}
                     <Route path="/about" element={<About />} />
