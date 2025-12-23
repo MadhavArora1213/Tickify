@@ -20,6 +20,7 @@ const Profile = () => {
         firstName: '',
         lastName: ''
     });
+    const [collectionName, setCollectionName] = useState('users');
 
     // Password change
     const [passwordData, setPasswordData] = useState({
@@ -40,14 +41,26 @@ const Profile = () => {
             }
 
             try {
-                const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+                // Try to find user in 'users' collection first
+                let targetCollection = 'users';
+                let docRef = doc(db, 'users', currentUser.uid);
+                let userDoc = await getDoc(docRef);
+
+                // If not found, check 'organizers' collection
+                if (!userDoc.exists()) {
+                    docRef = doc(db, 'organizers', currentUser.uid);
+                    userDoc = await getDoc(docRef);
+                    targetCollection = 'organizers';
+                }
+
                 if (userDoc.exists()) {
+                    setCollectionName(targetCollection);
                     const data = userDoc.data();
                     const nameParts = (data.displayName || '').split(' ');
                     setProfileData({
                         displayName: data.displayName || '',
                         email: data.email || currentUser.email || '',
-                        phone: data.phone || '',
+                        phone: data.phoneNumber || data.phone || '', // Check phoneNumber first
                         bio: data.bio || '',
                         firstName: nameParts[0] || '',
                         lastName: nameParts.slice(1).join(' ') || ''
@@ -84,9 +97,9 @@ const Profile = () => {
         try {
             const fullName = `${profileData.firstName} ${profileData.lastName}`.trim();
 
-            await updateDoc(doc(db, 'users', currentUser.uid), {
+            await updateDoc(doc(db, collectionName, currentUser.uid), {
                 displayName: fullName,
-                phone: profileData.phone,
+                phoneNumber: profileData.phone, // Update phoneNumber
                 bio: profileData.bio,
                 updatedAt: serverTimestamp()
             });
@@ -343,8 +356,8 @@ const Profile = () => {
                 {/* Message Display */}
                 {message.text && (
                     <div className={`max-w-5xl mx-auto mb-6 p-4 border-2 font-bold ${message.type === 'success'
-                            ? 'bg-green-100 dark:bg-green-900/30 border-[var(--color-success)] text-[var(--color-success)]'
-                            : 'bg-red-100 dark:bg-red-900/30 border-[var(--color-error)] text-[var(--color-error)]'
+                        ? 'bg-green-100 dark:bg-green-900/30 border-[var(--color-success)] text-[var(--color-success)]'
+                        : 'bg-red-100 dark:bg-red-900/30 border-[var(--color-error)] text-[var(--color-error)]'
                         }`}>
                         <span className="mr-2">{message.type === 'success' ? '✅' : '⚠️'}</span>
                         {message.text}

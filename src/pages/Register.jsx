@@ -1,23 +1,29 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { sendOTPEmail, verifyOTP, clearOTP } from '../services/brevoService';
+import { sendOTPSMS, verifyOTP as verifyPhoneOTP, clearOTP as clearPhoneOTP } from '../services/messageCentralOTPService';
+import { sendOTPEmail, verifyOTP as verifyEmailOTP, clearOTP as clearEmailOTP } from '../services/brevoService';
 
 const Register = () => {
-    const [step, setStep] = useState(1); // 1: Info, 2: OTP Verification
+    const [step, setStep] = useState(1); // 1: Info, 2: Email Verify, 3: Phone Input, 4: Phone Verify
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
+        phoneNumber: '',
         password: '',
         confirmPassword: ''
     });
-    const [otp, setOtp] = useState(['', '', '', '', '', '']);
+    const [otp, setOtp] = useState(['', '', '', '', '', '']); // For input display
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [resendTimer, setResendTimer] = useState(0);
     const [termsAccepted, setTermsAccepted] = useState(false);
+
+    // New state to track which OTP we are verifying
+    const [verificationType, setVerificationType] = useState(null); // 'email' or 'phone'
+
 
     const { signup, signInWithGoogle } = useAuth();
     const navigate = useNavigate();
@@ -128,7 +134,8 @@ const Register = () => {
         return true;
     };
 
-    const handleSendOTP = async () => {
+    // Step 1 -> 2: Send Email OTP
+    const handleSendEmailOTP = async () => {
         setError('');
         setSuccess('');
 
@@ -139,69 +146,93 @@ const Register = () => {
             const result = await sendOTPEmail(formData.email, formData.fullName);
             if (result.success) {
                 setStep(2);
+                setVerificationType('email');
+                setOtp(['', '', '', '', '', '']); // Clear OTP input
                 setSuccess('Verification code sent to your email!');
                 startResendTimer();
-                // DEV mode: show OTP in console
                 if (result.otp) {
-                    console.log('🔐 DEV OTP:', result.otp);
+                    console.log('� DEV EMAIL OTP:', result.otp);
                 }
             } else {
                 setError(result.message);
             }
         } catch (err) {
-            setError('Failed to send verification code. Please try again.');
+            setError('Failed to send email verification code. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleResendOTP = async () => {
-        if (resendTimer > 0) return;
-
+    // Step 2 -> 3: Verify Email OTP
+    const handleVerifyEmailOTP = () => {
         setError('');
-        setLoading(true);
-        clearOTP(formData.email);
-
-        try {
-            const result = await sendOTPEmail(formData.email, formData.fullName);
-            if (result.success) {
-                setSuccess('New verification code sent!');
-                setOtp(['', '', '', '', '', '']);
-                startResendTimer();
-                if (result.otp) {
-                    console.log('🔐 DEV OTP:', result.otp);
-                }
-            } else {
-                setError(result.message);
-            }
-        } catch (err) {
-            setError('Failed to resend code. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleVerifyAndRegister = async () => {
-        setError('');
-        setSuccess('');
-
         const otpString = otp.join('');
         if (otpString.length !== 6) {
             setError('Please enter the complete 6-digit code.');
             return;
         }
 
+        const verifyResult = verifyEmailOTP(formData.email, otpString);
+        if (verifyResult.success) {
+            setSuccess('Email verified! Now please enter your phone number.');
+            setStep(3); // Move to Phone Input
+            setVerificationType(null);
+            setOtp(['', '', '', '', '', '']); // Clear for next step
+        } else {
+            setError(verifyResult.message);
+        }
+    };
+
+    // Step 3 -> 4: Send Phone OTP
+    const handleSendPhoneOTP = async () => {
+        setError('');
+        setSuccess('');
+
+        if (!formData.phoneNumber || formData.phoneNumber.length < 10) {
+            setError('Please enter a valid phone number.');
+            return;
+        }
+
         setLoading(true);
         try {
-            // Verify OTP
-            const verifyResult = verifyOTP(formData.email, otpString);
+            const result = await sendOTPSMS(formData.phoneNumber);
+            if (result.success) {
+                setStep(4);
+                setVerificationType('phone');
+                setOtp(['', '', '', '']); // 4 digit OTP for phone
+                setSuccess('Verification code sent to your phone!');
+                startResendTimer();
+                if (result.otp) console.log('📱 DEV PHONE OTP:', result.otp);
+            } else {
+                setError(result.message);
+            }
+        } catch (err) {
+            setError('Failed to send phone verification code.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Step 4: Verify Phone and Register
+    const handleVerifyPhoneAndRegister = async () => {
+        setError('');
+        const otpString = otp.join('');
+        if (otpString.length !== 4) {
+            setError('Please enter the complete 4-digit code.');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // Verify Phone OTP
+            const verifyResult = await verifyPhoneOTP(formData.phoneNumber, otpString);
             if (!verifyResult.success) {
                 setError(verifyResult.message);
                 return;
             }
 
-            // Create account with Firebase
-            await signup(formData.email, formData.password, formData.fullName);
+            // All Verified - Create Account
+            await signup(formData.email, formData.password, formData.fullName, formData.phoneNumber);
 
             setSuccess('Account created successfully! Redirecting...');
             setTimeout(() => {
@@ -214,6 +245,37 @@ const Register = () => {
             } else {
                 setError('Failed to create account. Please try again.');
             }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResendOTP = async () => {
+        if (resendTimer > 0) return;
+        setError('');
+        setLoading(true);
+
+        try {
+            if (verificationType === 'email') {
+                clearEmailOTP(formData.email);
+                const result = await sendOTPEmail(formData.email, formData.fullName);
+                if (result.success) {
+                    setSuccess('New email code sent!');
+                    startResendTimer();
+                    if (result.otp) console.log('📧 DEV EMAIL OTP:', result.otp);
+                } else setError(result.message);
+            } else if (verificationType === 'phone') {
+                clearPhoneOTP(formData.phoneNumber);
+                const result = await sendOTPSMS(formData.phoneNumber);
+                if (result.success) {
+                    setSuccess('New phone code sent!');
+                    setOtp(['', '', '', '']); // Reset to 4
+                    startResendTimer();
+                    if (result.otp) console.log('📱 DEV PHONE OTP:', result.otp);
+                } else setError(result.message);
+            }
+        } catch (err) {
+            setError('Failed to resend code.');
         } finally {
             setLoading(false);
         }
@@ -233,6 +295,26 @@ const Register = () => {
     const strengthColors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-lime-500', 'bg-green-500'];
     const strengthLabels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
 
+    const getStepTitle = () => {
+        switch (step) {
+            case 1: return 'Create Account';
+            case 2: return 'Verify Email';
+            case 3: return 'Add Phone';
+            case 4: return 'Verify Phone';
+            default: return 'Create Account';
+        }
+    };
+
+    const getStepDescription = () => {
+        switch (step) {
+            case 1: return 'Join the Tickify community today.';
+            case 2: return `Enter code sent to ${formData.email}`;
+            case 3: return 'Secure your account with phone verification.';
+            case 4: return `Enter code sent to ${formData.phoneNumber}`;
+            default: return '';
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[var(--color-bg-primary)] flex items-center justify-center py-12 px-4 relative overflow-hidden transition-colors duration-300">
             {/* Background Decorations */}
@@ -248,25 +330,23 @@ const Register = () => {
                         </div>
                     </Link>
                     <h1 className="text-4xl font-black text-[var(--color-text-primary)] uppercase tracking-tighter mb-2">
-                        {step === 1 ? 'Create Account' : 'Verify Email'}
+                        {getStepTitle()}
                     </h1>
                     <p className="text-[var(--color-text-secondary)] font-bold">
-                        {step === 1
-                            ? 'Join the Tickify community today.'
-                            : `Enter the code sent to ${formData.email}`
-                        }
+                        {getStepDescription()}
                     </p>
                 </div>
 
                 {/* Progress Steps */}
-                <div className="flex items-center justify-center gap-4 mb-8">
-                    <div className={`w-10 h-10 border-3 font-black flex items-center justify-center text-lg transition-all ${step >= 1 ? 'bg-[var(--color-accent-primary)] text-white border-[var(--color-text-primary)] shadow-[3px_3px_0_var(--color-text-primary)]' : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] border-[var(--color-text-muted)]'}`}>
-                        {step > 1 ? '✓' : '1'}
-                    </div>
-                    <div className={`w-12 h-1 ${step >= 2 ? 'bg-[var(--color-accent-primary)]' : 'bg-[var(--color-text-muted)] opacity-30'}`}></div>
-                    <div className={`w-10 h-10 border-3 font-black flex items-center justify-center text-lg transition-all ${step >= 2 ? 'bg-[var(--color-accent-primary)] text-white border-[var(--color-text-primary)] shadow-[3px_3px_0_var(--color-text-primary)]' : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] border-[var(--color-text-muted)]'}`}>
-                        2
-                    </div>
+                <div className="flex items-center justify-center gap-2 mb-8">
+                    {[1, 2, 3, 4].map((s) => (
+                        <React.Fragment key={s}>
+                            <div className={`w-8 h-8 border-2 font-black flex items-center justify-center text-sm transition-all ${step >= s ? 'bg-[var(--color-accent-primary)] text-white border-[var(--color-text-primary)]' : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] border-[var(--color-text-muted)]'}`}>
+                                {step > s ? '✓' : s}
+                            </div>
+                            {s < 4 && <div className={`w-4 h-0.5 ${step > s ? 'bg-[var(--color-accent-primary)]' : 'bg-[var(--color-text-muted)] opacity-30'}`}></div>}
+                        </React.Fragment>
+                    ))}
                 </div>
 
                 {/* Registration Card */}
@@ -287,8 +367,8 @@ const Register = () => {
                         </div>
                     )}
 
-                    {step === 1 ? (
-                        /* Step 1: User Information */
+                    {step === 1 && (
+                        /* Step 1: User Information (No Phone) */
                         <div className="space-y-5">
                             {/* Full Name */}
                             <div className="space-y-2">
@@ -403,7 +483,7 @@ const Register = () => {
 
                             {/* Continue Button */}
                             <button
-                                onClick={handleSendOTP}
+                                onClick={handleSendEmailOTP}
                                 disabled={loading}
                                 className="neo-btn w-full bg-[var(--color-accent-secondary)] text-white font-black text-xl py-4 border-2 border-[var(--color-text-primary)] hover:bg-[var(--color-accent-primary)] transition-all shadow-[6px_6px_0_var(--color-text-primary)] hover:shadow-[8px_8px_0_var(--color-text-primary)] hover:translate-x-[-2px] hover:translate-y-[-2px] uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                             >
@@ -414,21 +494,25 @@ const Register = () => {
                                     </>
                                 ) : (
                                     <>
-                                        Continue
+                                        Verify Email
                                         <span>→</span>
                                     </>
                                 )}
                             </button>
                         </div>
-                    ) : (
-                        /* Step 2: OTP Verification */
+                    )}
+
+                    {(step === 2 || step === 4) && (
+                        /* OTP Verification (Shared for Email and Phone) */
                         <div className="space-y-6">
                             {/* OTP Illustration */}
                             <div className="text-center">
-                                <div className="text-6xl mb-4">📧</div>
+                                <div className="text-6xl mb-4">{step === 2 ? '📧' : '📱'}</div>
                                 <p className="text-sm text-[var(--color-text-muted)] font-medium">
-                                    We sent a 6-digit code to<br />
-                                    <span className="font-black text-[var(--color-text-primary)]">{formData.email}</span>
+                                    We sent a {step === 2 ? '6' : '4'}-digit code to<br />
+                                    <span className="font-black text-[var(--color-text-primary)]">
+                                        {step === 2 ? formData.email : formData.phoneNumber}
+                                    </span>
                                 </p>
                             </div>
 
@@ -467,18 +551,18 @@ const Register = () => {
 
                             {/* Verify Button */}
                             <button
-                                onClick={handleVerifyAndRegister}
-                                disabled={loading || otp.join('').length !== 6}
+                                onClick={step === 2 ? handleVerifyEmailOTP : handleVerifyPhoneAndRegister}
+                                disabled={loading || otp.join('').length !== (step === 2 ? 6 : 4)}
                                 className="neo-btn w-full bg-[var(--color-success)] text-white font-black text-xl py-4 border-2 border-[var(--color-text-primary)] hover:brightness-110 transition-all shadow-[6px_6px_0_var(--color-text-primary)] hover:shadow-[8px_8px_0_var(--color-text-primary)] hover:translate-x-[-2px] hover:translate-y-[-2px] uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                             >
                                 {loading ? (
                                     <>
                                         <span className="animate-spin">⏳</span>
-                                        Creating Account...
+                                        {step === 4 ? 'Creating Account...' : 'Verifying...'}
                                     </>
                                 ) : (
                                     <>
-                                        Verify & Create Account
+                                        {step === 4 ? 'Complete Registration' : 'Verify & Continue'}
                                         <span>✓</span>
                                     </>
                                 )}
@@ -486,11 +570,57 @@ const Register = () => {
 
                             {/* Back Button */}
                             <button
-                                onClick={() => setStep(1)}
+                                onClick={() => {
+                                    if (step === 2) setStep(1);
+                                    if (step === 4) setStep(3);
+                                    setError('');
+                                }}
                                 disabled={loading}
                                 className="w-full py-2 text-sm font-black text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] uppercase transition-colors disabled:opacity-50"
                             >
-                                ← Back to Details
+                                ← Back
+                            </button>
+                        </div>
+                    )}
+
+                    {step === 3 && (
+                        /* Step 3: Phone Input (After Email Verification) */
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-xs font-black uppercase text-[var(--color-text-secondary)] tracking-widest">
+                                    Phone Number
+                                </label>
+                                <input
+                                    type="tel"
+                                    name="phoneNumber"
+                                    placeholder="9999999999"
+                                    value={formData.phoneNumber}
+                                    onChange={handleInputChange}
+                                    maxLength="10"
+                                    className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)] rounded-none px-4 py-3 font-bold focus:border-[var(--color-accent-primary)] focus:shadow-[4px_4px_0_var(--color-accent-primary)] focus:outline-none transition-all placeholder-[var(--color-text-muted)]"
+                                />
+                                <p className="text-xs text-[var(--color-text-muted)] font-bold">
+                                    We need your phone number for secure account recovery and ticketing.
+                                </p>
+                            </div>
+
+                            {/* Continue Button */}
+                            <button
+                                onClick={handleSendPhoneOTP}
+                                disabled={loading}
+                                className="neo-btn w-full bg-[var(--color-accent-secondary)] text-white font-black text-xl py-4 border-2 border-[var(--color-text-primary)] hover:bg-[var(--color-accent-primary)] transition-all shadow-[6px_6px_0_var(--color-text-primary)] hover:shadow-[8px_8px_0_var(--color-text-primary)] hover:translate-x-[-2px] hover:translate-y-[-2px] uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                            >
+                                {loading ? (
+                                    <>
+                                        <span className="animate-spin">⏳</span>
+                                        Sending Code...
+                                    </>
+                                ) : (
+                                    <>
+                                        Verify Phone
+                                        <span>→</span>
+                                    </>
+                                )}
                             </button>
                         </div>
                     )}

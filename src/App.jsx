@@ -12,6 +12,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import OrganizerLogin from './pages/organizer/OrganizerLogin';
+import OrganizerRegister from './pages/organizer/OrganizerRegister';
 import OrganizerDashboard from './pages/organizer/OrganizerDashboard';
 import CreateEvent from './pages/organizer/CreateEvent';
 import ManageEvents from './pages/organizer/ManageEvents';
@@ -95,6 +96,7 @@ function App() {
 
                     {/* Organizer Routes */}
                     <Route path="/organizer/login" element={<OrganizerLogin />} />
+                    <Route path="/organizer/register" element={<OrganizerRegister />} />
                     <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
                     <Route path="/organizer/events" element={<ManageEvents />} />
                     <Route path="/organizer/events/create" element={<CreateEvent />} />

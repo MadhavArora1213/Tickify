@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     // Sign up with email and password
-    const signup = async (email, password, displayName) => {
+    const signup = async (email, password, displayName, phoneNumber) => {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
@@ -44,14 +44,61 @@ export const AuthProvider = ({ children }) => {
             uid: user.uid,
             email: user.email,
             displayName: displayName,
+            phoneNumber: phoneNumber || '',
             role: 'user',
             status: 'active',
-            emailVerified: true, // Assuming OTP verification was done
+            emailVerified: true, // Phone verified via OTP
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         });
 
         return user;
+    };
+
+    // Register as Organizer
+    const registerOrganizer = async (email, password, displayName, phoneNumber, organizerDetails) => {
+        // Check if organizer already exists in Firestore (organizers collection)
+        const organizersRef = collection(db, 'organizers');
+        const q = query(organizersRef, where('email', '==', email));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            throw new Error('An organizer account with this email already exists.');
+        }
+
+        try {
+            // Create auth user
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // Update profile
+            await updateProfile(user, { displayName });
+
+            // Prepare data to save in 'organizers' collection
+            const organizerData = {
+                uid: user.uid,
+                email: user.email,
+                displayName: displayName,
+                phoneNumber: phoneNumber || '',
+                role: 'organizer',
+                status: 'pending', // Pending approval
+                emailVerified: true,
+                organizerDetails: organizerDetails,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            };
+
+            // Create organizer document in 'organizers' collection
+            await setDoc(doc(db, 'organizers', user.uid), organizerData);
+
+            return user;
+        } catch (error) {
+            if (error.code === 'auth/email-already-in-use') {
+                throw new Error('This email is already in use. Please use a different email.');
+            } else {
+                throw error;
+            }
+        }
     };
 
     // Sign in with email and password
@@ -119,13 +166,19 @@ export const AuthProvider = ({ children }) => {
         return user;
     };
 
-    // Get user role - checks both admins and users collections
+    // Get user role - checks admins, organizers, and users collections
     const getUserRole = async (uid) => {
         try {
             // First check if user is an admin
             const adminDoc = await getDoc(doc(db, 'admins', uid));
             if (adminDoc.exists()) {
                 return 'admin';
+            }
+
+            // Check if user is an organizer
+            const organizerDoc = await getDoc(doc(db, 'organizers', uid));
+            if (organizerDoc.exists()) {
+                return organizerDoc.data().role || 'organizer';
             }
 
             // Then check users collection
@@ -141,40 +194,88 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // Get all users (admin only)
+    // Get all users (admin only) - fetches from both users and organizers
     const getAllUsers = async () => {
         try {
             const usersRef = collection(db, 'users');
-            const snapshot = await getDocs(usersRef);
-            return snapshot.docs.map(doc => ({
+            const organizersRef = collection(db, 'organizers');
+
+            const [usersSnapshot, organizersSnapshot] = await Promise.all([
+                getDocs(usersRef),
+                getDocs(organizersRef)
+            ]);
+
+            const users = usersSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
+
+            const organizers = organizersSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            return [...users, ...organizers];
         } catch (error) {
             console.error('Error getting users:', error);
             return [];
         }
     };
 
-    // Update user (admin only)
+    // Update user (admin only) - handles both collections
     const updateUser = async (userId, userData) => {
         try {
-            await updateDoc(doc(db, 'users', userId), {
-                ...userData,
-                updatedAt: serverTimestamp()
-            });
-            return { success: true };
+            // Check users collection first
+            const userRef = doc(db, 'users', userId);
+            const userSnap = await getDoc(userRef);
+
+            if (userSnap.exists()) {
+                await updateDoc(userRef, {
+                    ...userData,
+                    updatedAt: serverTimestamp()
+                });
+                return { success: true };
+            }
+
+            // Check organizers collection
+            const orgRef = doc(db, 'organizers', userId);
+            const orgSnap = await getDoc(orgRef);
+
+            if (orgSnap.exists()) {
+                await updateDoc(orgRef, {
+                    ...userData,
+                    updatedAt: serverTimestamp()
+                });
+                return { success: true };
+            }
+
+            return { success: false, error: 'User not found in either collection' };
         } catch (error) {
             console.error('Error updating user:', error);
             return { success: false, error: error.message };
         }
     };
 
-    // Delete user (admin only)
+    // Delete user (admin only) - handles both collections
     const deleteUser = async (userId) => {
         try {
-            await deleteDoc(doc(db, 'users', userId));
-            return { success: true };
+            // Try deleting from users
+            const userRef = doc(db, 'users', userId);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+                await deleteDoc(userRef);
+                return { success: true };
+            }
+
+            // Try deleting from organizers
+            const orgRef = doc(db, 'organizers', userId);
+            const orgSnap = await getDoc(orgRef);
+            if (orgSnap.exists()) {
+                await deleteDoc(orgRef);
+                return { success: true };
+            }
+
+            return { success: false, error: 'User not found' };
         } catch (error) {
             console.error('Error deleting user:', error);
             return { success: false, error: error.message };
@@ -191,13 +292,15 @@ export const AuthProvider = ({ children }) => {
             );
             const user = userCredential.user;
 
-            await setDoc(doc(db, 'users', user.uid), {
+            const collectionName = userData.role === 'organizer' ? 'organizers' : 'users';
+
+            await setDoc(doc(db, collectionName, user.uid), {
                 uid: user.uid,
                 email: userData.email,
                 displayName: userData.displayName || '',
                 role: userData.role || 'user',
                 status: userData.status || 'active',
-                phone: userData.phone || '',
+                phone: userData.phone || '', // Unified field name maybe? legacy was 'phone' here but 'phoneNumber' elsewhere. Keeping 'phone' as per original code here.
                 emailVerified: true,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
@@ -241,6 +344,14 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // Manual login for Phone OTP (Session only, not persisted on refresh unless using LocalStorage)
+    const manualLogin = async (user) => {
+        setCurrentUser(user);
+        const role = await getUserRole(user.uid);
+        setUserRole(role);
+        return user;
+    };
+
     const value = {
         currentUser,
         userRole,
@@ -255,7 +366,9 @@ export const AuthProvider = ({ children }) => {
         updateUser,
         deleteUser,
         createUser,
-        getUserRole
+        getUserRole,
+        manualLogin,
+        registerOrganizer
     };
 
     return (

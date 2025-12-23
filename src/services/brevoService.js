@@ -159,6 +159,88 @@ export const verifyOTP = (email, inputOtp) => {
 };
 
 /**
+ * Send 'Registration Received' Email
+ * @param {string} email
+ * @param {string} name
+ */
+export const sendRegistrationReceivedEmail = async (email, name) => {
+    const emailData = {
+        sender: { name: 'Tickify', email: 'aroramadhav1312@gmail.com' },
+        to: [{ email, name }],
+        subject: 'Organizer Registration Received - Tickify',
+        htmlContent: `
+            <!DOCTYPE html>
+            <html>
+            <body style="margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background-color: #111827;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+                    <div style="background-color: #1F2937; border: 4px solid #F9FAFB; padding: 40px; box-shadow: 8px 8px 0 #374151;">
+                        <h1 style="color: #F9FAFB; text-align: center; text-transform: uppercase;">Registration Pending</h1>
+                        <p style="color: #D1D5DB; text-align: center;">Hello ${name},</p>
+                        <p style="color: #D1D5DB; text-align: center;">Thanks for registering as an Organizer. Your request is currently <strong>Pending Approval</strong>.</p>
+                        <p style="color: #D1D5DB; text-align: center;">We will notify you once your account is active.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `
+    };
+    return sendEmail(emailData);
+};
+
+/**
+ * Send 'Organizer Approved' Email
+ * @param {string} email
+ * @param {string} name
+ */
+export const sendOrganizerApprovalEmail = async (email, name) => {
+    const emailData = {
+        sender: { name: 'Tickify', email: 'aroramadhav1312@gmail.com' },
+        to: [{ email, name }],
+        subject: 'Organizer Account Approved! - Tickify',
+        htmlContent: `
+             <!DOCTYPE html>
+            <html>
+            <body style="margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background-color: #111827;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+                    <div style="background-color: #1F2937; border: 4px solid #10B981; padding: 40px; box-shadow: 8px 8px 0 #059669;">
+                        <h1 style="color: #10B981; text-align: center; text-transform: uppercase;">Account Approved!</h1>
+                        <p style="color: #D1D5DB; text-align: center;">Hello ${name},</p>
+                        <p style="color: #D1D5DB; text-align: center;">Your Organizer account has been approved!</p>
+                        <div style="background-color: #111827; border: 2px dashed #10B981; padding: 20px; margin: 20px 0; text-align: center;">
+                            <p style="color: #F9FAFB; margin: 0;"><strong>Username:</strong> ${email}</p>
+                            <p style="color: #F9FAFB; margin: 10px 0 0 0;"><strong>Password:</strong> (The password you set during registration)</p>
+                        </div>
+                         <p style="color: #D1D5DB; text-align: center;">
+                            <a href="http://localhost:5173/organizer/login" style="color: #10B981; font-weight: bold;">Login to Dashboard</a>
+                        </p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `
+    };
+    return sendEmail(emailData);
+};
+
+// Helper to send email request
+const sendEmail = async (data) => {
+    try {
+        if (!BREVO_API_KEY) {
+            console.log('📧 DEV MODE - Email to', data.to[0].email, 'Subject:', data.subject);
+            return { success: true };
+        }
+        const response = await fetch(BREVO_API_URL, {
+            method: 'POST',
+            headers: { 'accept': 'application/json', 'api-key': BREVO_API_KEY, 'content-type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return response.ok ? { success: true } : { success: false, message: 'Failed to send email' };
+    } catch (e) {
+        return { success: false, message: e.message };
+    }
+};
+
+/**
  * Clear OTP for an email (for resend functionality)
  * @param {string} email - Email address
  */
