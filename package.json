@@ -10,8 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.958.0",
     "@gsap/react": "^2.1.2",
     "@tailwindcss/vite": "^4.1.17",
+    "browser-image-compression": "^2.0.2",
     "firebase": "^12.6.0",
     "framer-motion": "^12.23.25",
     "gsap": "^3.13.0",

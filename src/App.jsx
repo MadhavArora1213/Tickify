@@ -100,6 +100,7 @@ function App() {
                     <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
                     <Route path="/organizer/events" element={<ManageEvents />} />
                     <Route path="/organizer/events/create" element={<CreateEvent />} />
+                    <Route path="/organizer/events/:eventId/edit" element={<CreateEvent />} />
                     <Route path="/organizer/events/:eventId/analytics" element={<EventAnalytics />} />
                     <Route path="/organizer/settlements" element={<Settlements />} />
                     <Route path="/organizer/profile" element={<OrganizerProfile />} />

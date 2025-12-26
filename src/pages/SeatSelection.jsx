@@ -59,7 +59,7 @@ const SeatSelection = () => {
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 border-2 border-[var(--color-text-primary)] rounded bg-yellow-300"></div>
-                        <span className="text-xs font-black uppercase">VIP ($150)</span>
+                        <span className="text-xs font-black uppercase">VIP (₹150)</span>
                     </div>
                 </div>
 
@@ -120,7 +120,7 @@ const SeatSelection = () => {
                     <div className="flex items-center gap-6 w-full md:w-auto">
                         <div className="text-right flex-1 md:flex-none">
                             <p className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Total Amount</p>
-                            <p className="text-3xl font-black text-[var(--color-text-primary)]">${totalPrice}</p>
+                            <p className="text-3xl font-black text-[var(--color-text-primary)]">₹{totalPrice}</p>
                         </div>
                         <button
                             onClick={() => navigate('/checkout')}

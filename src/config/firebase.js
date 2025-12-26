@@ -2,6 +2,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+// import { getStorage } from 'firebase/storage';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 
 // Your Firebase configuration from environment variables
@@ -21,6 +22,7 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firebase Services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+// export const storage = getStorage(app); // Storage disabled in favor of AWS S3
 
 // Initialize analytics only if supported (prevents IndexedDB errors)
 let analytics = null;

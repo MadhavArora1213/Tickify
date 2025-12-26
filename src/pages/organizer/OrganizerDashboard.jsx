@@ -1,15 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { db } from '../../config/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 const OrganizerDashboard = () => {
     const [activeTab, setActiveTab] = useState('overview');
 
-    // --- Mock Data for Analytics ---
+    const { currentUser } = useAuth();
+    const [events, setEvents] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // --- Fetch Real Data ---
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            if (!currentUser) return;
+            try {
+                // Fetch Organizer's Events
+                const eventsRef = collection(db, 'events');
+                const q = query(eventsRef, where('organizerId', '==', currentUser.uid));
+                const querySnapshot = await getDocs(q);
+
+                const fetchedEvents = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                setEvents(fetchedEvents);
+            } catch (error) {
+                console.error("Error fetching dashboard data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, [currentUser]);
+
+    // Use real event count, mock others for now until Orders system is live
     const stats = [
-        { label: 'Total Sales', value: '$124,500', change: '+12%', color: 'bg-green-400', textColor: 'text-black' },
-        { label: 'Tickets Sold', value: '8,432', change: '+5%', color: 'bg-purple-400', textColor: 'text-white' },
-        { label: 'Active Events', value: '3', change: '0', color: 'bg-yellow-400', textColor: 'text-black' },
-        { label: 'Page Views', value: '45.2k', change: '+28%', color: 'bg-blue-400', textColor: 'text-white' },
+        { label: 'Total Sales', value: '₹0', change: '0%', color: 'bg-green-400', textColor: 'text-black' },
+        { label: 'Tickets Sold', value: '0', change: '0%', color: 'bg-purple-400', textColor: 'text-white' },
+        { label: 'Active Events', value: events.length.toString(), change: '0', color: 'bg-yellow-400', textColor: 'text-black' },
+        { label: 'Page Views', value: '0', change: '0%', color: 'bg-blue-400', textColor: 'text-white' },
     ];
 
     // --- Tab Content Renderers ---
@@ -49,33 +82,51 @@ const OrganizerDashboard = () => {
         <div className="space-y-6 animate-fade-in-up">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-3xl font-black uppercase text-[var(--color-text-primary)]">My Events</h2>
-                <button className="neo-btn bg-[var(--color-accent-primary)] text-white px-4 py-2 shadow-[4px_4px_0_black]">Create New +</button>
+                <Link to="/organizer/events/create" className="neo-btn bg-[var(--color-accent-primary)] text-white px-4 py-2 shadow-[4px_4px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_black] transition-all">Create New +</Link>
             </div>
 
-            {[1, 2, 3].map((event) => (
-                <div key={event} className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[6px_6px_0_var(--color-text-primary)] flex flex-col md:flex-row gap-6 relative">
-                    <div className="w-full md:w-48 h-32 bg-gray-300 border-2 border-black relative overflow-hidden group">
-                        <img src={`https://picsum.photos/seed/${event}/300/200`} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" alt="Event" />
-                    </div>
-                    <div className="flex-1">
-                        <div className="flex justify-between items-start">
-                            <h3 className="text-2xl font-black uppercase text-[var(--color-text-primary)]">Neon Nights Festival {2025 + event}</h3>
-                            <span className="bg-green-100 text-green-800 text-xs font-black uppercase px-2 py-1 border border-black">Live</span>
-                        </div>
-                        <p className="text-sm font-bold text-[var(--color-text-secondary)] mt-1">March 15, 2025 • Cyber Arena, NY</p>
-
-                        <div className="mt-4 w-full bg-[var(--color-bg-secondary)] h-4 border-2 border-black rounded-full overflow-hidden relative">
-                            <div className="bg-[var(--color-accent-primary)] h-full w-3/4 absolute top-0 left-0"></div>
-                            <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white mix-blend-difference">75% SOLD OUT</div>
-                        </div>
-
-                        <div className="flex gap-2 mt-4">
-                            <button className="text-xs font-black uppercase bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] border-2 border-[var(--color-text-primary)] px-3 py-1 hover:bg-[var(--color-text-primary)] hover:text-[var(--color-bg-primary)] transition-colors">Edit</button>
-                            <Link to={`/organizer/events/${event}/analytics`} className="text-xs font-black uppercase bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] border-2 border-[var(--color-text-primary)] px-3 py-1 hover:bg-[var(--color-text-primary)] hover:text-[var(--color-bg-primary)] transition-colors">Analytics</Link>
-                        </div>
-                    </div>
+            {loading ? (
+                <p className="font-bold text-center p-8">Loading events...</p>
+            ) : events.length === 0 ? (
+                <div className="neo-card p-10 text-center bg-gray-100 border-2 border-dashed border-gray-400">
+                    <p className="font-black text-xl text-gray-500 mb-4">No events found.</p>
+                    <Link to="/organizer/events/create" className="underline font-bold text-blue-600">Create your first event!</Link>
                 </div>
-            ))}
+            ) : (
+                events.map((event) => (
+                    <div key={event.id} className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[6px_6px_0_var(--color-text-primary)] flex flex-col md:flex-row gap-6 relative">
+                        <div className="w-full md:w-48 h-32 bg-gray-300 border-2 border-black relative overflow-hidden group">
+                            <img
+                                src={event.bannerUrl || `https://picsum.photos/seed/${event.id}/300/200`}
+                                className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
+                                alt={event.eventTitle}
+                                onError={(e) => e.target.src = 'https://via.placeholder.com/300x200?text=No+Image'}
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <div className="flex justify-between items-start">
+                                <h3 className="text-2xl font-black uppercase text-[var(--color-text-primary)]">{event.eventTitle}</h3>
+                                <span className={`text-xs font-black uppercase px-2 py-1 border border-black ${event.approvalStatus === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                    {event.approvalStatus || 'Pending'}
+                                </span>
+                            </div>
+                            <p className="text-sm font-bold text-[var(--color-text-secondary)] mt-1">
+                                {event.startDate} • {event.venueName || 'Online'}, {event.city}
+                            </p>
+
+                            <div className="mt-4 w-full bg-[var(--color-bg-secondary)] h-4 border-2 border-black rounded-full overflow-hidden relative">
+                                <div className="bg-[var(--color-accent-primary)] h-full w-[0%] absolute top-0 left-0"></div>
+                                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white mix-blend-difference">0% SOLD OUT</div>
+                            </div>
+
+                            <div className="flex gap-2 mt-4">
+                                <Link to={`/organizer/events/${event.id}/edit`} className="text-xs font-black uppercase bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] border-2 border-[var(--color-text-primary)] px-3 py-1 hover:bg-[var(--color-text-primary)] hover:text-[var(--color-bg-primary)] transition-colors">Edit</Link>
+                                <Link to={`/organizer/events/${event.id}/analytics`} className="text-xs font-black uppercase bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] border-2 border-[var(--color-text-primary)] px-3 py-1 hover:bg-[var(--color-text-primary)] hover:text-[var(--color-bg-primary)] transition-colors">Analytics</Link>
+                            </div>
+                        </div>
+                    </div>
+                ))
+            )}
         </div>
     );
 
@@ -237,9 +288,9 @@ const OrganizerDashboard = () => {
                             </nav>
 
                             <div className="mt-8 pt-8 border-t-4 border-[var(--color-text-primary)]">
-                                <button className="w-full py-3 bg-red-500 text-white font-black uppercase border-2 border-[var(--color-text-primary)] shadow-[4px_4px_0_var(--color-text-primary)] hover:shadow-[6px_6px_0_var(--color-text-primary)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all">
+                                <Link to="/organizer/events/create" className="block text-center w-full py-3 bg-red-500 text-white font-black uppercase border-2 border-[var(--color-text-primary)] shadow-[4px_4px_0_var(--color-text-primary)] hover:shadow-[6px_6px_0_var(--color-text-primary)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all">
                                     Create Event +
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     </aside>
