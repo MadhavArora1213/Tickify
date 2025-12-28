@@ -4,6 +4,7 @@ import FeaturedEvents from '../components/FeaturedEvents';
 import CategoryFilters from '../components/CategoryFilters';
 import HowItWorks from '../components/HowItWorks';
 import Testimonials from '../components/Testimonials';
+import FAQSection from '../components/FAQSection';
 import RollingGallery from '../components/react-bits/RollingGallery';
 import Newsletter from '../components/Newsletter';
 
@@ -25,6 +26,7 @@ const Home = () => {
             <FeaturedEvents />
             <HowItWorks />
             <Testimonials />
+            <FAQSection />
             <Newsletter />
         </div>
     );

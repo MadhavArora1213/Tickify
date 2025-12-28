@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { db } from '../../config/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const OrganizerDashboard = () => {
     const [activeTab, setActiveTab] = useState('overview');
@@ -10,6 +10,28 @@ const OrganizerDashboard = () => {
     const { currentUser } = useAuth();
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [settingsSaving, setSettingsSaving] = useState(false);
+    const [settingsSuccess, setSettingsSuccess] = useState(false);
+
+    // Settings Form State
+    const [settingsForm, setSettingsForm] = useState({
+        organizerName: '',
+        organizerType: 'Individual',
+        organizationName: '',
+        supportEmail: '',
+        phone: '',
+        website: '',
+        address: '',
+        city: '',
+        state: '',
+        pincode: '',
+        gstNumber: '',
+        panNumber: '',
+        bankAccountName: '',
+        bankAccountNumber: '',
+        bankIfsc: '',
+        upiId: '',
+    });
 
     // --- Fetch Real Data ---
     useEffect(() => {
@@ -27,6 +49,43 @@ const OrganizerDashboard = () => {
                 }));
 
                 setEvents(fetchedEvents);
+
+                // Fetch Organizer Profile
+                const profileRef = doc(db, 'organizers', currentUser.uid);
+                const profileSnap = await getDoc(profileRef);
+
+                if (profileSnap.exists()) {
+                    const profileData = profileSnap.data();
+                    const details = profileData.organizerDetails || {};
+
+                    setSettingsForm(prev => ({
+                        ...prev,
+                        // Map from Firestore field names to form field names
+                        organizerName: profileData.displayName || profileData.organizerName || '',
+                        organizerType: details.organizerType || 'Individual',
+                        organizationName: details.organizationName || '',
+                        supportEmail: profileData.email || profileData.supportEmail || '',
+                        phone: profileData.phoneNumber || profileData.phone || '',
+                        website: profileData.website || '',
+                        address: profileData.address || '',
+                        city: details.city || profileData.city || '',
+                        state: details.state || profileData.state || '',
+                        pincode: profileData.pincode || '',
+                        gstNumber: profileData.gstNumber || '',
+                        panNumber: profileData.panNumber || '',
+                        bankAccountName: profileData.bankAccountName || '',
+                        bankAccountNumber: profileData.bankAccountNumber || '',
+                        bankIfsc: profileData.bankIfsc || '',
+                        upiId: profileData.upiId || '',
+                    }));
+                } else {
+                    // Set default from user data
+                    setSettingsForm(prev => ({
+                        ...prev,
+                        organizerName: currentUser.displayName || '',
+                        supportEmail: currentUser.email || '',
+                    }));
+                }
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
             } finally {
@@ -46,6 +105,78 @@ const OrganizerDashboard = () => {
     ];
 
     // --- Tab Content Renderers ---
+
+    // Generate activities from events
+    const generateActivities = () => {
+        const activities = [];
+
+        events.forEach(event => {
+            // Event Created / Pending
+            if (event.approvalStatus === 'pending') {
+                activities.push({
+                    id: `${event.id}-pending`,
+                    type: 'event_pending',
+                    icon: '📝',
+                    iconBg: 'bg-yellow-400',
+                    title: 'Event Submitted for Approval',
+                    description: `${event.eventTitle} is pending admin review`,
+                    timestamp: event.createdAt?.toDate?.() || new Date(),
+                    badge: null,
+                });
+            }
+
+            // Event Approved
+            if (event.approvalStatus === 'approved') {
+                activities.push({
+                    id: `${event.id}-approved`,
+                    type: 'event_approved',
+                    icon: '✅',
+                    iconBg: 'bg-green-400',
+                    title: 'Event Approved!',
+                    description: `${event.eventTitle} is now live and accepting bookings`,
+                    timestamp: event.updatedAt?.toDate?.() || new Date(),
+                    badge: <span className="text-green-500 font-black">LIVE</span>,
+                });
+            }
+
+            // Event Rejected
+            if (event.approvalStatus === 'rejected') {
+                activities.push({
+                    id: `${event.id}-rejected`,
+                    type: 'event_rejected',
+                    icon: '❌',
+                    iconBg: 'bg-red-400',
+                    title: 'Event Rejected',
+                    description: `${event.eventTitle} was not approved. Please review and resubmit.`,
+                    timestamp: event.updatedAt?.toDate?.() || new Date(),
+                    badge: <span className="text-red-500 font-black">ACTION NEEDED</span>,
+                });
+            }
+        });
+
+        // Sort by timestamp (newest first)
+        activities.sort((a, b) => b.timestamp - a.timestamp);
+
+        return activities.slice(0, 10); // Limit to 10 most recent
+    };
+
+    const recentActivities = generateActivities();
+
+    const formatTimeAgo = (date) => {
+        if (!date) return '';
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return date.toLocaleDateString();
+    };
+
     const renderOverview = () => (
         <div className="space-y-8 animate-fade-in-up">
             {/* Stats Grid */}
@@ -61,18 +192,33 @@ const OrganizerDashboard = () => {
             <div className="bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[8px_8px_0_var(--color-text-primary)]">
                 <h3 className="text-xl font-black uppercase mb-6 text-[var(--color-text-primary)]">Recent Activity</h3>
                 <div className="space-y-4">
-                    {[1, 2, 3].map(i => (
-                        <div key={i} className="flex justify-between items-center p-3 border-2 border-[var(--color-text-secondary)]/20">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-green-400 border-2 border-black rounded-full flex items-center justify-center font-bold text-xs">S</div>
-                                <div>
-                                    <p className="font-bold text-sm text-[var(--color-text-primary)]">New Ticket Sold</p>
-                                    <p className="text-xs text-[var(--color-text-secondary)]">Neon Nights Festival • General Admission</p>
+                    {loading ? (
+                        <p className="text-center text-gray-500 py-4">Loading activity...</p>
+                    ) : recentActivities.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                            <p className="text-4xl mb-2">📭</p>
+                            <p className="font-bold">No recent activity</p>
+                            <p className="text-sm">Create your first event to get started!</p>
+                        </div>
+                    ) : (
+                        recentActivities.map(activity => (
+                            <div key={activity.id} className="flex justify-between items-center p-3 border-2 border-[var(--color-text-secondary)]/20 hover:bg-[var(--color-bg-secondary)]/30 transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 ${activity.iconBg} border-2 border-black rounded-full flex items-center justify-center text-lg`}>
+                                        {activity.icon}
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-sm text-[var(--color-text-primary)]">{activity.title}</p>
+                                        <p className="text-xs text-[var(--color-text-secondary)]">{activity.description}</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    {activity.badge}
+                                    <p className="text-[10px] text-gray-500 mt-1">{formatTimeAgo(activity.timestamp)}</p>
                                 </div>
                             </div>
-                            <span className="font-black text-green-500">+$120</span>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </div>
         </div>
@@ -220,23 +366,260 @@ const OrganizerDashboard = () => {
         </div>
     );
 
+    const handleSettingsChange = (e) => {
+        const { name, value } = e.target;
+        setSettingsForm(prev => ({ ...prev, [name]: value }));
+        setSettingsSuccess(false);
+    };
+
+    const handleSaveSettings = async () => {
+        if (!currentUser) return;
+        setSettingsSaving(true);
+        setSettingsSuccess(false);
+
+        try {
+            const profileRef = doc(db, 'organizers', currentUser.uid);
+            await setDoc(profileRef, {
+                ...settingsForm,
+                uid: currentUser.uid,
+                email: currentUser.email,
+                updatedAt: serverTimestamp(),
+            }, { merge: true });
+
+            setSettingsSuccess(true);
+            setTimeout(() => setSettingsSuccess(false), 3000);
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            alert('Failed to save settings: ' + error.message);
+        } finally {
+            setSettingsSaving(false);
+        }
+    };
+
     const renderSettings = () => (
         <div className="space-y-6 animate-fade-in-up">
             <h2 className="text-3xl font-black uppercase text-[var(--color-text-primary)] mb-6">Organizer Settings</h2>
-            <div className="neo-card bg-[var(--color-bg-surface)] p-8 border-4 border-[var(--color-text-primary)] shadow-[8px_8px_0_var(--color-text-primary)] max-w-2xl">
-                <div className="space-y-4">
+
+            {settingsSuccess && (
+                <div className="p-4 bg-green-100 border-2 border-green-500 text-green-700 font-bold mb-4">
+                    ✅ Settings saved successfully!
+                </div>
+            )}
+
+            {/* Profile Info */}
+            <div className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[6px_6px_0_var(--color-text-primary)]">
+                <h3 className="text-lg font-black uppercase mb-4 border-b-2 border-dashed pb-2">Profile Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Organizer Name</label>
-                        <input type="text" defaultValue="Electric Dreams Co." className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold" />
+                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Contact Person Name *</label>
+                        <input
+                            type="text"
+                            name="organizerName"
+                            value={settingsForm.organizerName}
+                            onChange={handleSettingsChange}
+                            className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold"
+                        />
                     </div>
                     <div>
-                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Support Email</label>
-                        <input type="email" defaultValue="help@electricdreams.com" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold" />
+                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Organizer Type</label>
+                        <select
+                            name="organizerType"
+                            value={settingsForm.organizerType}
+                            onChange={handleSettingsChange}
+                            className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold"
+                        >
+                            <option value="Individual">Individual</option>
+                            <option value="Company">Company</option>
+                            <option value="Organization">Organization</option>
+                        </select>
                     </div>
-                    <div className="pt-4">
-                        <button className="neo-btn bg-[var(--color-accent-primary)] text-white px-6 py-3 uppercase shadow-[4px_4px_0_black]">Save Changes</button>
+                    {settingsForm.organizerType !== 'Individual' && (
+                        <div className="md:col-span-2">
+                            <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Organization / Brand Name</label>
+                            <input
+                                type="text"
+                                name="organizationName"
+                                value={settingsForm.organizationName}
+                                onChange={handleSettingsChange}
+                                placeholder="Your Company or Brand Name"
+                                className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold"
+                            />
+                        </div>
+                    )}
+                    <div>
+                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Support Email *</label>
+                        <input
+                            type="email"
+                            name="supportEmail"
+                            value={settingsForm.supportEmail}
+                            onChange={handleSettingsChange}
+                            className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Phone Number</label>
+                        <input
+                            type="tel"
+                            name="phone"
+                            value={settingsForm.phone}
+                            onChange={handleSettingsChange}
+                            placeholder="+91 9876543210"
+                            className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Website</label>
+                        <input
+                            type="url"
+                            name="website"
+                            value={settingsForm.website}
+                            onChange={handleSettingsChange}
+                            placeholder="https://yourwebsite.com"
+                            className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold"
+                        />
                     </div>
                 </div>
+            </div>
+
+            {/* Address */}
+            <div className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[6px_6px_0_var(--color-text-primary)]">
+                <h3 className="text-lg font-black uppercase mb-4 border-b-2 border-dashed pb-2">Business Address</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Address</label>
+                        <input
+                            type="text"
+                            name="address"
+                            value={settingsForm.address}
+                            onChange={handleSettingsChange}
+                            placeholder="Street Address"
+                            className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">City</label>
+                        <input
+                            type="text"
+                            name="city"
+                            value={settingsForm.city}
+                            onChange={handleSettingsChange}
+                            className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">State</label>
+                        <input
+                            type="text"
+                            name="state"
+                            value={settingsForm.state}
+                            onChange={handleSettingsChange}
+                            className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Pincode</label>
+                        <input
+                            type="text"
+                            name="pincode"
+                            value={settingsForm.pincode}
+                            onChange={handleSettingsChange}
+                            maxLength={6}
+                            className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Tax Info */}
+            <div className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[6px_6px_0_var(--color-text-primary)]">
+                <h3 className="text-lg font-black uppercase mb-4 border-b-2 border-dashed pb-2">Tax Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">PAN Number</label>
+                        <input
+                            type="text"
+                            name="panNumber"
+                            value={settingsForm.panNumber}
+                            onChange={handleSettingsChange}
+                            placeholder="ABCDE1234F"
+                            maxLength={10}
+                            className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold uppercase"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">GST Number</label>
+                        <input
+                            type="text"
+                            name="gstNumber"
+                            value={settingsForm.gstNumber}
+                            onChange={handleSettingsChange}
+                            placeholder="22AAAAA0000A1Z5"
+                            maxLength={15}
+                            className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold uppercase"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Bank Details */}
+            <div className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[6px_6px_0_var(--color-text-primary)]">
+                <h3 className="text-lg font-black uppercase mb-4 border-b-2 border-dashed pb-2">💰 Payout Details</h3>
+                <p className="text-xs text-gray-500 mb-4">This is where your earnings will be transferred.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Account Holder Name</label>
+                        <input
+                            type="text"
+                            name="bankAccountName"
+                            value={settingsForm.bankAccountName}
+                            onChange={handleSettingsChange}
+                            className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Bank Account Number</label>
+                        <input
+                            type="text"
+                            name="bankAccountNumber"
+                            value={settingsForm.bankAccountNumber}
+                            onChange={handleSettingsChange}
+                            className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">IFSC Code</label>
+                        <input
+                            type="text"
+                            name="bankIfsc"
+                            value={settingsForm.bankIfsc}
+                            onChange={handleSettingsChange}
+                            placeholder="SBIN0001234"
+                            className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold uppercase"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">UPI ID (Optional)</label>
+                        <input
+                            type="text"
+                            name="upiId"
+                            value={settingsForm.upiId}
+                            onChange={handleSettingsChange}
+                            placeholder="yourname@upi"
+                            className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Save Button */}
+            <div className="pt-4">
+                <button
+                    onClick={handleSaveSettings}
+                    disabled={settingsSaving}
+                    className="neo-btn bg-[var(--color-accent-primary)] text-white px-8 py-3 uppercase shadow-[4px_4px_0_black] hover:shadow-[6px_6px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] disabled:opacity-50"
+                >
+                    {settingsSaving ? 'Saving...' : 'Save Changes'}
+                </button>
             </div>
         </div>
     );
@@ -261,7 +644,7 @@ const OrganizerDashboard = () => {
                     <span className="font-black text-xl uppercase tracking-tighter hidden md:block">Organizer Panel</span>
                 </div>
                 <div className="flex items-center gap-6">
-                    <button className="font-bold uppercase hover:underline text-[var(--color-text-primary)]">Help</button>
+                    <Link to="/contact" className="font-bold uppercase hover:underline text-[var(--color-text-primary)]">Help</Link>
                     <div className="w-10 h-10 rounded-full bg-gray-200 border-2 border-[var(--color-text-primary)] overflow-hidden">
                         <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Organizer" alt="Profile" />
                     </div>

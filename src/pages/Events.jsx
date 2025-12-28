@@ -4,6 +4,8 @@ import ShinyText from '../components/react-bits/ShinyText';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 // Fix for default Leaflet icon not finding images in Webpack/Vite
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -18,81 +20,69 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-const DUMMY_EVENTS = [
-    {
-        id: 1,
-        title: "Neon Nights Music Festival",
-        date: "MAR 15",
-        price: "$120",
-        location: "Cyber Arena, NY",
-        category: "Music",
-        image: "https://images.unsplash.com/photo-1470229722913-7ea2d9865154?q=80&w=2070&auto=format&fit=crop",
-        description: "Experience the most electrifying laser show and EDM beats under the neon sky.",
-        coordinates: [40.7128, -74.0060]
-    },
-    {
-        id: 2,
-        title: "Future Tech Summit 2025",
-        date: "APR 22",
-        price: "$450",
-        location: "Silicon Valley Design Center",
-        category: "Technology",
-        image: "https://images.unsplash.com/photo-1544531586-fde5298cdd40?q=80&w=2070&auto=format&fit=crop",
-        description: "Join industry leaders to discuss AI, Quantum Computing, and the future of humanity.",
-        coordinates: [37.3875, -122.0575]
-    },
-    {
-        id: 3,
-        title: "Abstract Art Gallery Opening",
-        date: "MAY 10",
-        price: "Free",
-        location: "Modern MOMA",
-        category: "Arts",
-        image: "https://images.unsplash.com/photo-1545989253-02cc26577f88?q=80&w=2070&auto=format&fit=crop",
-        description: "A journey through contemporary abstract expressionism by top emerging artists.",
-        coordinates: [40.7614, -73.9776]
-    },
-    {
-        id: 4,
-        title: "Global Food Carnival",
-        date: "JUN 05",
-        price: "$25",
-        location: "Central Park",
-        category: "Food",
-        image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1974&auto=format&fit=crop",
-        description: "Taste dishes from over 50 countries in one large open-air gastronomic festival.",
-        coordinates: [40.7851, -73.9683]
-    },
-    {
-        id: 5,
-        title: "Zen Yoga Retreat",
-        date: "JUL 12",
-        price: "$80",
-        location: "Blue Ridge Mountains",
-        category: "Wellness",
-        image: "https://images.unsplash.com/photo-1545205597-3d9d02c29597?q=80&w=2070&auto=format&fit=crop",
-        description: "Disconnect to reconnect. A full day of mindfulness, yoga, and nature.",
-        coordinates: [35.5678, -82.5567]
-    },
-    {
-        id: 6,
-        title: "Startup Pitch Night",
-        date: "AUG 20",
-        price: "Free",
-        location: "The Hive Co-working",
-        category: "Business",
-        image: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=2032&auto=format&fit=crop",
-        description: "Watch the next unicorn startups pitch their ideas to top venture capitalists.",
-        coordinates: [34.0522, -118.2437]
-    }
-];
-
 const FILTER_CATEGORIES = ['All', 'Music', 'Technology', 'Arts', 'Food', 'Wellness', 'Business', 'Sports'];
 
 const Events = () => {
+    const [events, setEvents] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState('All');
-    const [priceRange, setPriceRange] = useState(500);
+    const [priceRange, setPriceRange] = useState(1000);
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'map'
+    const [searchTerm, setSearchTerm] = useState('');
+    const [locationFilter, setLocationFilter] = useState('All');
+
+    useEffect(() => {
+        const fetchEvents = async () => {
+            try {
+                setLoading(true);
+                const eventsRef = collection(db, 'events');
+                // You can add more specific queries here if needed, e.g., only active events
+                // const q = query(eventsRef, where("status", "==", "active")); 
+                const querySnapshot = await getDocs(eventsRef);
+
+                const fetchedEvents = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                setEvents(fetchedEvents);
+            } catch (error) {
+                console.error("Error fetching events: ", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchEvents();
+    }, []);
+
+    // Filter logic
+    const filteredEvents = events.filter(event => {
+        const matchesCategory = selectedCategory === 'All' || event.category === selectedCategory;
+        // Parse price safely. If price is a string like "$120", remove '$'. If simple number, use it.
+        let priceValue = 0;
+        if (typeof event.price === 'string') {
+            priceValue = parseFloat(event.price.replace(/[^0-9.]/g, ''));
+        } else if (typeof event.price === 'number') {
+            priceValue = event.price;
+        }
+
+        const matchesPrice = priceValue <= priceRange;
+        const matchesSearch = event.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            event.description?.toLowerCase().includes(searchTerm.toLowerCase());
+        // Simple location match (can be improved)
+        const matchesLocation = locationFilter === 'All' || event.location?.includes(locationFilter);
+
+        return matchesCategory && matchesPrice && matchesSearch && matchesLocation;
+    });
+
+    if (loading) {
+        return (
+            <div className="pt-36 pb-20 min-h-screen bg-[var(--color-bg-primary)] flex justify-center items-center">
+                <div className="text-xl font-bold text-[var(--color-text-primary)]">Loading Events...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="pt-36 pb-20 min-h-screen bg-[var(--color-bg-primary)]">
@@ -115,6 +105,8 @@ const Events = () => {
                         <input
                             type="text"
                             placeholder="Search events..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full neo-input bg-[var(--color-bg-surface)] text-[var(--color-text-primary)]"
                         />
                         <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 text-[var(--color-text-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -124,17 +116,32 @@ const Events = () => {
                     <div className="neo-card bg-[var(--color-bg-surface)] p-6 sticky top-32 border-2 border-[var(--color-text-primary)]">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-extrabold text-[var(--color-text-primary)] uppercase">Filters</h3>
-                            <button className="text-sm font-bold text-[var(--color-accent-primary)] hover:underline border-b-2 border-transparent hover:border-[var(--color-accent-primary)]">RESET</button>
+                            <button
+                                onClick={() => {
+                                    setSelectedCategory('All');
+                                    setPriceRange(1000);
+                                    setSearchTerm('');
+                                    setLocationFilter('All');
+                                }}
+                                className="text-sm font-bold text-[var(--color-accent-primary)] hover:underline border-b-2 border-transparent hover:border-[var(--color-accent-primary)]"
+                            >
+                                RESET
+                            </button>
                         </div>
 
                         {/* Location */}
                         <div className="mb-6">
                             <label className="block text-sm font-black text-[var(--color-text-primary)] mb-2 uppercase tracking-wide">Location</label>
-                            <select className="w-full neo-input bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]">
-                                <option>New York, USA</option>
-                                <option>San Francisco, USA</option>
-                                <option>London, UK</option>
-                                <option>Tokyo, JP</option>
+                            <select
+                                value={locationFilter}
+                                onChange={(e) => setLocationFilter(e.target.value)}
+                                className="w-full neo-input bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]"
+                            >
+                                <option value="All">All Locations</option>
+                                <option value="New York">New York, USA</option>
+                                <option value="San Francisco">San Francisco, USA</option>
+                                <option value="London">London, UK</option>
+                                <option value="Tokyo">Tokyo, JP</option>
                             </select>
                         </div>
 
@@ -147,7 +154,7 @@ const Events = () => {
                         {/* Price Range */}
                         <div className="mb-6">
                             <div className="flex justify-between text-sm mb-2 font-bold">
-                                <span className="text-[var(--color-text-primary)]">Price Range</span>
+                                <span className="text-[var(--color-text-primary)]">Max Price</span>
                                 <span className="text-[var(--color-accent-primary)]">${priceRange}</span>
                             </div>
                             <input
@@ -189,7 +196,7 @@ const Events = () => {
                     {/* Toolbar */}
                     <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
                         <div className="text-[var(--color-text-primary)] font-black text-xl">
-                            {DUMMY_EVENTS.length} RESULTS
+                            {filteredEvents.length} RESULTS
                         </div>
 
                         <div className="flex items-center gap-4">
@@ -222,34 +229,42 @@ const Events = () => {
                     {viewMode === 'grid' ? (
                         <>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {DUMMY_EVENTS.map(event => (
-                                    <Link key={event.id} to={`/events/${event.id}`}>
-                                        <div className="neo-card bg-[var(--color-bg-surface)] overflow-hidden group h-full flex flex-col">
-                                            <div className="h-48 overflow-hidden relative border-b-2 border-black">
-                                                <img src={event.image} alt={event.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                                                <div className="absolute top-2 right-2 neo-btn bg-[var(--color-accent-primary)] text-white text-xs px-2 py-1 rotate-3">
-                                                    {event.price}
+                                {filteredEvents.length > 0 ? (
+                                    filteredEvents.map(event => (
+                                        <Link key={event.id} to={`/events/${event.id}`}>
+                                            <div className="neo-card bg-[var(--color-bg-surface)] overflow-hidden group h-full flex flex-col">
+                                                <div className="h-48 overflow-hidden relative border-b-2 border-black">
+                                                    <img src={event.image || "https://via.placeholder.com/400x200?text=No+Image"} alt={event.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                                                    <div className="absolute top-2 right-2 neo-btn bg-[var(--color-accent-primary)] text-white text-xs px-2 py-1 rotate-3">
+                                                        {event.price ? (typeof event.price === 'number' ? `$${event.price}` : event.price) : 'Free'}
+                                                    </div>
+                                                </div>
+                                                <div className="p-4 flex-1 flex flex-col">
+                                                    <div className="text-xs font-black text-[var(--color-accent-secondary)] mb-1 uppercase tracking-widest">{event.category || 'General'}</div>
+                                                    <h3 className="text-xl font-black text-[var(--color-text-primary)] mb-2 leading-tight">{event.title}</h3>
+                                                    <div className="mt-auto flex items-center justify-between">
+                                                        <span className="text-sm font-bold text-[var(--color-text-muted)]">{event.date}</span>
+                                                        <span className="neo-btn bg-white text-black px-3 py-1 text-xs">DETAILS</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="p-4 flex-1 flex flex-col">
-                                                <div className="text-xs font-black text-[var(--color-accent-secondary)] mb-1 uppercase tracking-widest">{event.category}</div>
-                                                <h3 className="text-xl font-black text-[var(--color-text-primary)] mb-2 leading-tight">{event.title}</h3>
-                                                <div className="mt-auto flex items-center justify-between">
-                                                    <span className="text-sm font-bold text-[var(--color-text-muted)]">{event.date}</span>
-                                                    <span className="neo-btn bg-white text-black px-3 py-1 text-xs">DETAILS</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </Link>
-                                ))}
+                                        </Link>
+                                    ))
+                                ) : (
+                                    <div className="col-span-full text-center py-12 text-[var(--color-text-secondary)]">
+                                        <p className="text-xl font-bold">No events found matching your filters.</p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Load More */}
-                            <div className="mt-12 text-center">
-                                <button className="neo-btn bg-[var(--color-accent-primary)] text-white px-8 py-4 text-lg">
-                                    LOAD MORE !!!
-                                </button>
-                            </div>
+                            {filteredEvents.length > 12 && (
+                                <div className="mt-12 text-center">
+                                    <button className="neo-btn bg-[var(--color-accent-primary)] text-white px-8 py-4 text-lg">
+                                        LOAD MORE !!!
+                                    </button>
+                                </div>
+                            )}
                         </>
                     ) : (
                         <div className="neo-card w-full h-[600px] bg-[var(--color-bg-surface)] overflow-hidden relative border-4 border-black shadow-[8px_8px_0_black]">
@@ -258,16 +273,21 @@ const Events = () => {
                                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                                 />
-                                {DUMMY_EVENTS.map((event) => (
-                                    <Marker key={event.id} position={event.coordinates}>
-                                        <Popup>
-                                            <div className="text-center">
-                                                <h3 className="font-bold text-lg mb-1">{event.title}</h3>
-                                                <p className="text-sm mb-2">{event.location}</p>
-                                                <Link to={`/events/${event.id}`} className="inline-block bg-blue-600 text-white px-3 py-1 rounded text-xs font-bold uppercase">View</Link>
-                                            </div>
-                                        </Popup>
-                                    </Marker>
+                                {filteredEvents.map((event) => (
+                                    (event.coordinates || (event.lat && event.lng)) && (
+                                        <Marker
+                                            key={event.id}
+                                            position={event.coordinates || [event.lat, event.lng]}
+                                        >
+                                            <Popup>
+                                                <div className="text-center">
+                                                    <h3 className="font-bold text-lg mb-1">{event.title}</h3>
+                                                    <p className="text-sm mb-2">{event.location}</p>
+                                                    <Link to={`/events/${event.id}`} className="inline-block bg-blue-600 text-white px-3 py-1 rounded text-xs font-bold uppercase">View</Link>
+                                                </div>
+                                            </Popup>
+                                        </Marker>
+                                    )
                                 ))}
                             </MapContainer>
                         </div>

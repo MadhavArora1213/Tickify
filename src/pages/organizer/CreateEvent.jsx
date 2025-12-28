@@ -13,6 +13,8 @@ const CreateEvent = () => {
     const [loading, setLoading] = useState(false);
     const [fetchingEvent, setFetchingEvent] = useState(false);
     const [error, setError] = useState('');
+    const [paintMode, setPaintMode] = useState('select'); // 'select' or 'paint_ticket'
+    const [selectedTicketForPaint, setSelectedTicketForPaint] = useState(0);
 
     const isEditMode = Boolean(eventId);
 
@@ -22,6 +24,8 @@ const CreateEvent = () => {
         eventTitle: '',
         eventDescription: '',
         category: 'Music',
+        eventType: 'Offline', // 'Online', 'Offline', 'Hybrid'
+        eventCode: '', // Auto-generated: YYYYMMDD + TYPE + SEQ
         startDate: '',
         startTime: '',
         endDate: '',
@@ -33,7 +37,8 @@ const CreateEvent = () => {
         city: '',
         state: '',
         zipCode: '',
-        isOnline: false,
+        onlinePlatform: '', // For online/hybrid events
+        meetingLink: '', // For online/hybrid events
         seatingType: 'Open', // 'Open' or 'Reserved'
 
         // Reserved Seating Config
@@ -43,9 +48,9 @@ const CreateEvent = () => {
         seatingGrid: [], // 2D Array: { id, rowLabel, colLabel, type: 'seat'|'aisle'|'blocked', priceTier: 'default' }
         totalCapacity: 0,
 
-        // Stage 3 & Tickets
+        // Stage 3 & Tickets - Added color field with defaults
         tickets: [
-            { name: 'General Admission', price: 0, quantity: 100, description: '' }
+            { name: 'General Admission', price: 0, quantity: 100, description: '', color: '#10B981' }
         ],
 
         // Stage 4: Compliance
@@ -59,6 +64,18 @@ const CreateEvent = () => {
         // Status
         status: 'pending_approval'
     });
+
+    // Default ticket colors palette
+    const ticketColorPalette = [
+        { name: 'Green', value: '#10B981' },
+        { name: 'Blue', value: '#3B82F6' },
+        { name: 'Purple', value: '#8B5CF6' },
+        { name: 'Pink', value: '#EC4899' },
+        { name: 'Orange', value: '#F97316' },
+        { name: 'Gold/VIP', value: '#F59E0B' },
+        { name: 'Red', value: '#EF4444' },
+        { name: 'Teal', value: '#14B8A6' },
+    ];
 
     // --- Fetch Existing Event for Edit Mode ---
     useEffect(() => {
@@ -146,25 +163,56 @@ const CreateEvent = () => {
         }));
     };
 
+    // Left-click: Toggle seat type OR Paint ticket
     const toggleSeatType = (r, c) => {
         setFormData(prev => {
             const newGrid = [...prev.seatingGrid];
-            // Toggle Seat -> Aisle (Gap) -> Blocked -> Seat
-            const currentType = newGrid[r][c].type;
-            let newType = 'seat';
-            if (currentType === 'seat') newType = 'aisle'; // Gap
-            else if (currentType === 'aisle') newType = 'blocked'; // Unusable
-            else newType = 'seat';
 
-            newGrid[r][c] = { ...newGrid[r][c], type: newType };
+            if (paintMode === 'paint_ticket') {
+                // Paint Mode: Set to seat and assign specific ticket
+                newGrid[r][c] = {
+                    ...newGrid[r][c],
+                    type: 'seat',
+                    ticketTypeIndex: selectedTicketForPaint
+                };
+            } else {
+                // Cycle Mode: Seat -> Aisle -> Blocked
+                const currentType = newGrid[r][c].type;
+                let newType = 'seat';
+                if (currentType === 'seat') newType = 'aisle';
+                else if (currentType === 'aisle') newType = 'blocked';
+                else newType = 'seat';
 
-            // Recalculate capacity
+                newGrid[r][c] = { ...newGrid[r][c], type: newType };
+            }
+
             let newCapacity = 0;
             newGrid.forEach(row => row.forEach(seat => {
                 if (seat.type === 'seat') newCapacity++;
             }));
 
             return { ...prev, seatingGrid: newGrid, totalCapacity: newCapacity };
+        });
+    };
+
+    // Right-click: Cycle through ticket types for the seat
+    const cycleSeatTicketType = (e, r, c) => {
+        e.preventDefault(); // Prevent context menu
+        setFormData(prev => {
+            const newGrid = [...prev.seatingGrid];
+            const seat = newGrid[r][c];
+
+            // Only allow ticket type change for actual seats
+            if (seat.type !== 'seat') return prev;
+
+            // Get current ticket type index, default to 0 (first ticket)
+            const currentIndex = seat.ticketTypeIndex || 0;
+            // Cycle to next ticket type
+            const nextIndex = (currentIndex + 1) % prev.tickets.length;
+
+            newGrid[r][c] = { ...newGrid[r][c], ticketTypeIndex: nextIndex };
+
+            return { ...prev, seatingGrid: newGrid };
         });
     };
 
@@ -204,9 +252,13 @@ const CreateEvent = () => {
     };
 
     const addTicketType = () => {
+        // Pick next color from palette based on current ticket count
+        const nextColorIndex = formData.tickets.length % ticketColorPalette.length;
+        const nextColor = ticketColorPalette[nextColorIndex].value;
+
         setFormData(prev => ({
             ...prev,
-            tickets: [...prev.tickets, { name: '', price: 0, quantity: 0, description: '' }]
+            tickets: [...prev.tickets, { name: '', price: 0, quantity: 0, description: '', color: nextColor }]
         }));
     };
 
@@ -307,10 +359,31 @@ const CreateEvent = () => {
                 idProofUrl = await uploadToS3(formData.idProofFile, 'organizers/id_proofs');
             }
 
+            // Generate Event Code range for new events
+            // Format: YYYYMMDD + TYPE (ON/OFF/HYB) + SEQUENCE
+            let eventCodePrefix = formData.eventCodePrefix;
+            let eventCodeFirst = formData.eventCodeFirst;
+            let eventCodeLast = formData.eventCodeLast;
+
+            if (!isEditMode || !eventCodePrefix) {
+                const dateStr = formData.startDate.replace(/-/g, ''); // YYYYMMDD
+                const typeCode = formData.eventType === 'Online' ? 'ON' :
+                    formData.eventType === 'Hybrid' ? 'HYB' : 'OFF';
+                const capacity = formData.totalCapacity || formData.tickets.reduce((sum, t) => sum + parseInt(t.quantity || 0), 0);
+                const padLength = String(capacity).length;
+
+                eventCodePrefix = `${dateStr}${typeCode}`;
+                eventCodeFirst = `${eventCodePrefix}${String(1).padStart(padLength, '0')}`;
+                eventCodeLast = `${eventCodePrefix}${String(capacity).padStart(padLength, '0')}`;
+            }
+
             // Preparing data
             const eventData = {
                 organizerId: currentUser.uid,
                 ...formData,
+                eventCodePrefix,
+                eventCodeFirst,
+                eventCodeLast,
                 category: formData.category === 'Other' ? (formData.customCategory || 'Other') : formData.category,
                 // Serialize 2D grid to JSON string to avoid Firestore "Nested arrays" error
                 seatingGrid: JSON.stringify(formData.seatingGrid),
@@ -378,6 +451,34 @@ const CreateEvent = () => {
                         <input name="customCategory" value={formData.customCategory || ''} onChange={(e) => setFormData(p => ({ ...p, customCategory: e.target.value }))} type="text" placeholder="Enter custom category" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold" />
                     </div>
                 )}
+
+                {/* Event Type - Online/Offline/Hybrid */}
+                <div>
+                    <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-2">Event Type *</label>
+                    <div className="grid grid-cols-3 gap-3">
+                        {['Offline', 'Online', 'Hybrid'].map(type => (
+                            <button
+                                key={type}
+                                type="button"
+                                onClick={() => setFormData(p => ({ ...p, eventType: type }))}
+                                className={`p-4 border-2 border-[var(--color-text-primary)] font-bold uppercase text-sm transition-all ${formData.eventType === type
+                                    ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] shadow-none'
+                                    : 'bg-[var(--color-bg-surface)] shadow-[4px_4px_0_var(--color-text-primary)] hover:shadow-[2px_2px_0_var(--color-text-primary)] hover:translate-x-[2px] hover:translate-y-[2px]'
+                                    }`}
+                            >
+                                <span className="text-2xl block mb-1">
+                                    {type === 'Offline' ? '🏟️' : type === 'Online' ? '💻' : '🔄'}
+                                </span>
+                                {type}
+                            </button>
+                        ))}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                        {formData.eventType === 'Online' && '📍 No physical venue needed. Attendees join via link.'}
+                        {formData.eventType === 'Offline' && '📍 Physical venue with seating options.'}
+                        {formData.eventType === 'Hybrid' && '📍 Both physical venue and online streaming.'}
+                    </p>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Start Date *</label>
@@ -402,186 +503,352 @@ const CreateEvent = () => {
 
     const renderStep2 = () => (
         <div className="space-y-6 animate-fade-in-up">
-            <h2 className="text-2xl font-black uppercase text-[var(--color-text-primary)]">Step 2: Venue & Seating</h2>
+            <h2 className="text-2xl font-black uppercase text-[var(--color-text-primary)]">
+                Step 3: {formData.eventType === 'Online' ? 'Platform Details' : 'Venue & Seating'}
+            </h2>
 
-            {/* Venue Details */}
-            <div className="space-y-4 border-b-2 border-dashed border-[var(--color-text-primary)] pb-6">
-                <div>
-                    <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Venue Name</label>
-                    <input name="venueName" value={formData.venueName} onChange={handleInputChange} type="text" placeholder="e.g. Madison Square Garden" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold" />
-                </div>
-                <div>
-                    <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Address</label>
-                    <input name="venueAddress" value={formData.venueAddress} onChange={handleInputChange} type="text" placeholder="Street Address" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold" />
-                </div>
-                <div className="grid grid-cols-3 gap-4">
+            {/* Online Event Fields */}
+            {(formData.eventType === 'Online' || formData.eventType === 'Hybrid') && (
+                <div className="space-y-4 p-4 bg-blue-50 border-2 border-blue-300 mb-4">
+                    <h3 className="font-black uppercase text-lg text-blue-800">💻 Online Event Details</h3>
                     <div>
-                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">City</label>
-                        <input name="city" value={formData.city} onChange={handleInputChange} type="text" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold" />
+                        <label className="block text-xs font-black uppercase text-blue-600 mb-1">Platform</label>
+                        <select name="onlinePlatform" value={formData.onlinePlatform} onChange={handleInputChange} className="w-full neo-input bg-white border-2 border-blue-500 px-4 py-3 font-bold">
+                            <option value="">Select Platform</option>
+                            <option value="Zoom">Zoom</option>
+                            <option value="Google Meet">Google Meet</option>
+                            <option value="Microsoft Teams">Microsoft Teams</option>
+                            <option value="YouTube Live">YouTube Live</option>
+                            <option value="Custom">Custom / Other</option>
+                        </select>
                     </div>
                     <div>
-                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">State</label>
-                        <input name="state" value={formData.state} onChange={handleInputChange} type="text" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold" />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Zip</label>
-                        <input name="zipCode" value={formData.zipCode} onChange={handleInputChange} type="text" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold" />
+                        <label className="block text-xs font-black uppercase text-blue-600 mb-1">Meeting / Stream Link</label>
+                        <input name="meetingLink" value={formData.meetingLink} onChange={handleInputChange} type="url" placeholder="https://zoom.us/j/..." className="w-full neo-input bg-white border-2 border-blue-500 px-4 py-3 font-bold" />
+                        <p className="text-xs text-blue-600 mt-1">This link will be shared with ticket holders</p>
                     </div>
                 </div>
-            </div>
+            )}
 
-            {/* Seating Configuration */}
-            <div className="space-y-4">
-                <h3 className="font-black uppercase text-xl">Seating Configuration</h3>
-                <div>
-                    <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Seating Type</label>
-                    <select name="seatingType" value={formData.seatingType} onChange={handleInputChange} className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold">
-                        <option value="Open">Open / General Admission (Standing)</option>
-                        <option value="Reserved">Reserved Seating (Rows & Cols)</option>
-                    </select>
-                </div>
-
-                {formData.seatingType === 'Reserved' && (
-                    <div className="mt-4 flex flex-col md:flex-row gap-6">
-                        {/* Left Side: Controls */}
-                        <div className="w-full md:w-1/3 space-y-4 bg-gray-50 p-4 border-2 border-dashed border-gray-400">
-                            <h4 className="font-bold uppercase text-sm">Grid Settings</h4>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label className="block text-[10px] font-black uppercase mb-1">Rows</label>
-                                    <input name="totalRows" type="number" min="1" max="50" value={formData.totalRows} onChange={handleInputChange} className="w-full p-2 border border-black font-bold text-center" />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-black uppercase mb-1">Columns</label>
-                                    <input name="seatsPerRow" type="number" min="1" max="50" value={formData.seatsPerRow} onChange={handleInputChange} className="w-full p-2 border border-black font-bold text-center" />
-                                </div>
+            {/* Venue Details - Only for Offline/Hybrid */}
+            {(formData.eventType === 'Offline' || formData.eventType === 'Hybrid') && (
+                <>
+                    <div className="space-y-4 border-b-2 border-dashed border-[var(--color-text-primary)] pb-6">
+                        <h3 className="font-black uppercase text-lg">🏟️ Physical Venue</h3>
+                        <div>
+                            <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Venue Name</label>
+                            <input name="venueName" value={formData.venueName} onChange={handleInputChange} type="text" placeholder="e.g. Madison Square Garden" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold" />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Address</label>
+                            <input name="venueAddress" value={formData.venueAddress} onChange={handleInputChange} type="text" placeholder="Street Address" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold" />
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">City</label>
+                                <input name="city" value={formData.city} onChange={handleInputChange} type="text" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold" />
                             </div>
-                            <div className="text-xs text-gray-500">
-                                <p><strong>Instructions:</strong></p>
-                                <ul className="pl-0 space-y-2 mt-2">
-                                    <li className="flex items-center gap-2">
-                                        <div className="w-4 h-4 rounded bg-gradient-to-b from-emerald-400 to-emerald-600 shadow-[0_2px_0_#064e3b]"></div>
-                                        <span>Active Seat (Standard)</span>
-                                    </li>
-                                    <li className="flex items-center gap-2">
-                                        <div className="w-4 h-4 bg-white border border-gray-300"></div>
-                                        <span>Aisle / White Line (Gap)</span>
-                                    </li>
-                                    <li className="flex items-center gap-2">
-                                        <div className="w-4 h-4 rounded bg-gradient-to-b from-red-400 to-red-600 opacity-60"></div>
-                                        <span>Blocked / Unavailable</span>
-                                    </li>
-                                </ul>
-                                <p className="mt-2 italic text-[10px]">* Click seats to cycle types.</p>
+                            <div>
+                                <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">State</label>
+                                <input name="state" value={formData.state} onChange={handleInputChange} type="text" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold" />
                             </div>
-                            <div className="mt-4 p-3 bg-blue-100 border border-blue-500 text-center">
-                                <span className="block text-xs font-black uppercase text-blue-800">Total Capacity</span>
-                                <span className="text-3xl font-black text-blue-600">{formData.totalCapacity}</span>
+                            <div>
+                                <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Zip</label>
+                                <input name="zipCode" value={formData.zipCode} onChange={handleInputChange} type="text" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold" />
                             </div>
                         </div>
+                    </div>
 
-                        {/* Right Side: Visual Grid */}
-                        <div className="w-full md:w-2/3 bg-[#2a2a2a] p-8 border-4 border-black shadow-[6px_6px_0_gray] min-h-[400px] flex flex-col items-center justify-center relative overflow-hidden rounded-lg">
-                            {/* Stage Decor */}
-                            <div className="w-full max-w-md h-8 bg-gradient-to-b from-gray-700 to-transparent mb-8 text-center text-gray-500 text-xs font-black tracking-[0.5em] uppercase opacity-50">
-                                S T A G E
-                            </div>
+                    {/* Seating Configuration */}
+                    <div className="space-y-4">
+                        <h3 className="font-black uppercase text-xl">🪑 Seating Configuration</h3>
+                        <div>
+                            <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Seating Type</label>
+                            <select name="seatingType" value={formData.seatingType} onChange={handleInputChange} className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold">
+                                <option value="Open">Open / General Admission (Standing)</option>
+                                <option value="Reserved">Reserved Seating (Rows & Cols)</option>
+                            </select>
+                        </div>
 
-                            <div className="perspective-container" style={{ perspective: '1000px' }}>
-                                <div
-                                    className="grid gap-2 transition-transform duration-500 ease-out"
-                                    style={{
-                                        gridTemplateColumns: `repeat(${formData.seatsPerRow}, minmax(0, 1fr))`,
-                                        transform: 'rotateX(10deg)',
-                                        transformStyle: 'preserve-3d',
-                                    }}
-                                >
-                                    {formData.seatingGrid.map((row, rIndex) => (
-                                        row.map((seat, cIndex) => (
-                                            <div
-                                                key={seat.id}
-                                                onClick={() => toggleSeatType(rIndex, cIndex)}
-                                                title={`Row ${rIndex + 1} Col ${cIndex + 1} - ${seat.label}`}
-                                                className={`
-                                                    relative w-8 h-8 md:w-10 md:h-10 flex items-center justify-center text-[10px] cursor-pointer select-none transition-all duration-150
-                                                    ${seat.type === 'seat'
-                                                        ? 'bg-gradient-to-b from-emerald-400 to-emerald-600 text-white font-bold rounded-t-lg rounded-b-md shadow-[0_4px_0_#064e3b] hover:-translate-y-1 hover:shadow-[0_6px_0_#064e3b] active:shadow-none active:translate-y-1 z-10'
-                                                        : ''}
-                                                    ${seat.type === 'aisle'
-                                                        ? 'bg-white/10 border-2 border-dashed border-white/20 rounded-sm hover:bg-white/20'
-                                                        : ''}
-                                                    ${seat.type === 'blocked'
-                                                        ? 'bg-gradient-to-b from-red-800 to-red-900 text-white/50 rounded-md scale-90 opacity-60 shadow-inner'
-                                                        : ''}
-                                                `}
+                        {formData.seatingType === 'Reserved' && (
+                            <div className="mt-4 flex flex-col md:flex-row gap-6">
+                                {/* Left Side: Controls */}
+                                <div className="w-full md:w-1/3 space-y-4 bg-gray-50 p-4 border-2 border-dashed border-gray-400">
+
+                                    {/* Interaction Mode Toolbar */}
+                                    <div className="bg-white border-2 border-gray-300 p-3 shadow-sm">
+                                        <h4 className="font-black uppercase text-xs text-gray-500 mb-2">🖱️ Click Action</h4>
+                                        <div className="flex gap-2 mb-3">
+                                            <button
+                                                type="button"
+                                                key="mode-select"
+                                                onClick={() => setPaintMode('select')}
+                                                className={`flex-1 py-2 text-[10px] font-black uppercase border-2 transition-all ${paintMode === 'select' ? 'bg-black text-white border-black' : 'bg-gray-100 text-gray-600 border-gray-300 hover:border-black'}`}
                                             >
-                                                {seat.type === 'seat' && (
-                                                    <span className="drop-shadow-md">{seat.label}</span>
-                                                )}
-                                                {seat.type === 'aisle' && (
-                                                    <span className="hidden">Gap</span>
-                                                )}
+                                                Cycle Status
+                                            </button>
+                                            <button
+                                                type="button"
+                                                key="mode-paint"
+                                                onClick={() => setPaintMode('paint_ticket')}
+                                                className={`flex-1 py-2 text-[10px] font-black uppercase border-2 transition-all ${paintMode === 'paint_ticket' ? 'bg-[var(--color-accent-primary)] text-white border-black shadow-[2px_2px_0_black]' : 'bg-gray-100 text-gray-600 border-gray-300 hover:border-black'}`}
+                                            >
+                                                Assign Ticket
+                                            </button>
+                                        </div>
+
+                                        {paintMode === 'paint_ticket' && (
+                                            <div className="grid grid-cols-1 gap-1 max-h-40 overflow-y-auto">
+                                                {formData.tickets.map((t, idx) => (
+                                                    <button
+                                                        type="button"
+                                                        key={`ticket-btn-${idx}`}
+                                                        onClick={() => setSelectedTicketForPaint(idx)}
+                                                        className={`flex items-center gap-2 p-2 border-2 text-xs font-bold text-left transition-all ${selectedTicketForPaint === idx ? 'border-black bg-blue-50 shadow-[2px_2px_0_rgba(0,0,0,0.2)]' : 'border-transparent hover:bg-gray-50'}`}
+                                                    >
+                                                        <div className="w-4 h-4 rounded-full border border-black" style={{ backgroundColor: t.color }}></div>
+                                                        <span className="truncate">{t.name || `Ticket ${idx + 1}`}</span>
+                                                    </button>
+                                                ))}
                                             </div>
-                                        ))
+                                        )}
+                                    </div>
+
+                                    <h4 className="font-bold uppercase text-sm">Grid Settings</h4>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="block text-[10px] font-black uppercase mb-1">Rows</label>
+                                            <input name="totalRows" type="number" min="1" max="50" value={formData.totalRows} onChange={handleInputChange} className="w-full p-2 border border-black font-bold text-center" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-black uppercase mb-1">Columns</label>
+                                            <input name="seatsPerRow" type="number" min="1" max="50" value={formData.seatsPerRow} onChange={handleInputChange} className="w-full p-2 border border-black font-bold text-center" />
+                                        </div>
+                                    </div>
+
+                                    {/* Enhanced Instructions */}
+                                    <div className="bg-yellow-50 border-2 border-yellow-400 p-3 text-xs">
+                                        <p className="font-black text-yellow-800 mb-2">📖 HOW TO SET SEATS:</p>
+                                        <ul className="space-y-2 text-gray-700">
+                                            <li className="flex items-start gap-2">
+                                                <span className="font-black text-green-600">1 Click:</span>
+                                                <span>Seat → Aisle (gap/walkway)</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="font-black text-orange-600">2 Clicks:</span>
+                                                <span>Aisle → Blocked (unavailable)</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="font-black text-blue-600">3 Clicks:</span>
+                                                <span>Blocked → Back to Seat</span>
+                                            </li>
+                                        </ul>
+                                        <div className="mt-3 pt-2 border-t border-yellow-300">
+                                            <p className="font-black text-purple-700">🖱️ Right-Click:</p>
+                                            <span>Change Ticket Type (VIP, General, etc.)</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Ticket Type Legend */}
+                                    <div className="text-xs text-gray-500">
+                                        <p><strong>Your Ticket Types:</strong></p>
+                                        <ul className="pl-0 space-y-2 mt-2">
+                                            {formData.tickets.map((ticket, idx) => (
+                                                <li key={idx} className="flex items-center gap-2">
+                                                    <div
+                                                        className="w-4 h-4 rounded shadow-sm border border-gray-400"
+                                                        style={{ backgroundColor: ticket.color || '#10B981' }}
+                                                    ></div>
+                                                    <span>{ticket.name || `Ticket ${idx + 1}`}</span>
+                                                </li>
+                                            ))}
+                                            <li className="flex items-center gap-2 mt-1 pt-1 border-t border-gray-200">
+                                                <div className="w-4 h-4 bg-white border border-gray-300"></div>
+                                                <span>Aisle / Walkway</span>
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <div className="w-4 h-4 rounded bg-gradient-to-b from-red-400 to-red-600 opacity-60"></div>
+                                                <span>Blocked Seat</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="mt-4 p-3 bg-blue-100 border border-blue-500 text-center">
+                                        <span className="block text-xs font-black uppercase text-blue-800">Total Capacity</span>
+                                        <span className="text-3xl font-black text-blue-600">{formData.totalCapacity}</span>
+                                    </div>
+                                </div>
+
+                                {/* Right Side: Visual Grid */}
+                                <div className="w-full md:w-2/3 bg-[#2a2a2a] p-8 border-4 border-black shadow-[6px_6px_0_gray] min-h-[400px] flex flex-col items-center justify-center relative overflow-hidden rounded-lg">
+                                    {/* Stage Decor */}
+                                    <div className="w-full max-w-md h-8 bg-gradient-to-b from-gray-700 to-transparent mb-8 text-center text-gray-500 text-xs font-black tracking-[0.5em] uppercase opacity-50">
+                                        S T A G E
+                                    </div>
+
+                                    <div className="perspective-container" style={{ perspective: '1000px' }}>
+                                        <div
+                                            className="grid gap-2 transition-transform duration-500 ease-out"
+                                            style={{
+                                                gridTemplateColumns: `repeat(${formData.seatsPerRow}, minmax(0, 1fr))`,
+                                                transform: 'rotateX(10deg)',
+                                                transformStyle: 'preserve-3d',
+                                            }}
+                                        >
+                                            {formData.seatingGrid.map((row, rIndex) => (
+                                                row.map((seat, cIndex) => {
+                                                    // Get ticket type color for this seat
+                                                    const ticketIndex = seat.ticketTypeIndex || 0;
+                                                    const ticketType = formData.tickets[ticketIndex] || formData.tickets[0];
+                                                    const seatColor = ticketType?.color || '#10B981';
+
+                                                    return (
+                                                        <div
+                                                            key={seat.id}
+                                                            onClick={() => toggleSeatType(rIndex, cIndex)}
+                                                            onContextMenu={(e) => cycleSeatTicketType(e, rIndex, cIndex)}
+                                                            title={`${seat.label} - ${seat.type === 'seat' ? (ticketType?.name || 'General') : seat.type} (Right-click to change ticket type)`}
+                                                            className={`
+                                                                relative w-8 h-8 md:w-10 md:h-10 flex items-center justify-center text-[10px] cursor-pointer select-none transition-all duration-150
+                                                                ${seat.type === 'aisle'
+                                                                    ? 'bg-white/10 border-2 border-dashed border-white/20 rounded-sm hover:bg-white/20'
+                                                                    : ''}
+                                                                ${seat.type === 'blocked'
+                                                                    ? 'bg-gradient-to-b from-red-800 to-red-900 text-white/50 rounded-md scale-90 opacity-60 shadow-inner'
+                                                                    : ''}
+                                                            `}
+                                                            style={seat.type === 'seat' ? {
+                                                                background: `linear-gradient(to bottom, ${seatColor}, ${seatColor}dd)`,
+                                                                color: 'white',
+                                                                fontWeight: 'bold',
+                                                                borderRadius: '8px 8px 6px 6px',
+                                                                boxShadow: `0 4px 0 ${seatColor}88`,
+                                                            } : {}}
+                                                        >
+                                                            {seat.type === 'seat' && (
+                                                                <span className="drop-shadow-md">{seat.label}</span>
+                                                            )}
+                                                            {seat.type === 'aisle' && (
+                                                                <span className="hidden">Gap</span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-8 text-white/30 text-[10px] uppercase tracking-widest font-bold">
+                                        Front of House
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </>
+            )}
+        </div>
+    );
+
+    const renderStep3 = () => {
+        // Calculate preview event code range
+        const dateStr = formData.startDate ? formData.startDate.replace(/-/g, '') : 'YYYYMMDD';
+        const typeCode = formData.eventType === 'Online' ? 'ON' :
+            formData.eventType === 'Hybrid' ? 'HYB' : 'OFF';
+        const totalTickets = formData.tickets.reduce((sum, t) => sum + parseInt(t.quantity || 0), 0);
+        const capacity = formData.totalCapacity || totalTickets || 1;
+
+        // Generate code range like 20251226OFF01 to 20251226OFF100
+        const firstCode = `${dateStr}${typeCode}${String(1).padStart(String(capacity).length, '0')}`;
+        const lastCode = `${dateStr}${typeCode}${String(capacity).padStart(String(capacity).length, '0')}`;
+
+        return (
+            <div className="space-y-6 animate-fade-in-up">
+                <h2 className="text-2xl font-black uppercase text-[var(--color-text-primary)]">Step 2: Tickets</h2>
+
+                {/* Event Code Preview - Shows Range */}
+                <div className="bg-gradient-to-r from-gray-100 to-gray-200 border-2 border-gray-400 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-black uppercase text-gray-500">🎫 Ticket Code Range (Auto-Generated)</span>
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 font-bold rounded">{capacity} Tickets</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <div className="bg-white border-2 border-gray-400 px-4 py-2 font-mono font-black text-gray-800">{firstCode}</div>
+                        <span className="text-gray-400 font-black">→</span>
+                        <div className="bg-white border-2 border-gray-400 px-4 py-2 font-mono font-black text-gray-800">{lastCode}</div>
+                    </div>
+                    <div className="mt-3 text-xs text-gray-500 flex gap-4">
+                        <span>📅 Date: {formData.startDate || 'Not set'}</span>
+                        <span>🏷️ Type: {formData.eventType}</span>
+                    </div>
+                </div>
+
+                {formData.tickets.map((ticket, index) => (
+                    <div key={index} className="neo-card bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] p-4 relative mb-4" style={{ borderLeftColor: ticket.color || '#10B981', borderLeftWidth: '6px' }}>
+                        <div className="flex justify-between items-start mb-3">
+                            <div className="flex items-center gap-3">
+                                <div
+                                    className="w-6 h-6 rounded-full border-2 border-black shadow-[2px_2px_0_black]"
+                                    style={{ backgroundColor: ticket.color || '#10B981' }}
+                                ></div>
+                                <span className="bg-black text-white text-xs font-bold px-2 py-1 uppercase">Ticket Type #{index + 1}</span>
+                            </div>
+                            {formData.tickets.length > 1 && (
+                                <button onClick={() => removeTicketType(index)} className="text-red-600 font-bold hover:underline text-xs">REMOVE</button>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Name</label>
+                                <input type="text" value={ticket.name} onChange={(e) => handleTicketChange(index, 'name', e.target.value)} placeholder="VIP / General" className="w-full neo-input bg-[var(--color-bg-surface)] border-2 border-[var(--color-text-primary)] px-3 py-2 font-bold" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Quantity</label>
+                                <input
+                                    type="number"
+                                    value={ticket.quantity}
+                                    onChange={(e) => handleTicketChange(index, 'quantity', e.target.value)}
+                                    placeholder={formData.seatingType === 'Reserved' ? formData.totalCapacity : "100"}
+                                    className="w-full neo-input bg-[var(--color-bg-surface)] border-2 border-[var(--color-text-primary)] px-3 py-2 font-bold"
+                                />
+                                {formData.seatingType === 'Reserved' && (
+                                    <p className="text-[10px] text-gray-500 mt-1">Total Seats: {formData.totalCapacity}</p>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Price (₹)</label>
+                                <input type="number" value={ticket.price} onChange={(e) => handleTicketChange(index, 'price', e.target.value)} placeholder="0.00" className="w-full neo-input bg-[var(--color-bg-surface)] border-2 border-[var(--color-text-primary)] px-3 py-2 font-bold" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Color</label>
+                                <div className="flex flex-wrap gap-1">
+                                    {ticketColorPalette.map((color) => (
+                                        <button
+                                            key={color.value}
+                                            type="button"
+                                            onClick={() => handleTicketChange(index, 'color', color.value)}
+                                            title={color.name}
+                                            className={`w-6 h-6 rounded border-2 transition-all ${ticket.color === color.value ? 'border-black scale-110 shadow-md' : 'border-gray-300 hover:scale-105'}`}
+                                            style={{ backgroundColor: color.value }}
+                                        />
                                     ))}
                                 </div>
                             </div>
+                        </div>
 
-                            <div className="mt-8 text-white/30 text-[10px] uppercase tracking-widest font-bold">
-                                Front of House
-                            </div>
+                        <div className="mt-3">
+                            <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Description</label>
+                            <input type="text" value={ticket.description} onChange={(e) => handleTicketChange(index, 'description', e.target.value)} placeholder="Includes backstage access..." className="w-full neo-input bg-[var(--color-bg-surface)] border-2 border-[var(--color-text-primary)] px-3 py-2 text-sm" />
                         </div>
                     </div>
-                )}
+                ))}
+                <button onClick={addTicketType} className="w-full py-3 border-2 border-dashed border-[var(--color-text-primary)] text-[var(--color-text-primary)] font-black uppercase hover:bg-[var(--color-bg-secondary)] transition-colors">
+                    + Add Ticket Type
+                </button>
             </div>
-        </div>
-    );
-
-    const renderStep3 = () => (
-        <div className="space-y-6 animate-fade-in-up">
-            <h2 className="text-2xl font-black uppercase text-[var(--color-text-primary)]">Step 3: Tickets</h2>
-            {formData.tickets.map((ticket, index) => (
-                <div key={index} className="neo-card bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] p-4 relative mb-4">
-                    <div className="flex justify-between items-start mb-2">
-                        <span className="bg-black text-white text-xs font-bold px-2 py-1 uppercase">Ticket Type #{index + 1}</span>
-                        {formData.tickets.length > 1 && (
-                            <button onClick={() => removeTicketType(index)} className="text-red-600 font-bold hover:underline text-xs">REMOVE</button>
-                        )}
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Name</label>
-                            <input type="text" value={ticket.name} onChange={(e) => handleTicketChange(index, 'name', e.target.value)} placeholder="VIP / General" className="w-full neo-input bg-[var(--color-bg-surface)] border-2 border-[var(--color-text-primary)] px-3 py-2 font-bold" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Quantity</label>
-                            <input
-                                type="number"
-                                value={ticket.quantity}
-                                onChange={(e) => handleTicketChange(index, 'quantity', e.target.value)}
-                                placeholder={formData.seatingType === 'Reserved' ? formData.totalCapacity : "100"}
-                                className="w-full neo-input bg-[var(--color-bg-surface)] border-2 border-[var(--color-text-primary)] px-3 py-2 font-bold"
-                            />
-                            {formData.seatingType === 'Reserved' && (
-                                <p className="text-[10px] text-gray-500 mt-1">Total Seats: {formData.totalCapacity}</p>
-                            )}
-                        </div>
-                        <div>
-                            <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Price (₹)</label>
-                            <input type="number" value={ticket.price} onChange={(e) => handleTicketChange(index, 'price', e.target.value)} placeholder="0.00" className="w-full neo-input bg-[var(--color-bg-surface)] border-2 border-[var(--color-text-primary)] px-3 py-2 font-bold" />
-                        </div>
-                    </div>
-                    <div className="mt-2">
-                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Description</label>
-                        <input type="text" value={ticket.description} onChange={(e) => handleTicketChange(index, 'description', e.target.value)} placeholder="Includes backstage access..." className="w-full neo-input bg-[var(--color-bg-surface)] border-2 border-[var(--color-text-primary)] px-3 py-2 text-sm" />
-                    </div>
-                </div>
-            ))}
-            <button onClick={addTicketType} className="w-full py-3 border-2 border-dashed border-[var(--color-text-primary)] text-[var(--color-text-primary)] font-black uppercase hover:bg-[var(--color-bg-secondary)] transition-colors">
-                + Add Ticket Type
-            </button>
-        </div>
-    );
+        );
+    };
 
     const renderStep4 = () => (
         <div className="space-y-6 animate-fade-in-up">
@@ -749,8 +1016,8 @@ const CreateEvent = () => {
                     )}
 
                     {step === 1 && renderStep1()}
-                    {step === 2 && renderStep2()}
-                    {step === 3 && renderStep3()}
+                    {step === 2 && renderStep3()}  {/* Tickets now comes BEFORE Seating */}
+                    {step === 3 && renderStep2()}  {/* Venue & Seating now comes AFTER Tickets */}
                     {step === 4 && renderStep4()}
                     {step === 5 && renderStep5()}
 

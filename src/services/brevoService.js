@@ -222,6 +222,80 @@ export const sendOrganizerApprovalEmail = async (email, name) => {
     return sendEmail(emailData);
 };
 
+/**
+ * Send 'Contact Form Confirmation' Email
+ * @param {string} email - User's email
+ * @param {string} name - User's name
+ * @param {string} topic - The topic they selected
+ */
+export const sendContactConfirmationEmail = async (email, name, topic) => {
+    const emailData = {
+        sender: { name: 'Tickify Support', email: 'aroramadhav1312@gmail.com' },
+        to: [{ email, name }],
+        subject: 'We Received Your Message - Tickify Support',
+        htmlContent: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background-color: #111827;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+                    <div style="background-color: #1F2937; border: 4px solid #F9FAFB; padding: 40px; box-shadow: 8px 8px 0 #374151;">
+                        <!-- Logo -->
+                        <div style="text-align: center; margin-bottom: 32px;">
+                            <div style="display: inline-block; width: 60px; height: 60px; background-color: #10B981; border: 3px solid #F9FAFB; box-shadow: 4px 4px 0 #F9FAFB;">
+                                <span style="font-size: 28px; line-height: 54px; color: #F9FAFB; font-weight: 900;">✓</span>
+                            </div>
+                        </div>
+                        
+                        <h1 style="color: #10B981; font-size: 28px; text-align: center; margin: 0 0 24px 0; text-transform: uppercase; letter-spacing: 2px; font-weight: 900;">
+                            Message Received!
+                        </h1>
+                        
+                        <p style="color: #D1D5DB; font-size: 16px; text-align: center; margin: 0 0 24px 0; line-height: 1.6;">
+                            Hello <strong style="color: #F9FAFB;">${name}</strong>,
+                        </p>
+                        
+                        <p style="color: #D1D5DB; font-size: 16px; text-align: center; margin: 0 0 32px 0; line-height: 1.6;">
+                            Thank you for reaching out to us! We have received your message regarding <strong style="color: #F59E0B;">"${topic}"</strong>.
+                        </p>
+                        
+                        <!-- Response Time Box -->
+                        <div style="background-color: #111827; border: 4px solid #2563EB; padding: 24px; text-align: center; margin-bottom: 32px; box-shadow: 6px 6px 0 #2563EB;">
+                            <p style="color: #D1D5DB; font-size: 14px; margin: 0 0 8px 0;">Expected Response Time</p>
+                            <span style="font-family: 'Arial', sans-serif; font-size: 32px; font-weight: 900; color: #2563EB;">
+                                24-48 Hours
+                            </span>
+                        </div>
+                        
+                        <p style="color: #D1D5DB; font-size: 14px; text-align: center; margin: 0 0 24px 0; line-height: 1.6;">
+                            Our support team is reviewing your request and will get back to you as soon as possible. In the meantime, you can check our <a href="http://localhost:5173/faq" style="color: #2563EB; text-decoration: none; font-weight: bold;">FAQ section</a> for quick answers.
+                        </p>
+                        
+                        <div style="border-top: 2px dashed #374151; padding-top: 24px; margin-top: 24px;">
+                            <p style="color: #9CA3AF; font-size: 12px; text-align: center; margin: 0 0 8px 0;">
+                                <strong>Need urgent help?</strong>
+                            </p>
+                            <p style="color: #6B7280; font-size: 12px; text-align: center; margin: 0;">
+                                📧 support@tickify.com &nbsp;|&nbsp; 📱 +91 1800-XXX-XXXX
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <p style="color: #6B7280; font-size: 12px; text-align: center; margin-top: 24px;">
+                        © 2025 Tickify. All rights reserved.<br>
+                        This is an automated message. Please do not reply directly to this email.
+                    </p>
+                </div>
+            </body>
+            </html>
+        `
+    };
+    return sendEmail(emailData);
+};
+
 // Helper to send email request
 const sendEmail = async (data) => {
     try {

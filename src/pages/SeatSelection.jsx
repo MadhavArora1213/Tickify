@@ -1,23 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 const SeatSelection = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const [selectedSeats, setSelectedSeats] = useState([]);
+    const [rows, setRows] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [eventName, setEventName] = useState('');
 
-    // Mock Seat Configuration
-    // 0: Sold, 1: Available (Standard), 2: Available (VIP)
-    const rows = [
-        { id: 'A', type: 'VIP', price: 150, seats: [2, 2, 2, 0, 0, 2, 2, 2] },
-        { id: 'B', type: 'VIP', price: 150, seats: [2, 2, 0, 0, 2, 2, 2, 2] },
-        { id: 'C', type: 'STD', price: 80, seats: [1, 1, 1, 1, 1, 1, 1, 1] },
-        { id: 'D', type: 'STD', price: 80, seats: [1, 1, 0, 0, 0, 1, 1, 1] },
-        { id: 'E', type: 'STD', price: 80, seats: [1, 1, 1, 1, 1, 1, 1, 1] },
-        { id: 'F', type: 'ECO', price: 45, seats: [1, 1, 1, 1, 1, 1, 1, 1] },
-    ];
+    useEffect(() => {
+        const fetchEventAndSeats = async () => {
+            try {
+                setLoading(true);
+                const docRef = doc(db, 'events', id);
+                const docSnap = await getDoc(docRef);
 
-    const toggleSeat = (rowId, seatIndex, price, type) => {
+                if (docSnap.exists()) {
+                    const eventData = docSnap.data();
+                    setEventName(eventData.title);
+
+                    // Prefer explicit seat map if available in DB
+                    if (eventData.rows || eventData.seatMap) {
+                        setRows(eventData.rows || eventData.seatMap);
+                    } else if (eventData.tickets) {
+                        // Fallback: Generate rows based on ticket types
+                        const generatedRows = [];
+                        const seatLayouts = [
+                            { count: 8, pattern: [1, 1, 1, 1, 1, 1, 1, 1] }, // Default fill
+                            { count: 8, pattern: [1, 1, 1, 0, 0, 1, 1, 1] }, // With aisle
+                        ];
+
+                        let currentRowId = 'A';
+
+                        eventData.tickets.forEach((ticket, index) => {
+                            // Assign 2 rows per ticket type for demo purposes
+                            // In a real app, this would be defined in the event creation
+                            for (let i = 0; i < 2; i++) {
+                                const pattern = seatLayouts[i % seatLayouts.length].pattern; // Alternating patterns
+                                // Clone pattern to avoid reference issues
+                                const seats = [...pattern];
+                                generatedRows.push({
+                                    id: currentRowId,
+                                    type: ticket.name.includes('VIP') ? 'VIP' : (ticket.name.includes('General') ? 'STD' : 'ECO'),
+                                    price: ticket.price,
+                                    name: ticket.name, // Store ticket name for reference
+                                    seats: seats
+                                });
+                                // Increment row char
+                                currentRowId = String.fromCharCode(currentRowId.charCodeAt(0) + 1);
+                            }
+                        });
+                        setRows(generatedRows);
+                    }
+                } else {
+                    console.log("No such event!");
+                }
+            } catch (error) {
+                console.error("Error fetching event:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchEventAndSeats();
+    }, [id]);
+
+    const toggleSeat = (rowId, seatIndex, price, type, ticketName) => {
         const seatId = `${rowId}${seatIndex + 1}`;
         const isSelected = selectedSeats.find(s => s.id === seatId);
 
@@ -29,18 +80,34 @@ const SeatSelection = () => {
                 alert("You can only select up to 6 seats.");
                 return;
             }
-            setSelectedSeats([...selectedSeats, { id: seatId, price, type }]);
+            setSelectedSeats([...selectedSeats, { id: seatId, price, type, ticketName }]);
         }
     };
 
     const totalPrice = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[var(--color-bg-primary)] pt-24 pb-32 px-4 flex justify-center items-center">
+                <div className="text-xl font-bold text-[var(--color-text-primary)]">Loading Seat Map...</div>
+            </div>
+        );
+    }
+
+    if (rows.length === 0) {
+        return (
+            <div className="min-h-screen bg-[var(--color-bg-primary)] pt-24 pb-32 px-4 flex justify-center items-center">
+                <div className="text-xl font-bold text-[var(--color-text-primary)]">No seat map available for this event.</div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[var(--color-bg-primary)] pt-24 pb-32 px-4">
             <div className="max-w-4xl mx-auto">
                 <div className="text-center mb-8">
                     <h1 className="text-3xl md:text-5xl font-black uppercase text-[var(--color-text-primary)]">Select Your Seats</h1>
-                    <p className="font-bold text-[var(--color-text-secondary)]">Neon Nights Festival • Main Stage</p>
+                    <p className="font-bold text-[var(--color-text-secondary)]">{eventName || 'Event'} • Main Stage</p>
                 </div>
 
                 {/* Legend */}
@@ -59,7 +126,7 @@ const SeatSelection = () => {
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 border-2 border-[var(--color-text-primary)] rounded bg-yellow-300"></div>
-                        <span className="text-xs font-black uppercase">VIP (₹150)</span>
+                        <span className="text-xs font-black uppercase">VIP/Premium</span>
                     </div>
                 </div>
 
@@ -75,6 +142,9 @@ const SeatSelection = () => {
                             <span className="text-sm font-black w-6 text-center text-[var(--color-text-secondary)]">{row.id}</span>
                             <div className="flex gap-2 md:gap-4">
                                 {row.seats.map((status, index) => {
+                                    // 0: Sold, 1: Available
+                                    // You can expand this logic for more statuses if needed
+
                                     const seatId = `${row.id}${index + 1}`;
                                     const isSelected = selectedSeats.find(s => s.id === seatId);
 
@@ -88,14 +158,15 @@ const SeatSelection = () => {
                                     return (
                                         <button
                                             key={index}
-                                            onClick={() => toggleSeat(row.id, index, row.price, row.type)}
+                                            onClick={() => toggleSeat(row.id, index, row.price, row.type, row.name)}
                                             className={`w-8 h-8 md:w-10 md:h-10 rounded-t-lg border-2 border-[var(--color-text-primary)] transition-all font-black text-[10px] md:text-xs flex items-center justify-center
                                             ${isSelected
                                                     ? 'bg-[var(--color-accent-primary)] text-white translate-y-[-4px] shadow-[0_4px_0_var(--color-text-primary)]'
-                                                    : row.type === 'VIP'
+                                                    : (row.type === 'VIP' || row.price >= 150) // Basic heuristic for "premium" look
                                                         ? 'bg-yellow-300 hover:bg-yellow-200'
                                                         : 'bg-white hover:bg-gray-100'
                                                 }`}
+                                            title={`${row.name || row.type} - $${row.price}`}
                                         >
                                             {index + 1}
                                         </button>
