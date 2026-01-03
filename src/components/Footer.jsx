@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const Footer = () => {
     return (
@@ -16,6 +17,20 @@ const Footer = () => {
                         <p className="text-[var(--color-text-secondary)] font-bold text-sm leading-relaxed mb-6 border-l-4 border-black pl-4">
                             The modern platform for discovering, creating, and managing events that people love.
                         </p>
+
+                        {/* Social Links */}
+                        <div className="flex gap-4 mb-6 pl-4">
+                            <a href="https://www.linkedin.com/in/saransh-mittal-172556395/" target="_blank" rel="noopener noreferrer" className="text-2xl hover:scale-110 transition-transform" title="LinkedIn">👔</a>
+                            <a href="https://www.instagram.com/ticki_fy/" target="_blank" rel="noopener noreferrer" className="text-2xl hover:scale-110 transition-transform" title="Instagram">📸</a>
+                            <a href="https://x.com/Tickify134140" target="_blank" rel="noopener noreferrer" className="text-2xl hover:scale-110 transition-transform" title="X (Twitter)">🐦</a>
+                        </div>
+
+                        {/* Contact Info */}
+                        <div className="space-y-2 text-sm font-bold text-[var(--color-text-secondary)] pl-4">
+                            <a href="mailto:Contacttickify@gmail.com" className="block hover:text-[var(--color-text-primary)] hover:underline">📧 Contacttickify@gmail.com</a>
+                            <a href="tel:9636573425" className="block hover:text-[var(--color-text-primary)] hover:underline">📱 +91 9636573425</a>
+                            <a href="tel:9172289897" className="block hover:text-[var(--color-text-primary)] hover:underline">📱 +91 9172289897</a>
+                        </div>
                     </div>
 
                     {/* Links 1 */}
@@ -25,9 +40,9 @@ const Footer = () => {
                             <span className="hidden dark:block drop-shadow-[2px_2px_0_var(--color-accent-secondary)]">Platform</span>
                         </h4>
                         <ul className="space-y-2">
-                            <li><a href="#" className="font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline decoration-4 decoration-[var(--color-accent-primary)] transition-all text-sm uppercase">Browse Events</a></li>
-                            <li><a href="#" className="font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline decoration-4 decoration-[var(--color-accent-primary)] transition-all text-sm uppercase">Create Event</a></li>
-                            <li><a href="#" className="font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline decoration-4 decoration-[var(--color-accent-primary)] transition-all text-sm uppercase">Pricing</a></li>
+                            <li><Link to="/events" className="font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline decoration-4 decoration-[var(--color-accent-primary)] transition-all text-sm uppercase">Browse Events</Link></li>
+                            <li><Link to="/organizer/events/create" className="font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline decoration-4 decoration-[var(--color-accent-primary)] transition-all text-sm uppercase">Create Event</Link></li>
+                            <li><Link to="/pricing" className="font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline decoration-4 decoration-[var(--color-accent-primary)] transition-all text-sm uppercase">Pricing</Link></li>
                         </ul>
                     </div>
 
@@ -38,9 +53,9 @@ const Footer = () => {
                             <span className="hidden dark:block drop-shadow-[2px_2px_0_var(--color-accent-secondary)]">Company</span>
                         </h4>
                         <ul className="space-y-2">
-                            <li><a href="#" className="font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline decoration-4 decoration-[var(--color-accent-primary)] transition-all text-sm uppercase">About Us</a></li>
-                            <li><a href="#" className="font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline decoration-4 decoration-[var(--color-accent-primary)] transition-all text-sm uppercase">Careers</a></li>
-                            <li><a href="#" className="font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline decoration-4 decoration-[var(--color-accent-primary)] transition-all text-sm uppercase">Contact</a></li>
+                            <li><Link to="/about" className="font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline decoration-4 decoration-[var(--color-accent-primary)] transition-all text-sm uppercase">About Us</Link></li>
+                            <li><Link to="/careers" className="font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline decoration-4 decoration-[var(--color-accent-primary)] transition-all text-sm uppercase">Careers</Link></li>
+                            <li><Link to="/contact" className="font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline decoration-4 decoration-[var(--color-accent-primary)] transition-all text-sm uppercase">Contact</Link></li>
                         </ul>
                     </div>
 
@@ -51,9 +66,9 @@ const Footer = () => {
                             <span className="hidden dark:block drop-shadow-[2px_2px_0_var(--color-accent-secondary)]">Legal</span>
                         </h4>
                         <ul className="space-y-2">
-                            <li><a href="#" className="font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline decoration-4 decoration-[var(--color-accent-primary)] transition-all text-sm uppercase">Terms of Service</a></li>
-                            <li><a href="#" className="font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline decoration-4 decoration-[var(--color-accent-primary)] transition-all text-sm uppercase">Privacy Policy</a></li>
-                            <li><a href="#" className="font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline decoration-4 decoration-[var(--color-accent-primary)] transition-all text-sm uppercase">Cookie Policy</a></li>
+                            <li><Link to="/terms" className="font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline decoration-4 decoration-[var(--color-accent-primary)] transition-all text-sm uppercase">Terms of Service</Link></li>
+                            <li><Link to="/privacy" className="font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline decoration-4 decoration-[var(--color-accent-primary)] transition-all text-sm uppercase">Privacy Policy</Link></li>
+                            <li><Link to="/cookie-policy" className="font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline decoration-4 decoration-[var(--color-accent-primary)] transition-all text-sm uppercase">Cookie Policy</Link></li>
                         </ul>
                     </div>
                 </div>

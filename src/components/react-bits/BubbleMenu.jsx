@@ -20,14 +20,14 @@ const DEFAULT_ITEMS = [
     },
     {
         label: 'Create',
-        href: '#',
+        href: '/organizer/events/create',
         ariaLabel: 'Create',
         rotation: 8,
         hoverStyles: { bgColor: '#f59e0b', textColor: '#ffffff' }
     },
     {
         label: 'About',
-        href: '#',
+        href: '/about',
         ariaLabel: 'About',
         rotation: 8,
         hoverStyles: { bgColor: '#ef4444', textColor: '#ffffff' }
@@ -41,12 +41,14 @@ const DEFAULT_ITEMS = [
     },
     {
         label: 'Profile',
-        href: '#',
+        href: '/profile',
         ariaLabel: 'Profile',
         rotation: -8,
         hoverStyles: { bgColor: '#8b5cf6', textColor: '#ffffff' }
     }
 ];
+
+
 
 export default function BubbleMenu({
     logo,
@@ -391,9 +393,9 @@ export default function BubbleMenu({
                                     'box-border'
                                 ].join(' ')}
                             >
-                                <a
+                                <Link
                                     role="menuitem"
-                                    href={item.href}
+                                    to={item.href}
                                     aria-label={item.ariaLabel || item.label}
                                     className={[
                                         'pill-link',
@@ -446,7 +448,7 @@ export default function BubbleMenu({
                                     >
                                         {item.label}
                                     </span>
-                                </a>
+                                </Link>
                             </li>
                         ))}
                     </ul>

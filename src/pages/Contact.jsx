@@ -141,37 +141,50 @@ const Contact = () => {
                         Got a question? Found a bug? Just want to say hi? We're all ears.
                     </p>
 
-                    <div className="space-y-6">
-                        <div className="neo-card bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] p-6 flex items-center gap-6 shadow-[8px_8px_0_var(--color-text-primary)]">
-                            <div className="w-12 h-12 bg-blue-500 border-2 border-black flex items-center justify-center text-2xl">📧</div>
-                            <div>
-                                <p className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Email Us</p>
-                                <p className="text-xl font-black text-[var(--color-text-primary)]">support@tickify.com</p>
+                    <div className="neo-card bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] p-6 flex items-center gap-6 shadow-[8px_8px_0_var(--color-text-primary)]">
+                        <div className="w-12 h-12 bg-blue-500 border-2 border-black flex items-center justify-center text-2xl">📧</div>
+                        <div>
+                            <p className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Email Us</p>
+                            <a href="mailto:Contacttickify@gmail.com" className="text-xl font-black text-[var(--color-text-primary)] hover:underline">Contacttickify@gmail.com</a>
+                        </div>
+                    </div>
+
+                    <div className="neo-card bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] p-6 flex items-center gap-6 shadow-[8px_8px_0_var(--color-text-primary)]">
+                        <div className="w-12 h-12 bg-green-500 border-2 border-black flex items-center justify-center text-2xl">📱</div>
+                        <div>
+                            <p className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Call Us</p>
+                            <div className="flex flex-col">
+                                <a href="tel:9636573425" className="text-lg font-black text-[var(--color-text-primary)] hover:underline">+91 9636573425</a>
+                                <a href="tel:9172289897" className="text-lg font-black text-[var(--color-text-primary)] hover:underline">+91 9172289897</a>
                             </div>
                         </div>
+                    </div>
 
-                        <div className="neo-card bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] p-6 flex items-center gap-6 shadow-[8px_8px_0_var(--color-text-primary)]">
-                            <div className="w-12 h-12 bg-green-500 border-2 border-black flex items-center justify-center text-2xl">📱</div>
-                            <div>
-                                <p className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Call Us</p>
-                                <p className="text-xl font-black text-[var(--color-text-primary)]">+91 1800-XXX-XXXX</p>
+                    <div className="neo-card bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] p-6 flex items-center gap-6 shadow-[8px_8px_0_var(--color-text-primary)]">
+                        <div className="w-12 h-12 bg-pink-500 border-2 border-black flex items-center justify-center text-2xl">🌐</div>
+                        <div>
+                            <p className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Follow Us</p>
+                            <div className="flex gap-4 mt-1">
+                                <a href="https://www.linkedin.com/in/saransh-mittal-172556395/" target="_blank" rel="noopener noreferrer" className="text-2xl hover:scale-110 transition-transform" title="LinkedIn">👔</a>
+                                <a href="https://www.instagram.com/ticki_fy/" target="_blank" rel="noopener noreferrer" className="text-2xl hover:scale-110 transition-transform" title="Instagram">📸</a>
+                                <a href="https://x.com/Tickify134140" target="_blank" rel="noopener noreferrer" className="text-2xl hover:scale-110 transition-transform" title="X (Twitter)">🐦</a>
                             </div>
                         </div>
+                    </div>
 
-                        <div className="neo-card bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] p-6 flex items-center gap-6 shadow-[8px_8px_0_var(--color-text-primary)]">
-                            <div className="w-12 h-12 bg-red-500 border-2 border-black flex items-center justify-center text-2xl">📍</div>
-                            <div>
-                                <p className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Visit Us</p>
-                                <p className="text-xl font-black text-[var(--color-text-primary)]">Bangalore, India</p>
-                            </div>
+                    <div className="neo-card bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] p-6 flex items-center gap-6 shadow-[8px_8px_0_var(--color-text-primary)]">
+                        <div className="w-12 h-12 bg-red-500 border-2 border-black flex items-center justify-center text-2xl">📍</div>
+                        <div>
+                            <p className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Visit Us</p>
+                            <p className="text-xl font-black text-[var(--color-text-primary)]">Bangalore, India</p>
                         </div>
+                    </div>
 
-                        <div className="neo-card bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] p-6 flex items-center gap-6 shadow-[8px_8px_0_var(--color-text-primary)]">
-                            <div className="w-12 h-12 bg-purple-500 border-2 border-black flex items-center justify-center text-2xl">⏰</div>
-                            <div>
-                                <p className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Response Time</p>
-                                <p className="text-xl font-black text-[var(--color-text-primary)]">Within 24-48 hours</p>
-                            </div>
+                    <div className="neo-card bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] p-6 flex items-center gap-6 shadow-[8px_8px_0_var(--color-text-primary)]">
+                        <div className="w-12 h-12 bg-purple-500 border-2 border-black flex items-center justify-center text-2xl">⏰</div>
+                        <div>
+                            <p className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Response Time</p>
+                            <p className="text-xl font-black text-[var(--color-text-primary)]">Within 24-48 hours</p>
                         </div>
                     </div>
                 </div>

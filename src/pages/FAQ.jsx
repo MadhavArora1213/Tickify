@@ -136,7 +136,7 @@ const FAQ = () => {
         },
         {
             q: "How do I contact support?",
-            a: "Visit our Contact page or email support@tickify.com. For urgent issues, use the in-app chat during business hours.",
+            a: "Visit our Contact page or email Contacttickify@gmail.com. For urgent issues, use the in-app chat during business hours.",
             category: 'technical'
         },
     ];
@@ -165,8 +165,8 @@ const FAQ = () => {
                             key={cat.id}
                             onClick={() => { setActiveCategory(cat.id); setActiveIndex(null); }}
                             className={`px-4 py-2 font-black uppercase text-sm border-2 border-[var(--color-text-primary)] transition-all ${activeCategory === cat.id
-                                    ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] shadow-none'
-                                    : 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-[4px_4px_0_var(--color-text-primary)] hover:shadow-[2px_2px_0_var(--color-text-primary)] hover:translate-x-[2px] hover:translate-y-[2px]'
+                                ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] shadow-none'
+                                : 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-[4px_4px_0_var(--color-text-primary)] hover:shadow-[2px_2px_0_var(--color-text-primary)] hover:translate-x-[2px] hover:translate-y-[2px]'
                                 }`}
                         >
                             <span className="mr-2">{cat.icon}</span>

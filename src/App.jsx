@@ -43,6 +43,9 @@ import ServerError from './pages/ServerError';
 import Maintenance from './pages/Maintenance';
 import SeatSelection from './pages/SeatSelection';
 import VerifyTicket from './pages/VerifyTicket';
+import Pricing from './pages/Pricing';
+import Careers from './pages/Careers';
+import CookiePolicy from './pages/CookiePolicy';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BubbleMenu from './components/react-bits/BubbleMenu';
@@ -168,6 +171,9 @@ function App() {
                     <Route path="/contact" element={<Contact />} />
                     <Route path="/terms" element={<Terms />} />
                     <Route path="/privacy" element={<Privacy />} />
+                    <Route path="/cookie-policy" element={<CookiePolicy />} />
+                    <Route path="/pricing" element={<Pricing />} />
+                    <Route path="/careers" element={<Careers />} />
                     <Route path="/faq" element={<FAQ />} />
                     <Route path="/help" element={<HelpCenter />} />
 
