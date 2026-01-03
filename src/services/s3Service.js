@@ -85,7 +85,7 @@ export const uploadToS3 = async (file, folder = 'uploads') => {
             Key: fileName,
             Body: uint8Array,
             ContentType: compressedFile.type || 'image/jpeg',
-            // ACL: 'public-read' // Uncomment if your bucket allows ACLs
+            // ACL: 'public-read' // REMOVED: Bucket does not support ACLs. Use Bucket Policy instead.
         };
 
         const command = new PutObjectCommand(params);

@@ -40,10 +40,27 @@ const Events = () => {
                 // const q = query(eventsRef, where("status", "==", "active")); 
                 const querySnapshot = await getDocs(eventsRef);
 
-                const fetchedEvents = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
+                const fetchedEvents = querySnapshot.docs.map(doc => {
+                    const data = doc.data();
+
+                    // Calculate starting price from tickets if not set directly
+                    let startingPrice = data.price;
+                    if (!startingPrice && data.tickets && Array.isArray(data.tickets) && data.tickets.length > 0) {
+                        const prices = data.tickets.map(t => Number(t.price) || 0);
+                        startingPrice = Math.min(...prices);
+                    }
+
+                    return {
+                        id: doc.id,
+                        ...data,
+                        // Mappings for UI compatibility
+                        title: data.eventTitle || data.title,
+                        image: data.bannerUrl || data.image,
+                        date: data.startDate || data.date,
+                        location: data.city ? `${data.venueName ? data.venueName + ', ' : ''}${data.city}` : data.location,
+                        price: startingPrice
+                    };
+                });
 
                 setEvents(fetchedEvents);
             } catch (error) {

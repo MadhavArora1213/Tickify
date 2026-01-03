@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { db } from '../../config/firebase';
 import { collection, query, where, getDocs, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { uploadToS3 } from '../../services/s3Service';
 
 const OrganizerDashboard = () => {
     const [activeTab, setActiveTab] = useState('overview');
@@ -31,6 +32,9 @@ const OrganizerDashboard = () => {
         bankAccountNumber: '',
         bankIfsc: '',
         upiId: '',
+        bio: '',
+        profileImage: '',
+        profileImageFile: null // For upload
     });
 
     // --- Fetch Real Data ---
@@ -77,6 +81,8 @@ const OrganizerDashboard = () => {
                         bankAccountNumber: profileData.bankAccountNumber || '',
                         bankIfsc: profileData.bankIfsc || '',
                         upiId: profileData.upiId || '',
+                        bio: profileData.bio || '',
+                        profileImage: profileData.profileImage || '',
                     }));
                 } else {
                     // Set default from user data
@@ -246,7 +252,10 @@ const OrganizerDashboard = () => {
                                 src={event.bannerUrl || `https://picsum.photos/seed/${event.id}/300/200`}
                                 className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
                                 alt={event.eventTitle}
-                                onError={(e) => e.target.src = 'https://via.placeholder.com/300x200?text=No+Image'}
+                                onError={(e) => {
+                                    console.error(`Failed to load image for event ${event.id}:`, e.target.src);
+                                    e.target.src = 'https://via.placeholder.com/300x200?text=Image+Load+Error';
+                                }}
                             />
                         </div>
                         <div className="flex-1">
@@ -378,14 +387,24 @@ const OrganizerDashboard = () => {
         setSettingsSuccess(false);
 
         try {
+            let profileImageUrl = settingsForm.profileImage;
+
+            // Upload new image if selected
+            if (settingsForm.profileImageFile) {
+                profileImageUrl = await uploadToS3(settingsForm.profileImageFile, 'organizers/profiles');
+            }
+
             const profileRef = doc(db, 'organizers', currentUser.uid);
             await setDoc(profileRef, {
                 ...settingsForm,
+                profileImage: profileImageUrl,
+                profileImageFile: null, // Don't save file object to DB
                 uid: currentUser.uid,
                 email: currentUser.email,
                 updatedAt: serverTimestamp(),
             }, { merge: true });
 
+            setSettingsForm(prev => ({ ...prev, profileImage: profileImageUrl, profileImageFile: null }));
             setSettingsSuccess(true);
             setTimeout(() => setSettingsSuccess(false), 3000);
         } catch (error) {
@@ -409,6 +428,32 @@ const OrganizerDashboard = () => {
             {/* Profile Info */}
             <div className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[6px_6px_0_var(--color-text-primary)]">
                 <h3 className="text-lg font-black uppercase mb-4 border-b-2 border-dashed pb-2">Profile Information</h3>
+
+                {/* Image Upload */}
+                <div className="mb-6 flex flex-col items-center">
+                    <div className="w-32 h-32 bg-gray-200 rounded-full border-4 border-black overflow-hidden mb-4 relative group">
+                        <img
+                            src={settingsForm.profileImageFile ? URL.createObjectURL(settingsForm.profileImageFile) : (settingsForm.profileImage || `https://api.dicebear.com/7.x/initials/svg?seed=${settingsForm.organizerName}`)}
+                            alt="Profile"
+                            className="w-full h-full object-cover"
+                        />
+                        <label className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                            <span className="text-white font-bold text-xs uppercase">Change</span>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                    if (e.target.files[0]) {
+                                        setSettingsForm({ ...settingsForm, profileImageFile: e.target.files[0] });
+                                    }
+                                }}
+                            />
+                        </label>
+                    </div>
+                    <p className="text-xs font-bold text-[var(--color-text-secondary)] uppercase">Click image to upload new</p>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Contact Person Name *</label>
@@ -475,6 +520,17 @@ const OrganizerDashboard = () => {
                             value={settingsForm.website}
                             onChange={handleSettingsChange}
                             placeholder="https://yourwebsite.com"
+                            className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold"
+                        />
+                    </div>
+                    <div className="md:col-span-2">
+                        <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Bio / About Description</label>
+                        <textarea
+                            name="bio"
+                            value={settingsForm.bio}
+                            onChange={handleSettingsChange}
+                            placeholder="Tell us about yourself or your organization..."
+                            rows="4"
                             className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-2 font-bold"
                         />
                     </div>

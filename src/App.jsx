@@ -3,10 +3,12 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import Events from './pages/Events';
 import EventDetails from './pages/EventDetails';
+import OrganizerPublicProfile from './pages/OrganizerPublicProfile';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import PaymentSuccess from './pages/PaymentSuccess';
 import MyTickets from './pages/MyTickets';
+import ResellMarketplace from './pages/ResellMarketplace';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -40,6 +42,7 @@ import NotFound from './pages/NotFound';
 import ServerError from './pages/ServerError';
 import Maintenance from './pages/Maintenance';
 import SeatSelection from './pages/SeatSelection';
+import VerifyTicket from './pages/VerifyTicket';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BubbleMenu from './components/react-bits/BubbleMenu';
@@ -60,10 +63,12 @@ function App() {
                     <Route path="/" element={<Home />} />
                     <Route path="/events" element={<Events />} />
                     <Route path="/events/:id" element={<EventDetails />} />
+                    <Route path="/organizer-public/:id" element={<OrganizerPublicProfile />} />
                     <Route path="/events/:id/seats" element={<SeatSelection />} />
                     <Route path="/cart" element={<Cart />} />
                     <Route path="/checkout" element={<Checkout />} />
                     <Route path="/payment/success" element={<PaymentSuccess />} />
+                    <Route path="/resell" element={<ResellMarketplace />} />
 
                     {/* User Auth Routes - Redirect if already logged in */}
                     <Route path="/login" element={
@@ -154,6 +159,9 @@ function App() {
                             <AdminSettings />
                         </AdminRoute>
                     } />
+
+                    {/* Verification Route */}
+                    <Route path="/verify/:bookingId" element={<VerifyTicket />} />
 
                     {/* Public Info Pages */}
                     <Route path="/about" element={<About />} />

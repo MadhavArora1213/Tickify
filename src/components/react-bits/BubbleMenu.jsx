@@ -33,6 +33,13 @@ const DEFAULT_ITEMS = [
         hoverStyles: { bgColor: '#ef4444', textColor: '#ffffff' }
     },
     {
+        label: 'Resale',
+        href: '/resell',
+        ariaLabel: 'Resale Market',
+        rotation: 8,
+        hoverStyles: { bgColor: '#ec4899', textColor: '#ffffff' }
+    },
+    {
         label: 'Profile',
         href: '#',
         ariaLabel: 'Profile',
@@ -209,6 +216,16 @@ export default function BubbleMenu({
             transform: scale(.94);
           }
         }
+        
+        .menu-btn {
+            --line-color: white;
+        }
+        :global([data-theme="dark"]) .menu-btn {
+            --line-color: black;
+        }
+        .menu-btn.open {
+            --line-color: white;
+        }
       `}</style>
 
             <nav className={containerClassName} style={style} aria-label="Main navigation">
@@ -320,19 +337,7 @@ export default function BubbleMenu({
                                 backgroundColor: isMenuOpen ? 'white' : 'var(--line-color)',
                                 transform: isMenuOpen ? 'translateY(4px) rotate(45deg)' : 'none'
                             }}
-                        >
-                            <style jsx>{`
-                                .menu-btn {
-                                    --line-color: white;
-                                }
-                                :global([data-theme="dark"]) .menu-btn {
-                                    --line-color: black;
-                                }
-                                .menu-btn.open {
-                                    --line-color: white;
-                                }
-                            `}</style>
-                        </span>
+                        />
                         <span
                             className="menu-line short block mx-auto rounded-[2px] transition-colors"
                             style={{

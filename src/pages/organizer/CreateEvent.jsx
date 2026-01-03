@@ -62,7 +62,11 @@ const CreateEvent = () => {
         bannerImageFile: null, // File object
 
         // Status
-        status: 'pending_approval'
+        status: 'pending_approval',
+
+        // Ticket ID Settings
+        ticketPrefix: '',
+        ticketPadding: 0
     });
 
     // Default ticket colors palette
@@ -176,14 +180,30 @@ const CreateEvent = () => {
                     ticketTypeIndex: selectedTicketForPaint
                 };
             } else {
-                // Cycle Mode: Seat -> Aisle -> Blocked
-                const currentType = newGrid[r][c].type;
-                let newType = 'seat';
-                if (currentType === 'seat') newType = 'aisle';
-                else if (currentType === 'aisle') newType = 'blocked';
-                else newType = 'seat';
+                // Cycle Mode: Seat types -> Aisle -> Blocked -> Seat type 1
+                const currentSeat = newGrid[r][c];
+                const currentType = currentSeat.type;
+                const currentTicketIndex = currentSeat.ticketTypeIndex || 0;
+                const totalTickets = prev.tickets.length;
 
-                newGrid[r][c] = { ...newGrid[r][c], type: newType };
+                if (currentType === 'seat') {
+                    if (currentTicketIndex < totalTickets - 1) {
+                        // Move to next ticket type
+                        newGrid[r][c] = {
+                            ...currentSeat,
+                            ticketTypeIndex: currentTicketIndex + 1
+                        };
+                    } else {
+                        // End of tickets -> Aisle
+                        newGrid[r][c] = { ...currentSeat, type: 'aisle' };
+                    }
+                } else if (currentType === 'aisle') {
+                    // Aisle -> Blocked
+                    newGrid[r][c] = { ...currentSeat, type: 'blocked' };
+                } else {
+                    // Blocked -> First Ticket
+                    newGrid[r][c] = { ...currentSeat, type: 'seat', ticketTypeIndex: 0 };
+                }
             }
 
             let newCapacity = 0;
@@ -195,26 +215,7 @@ const CreateEvent = () => {
         });
     };
 
-    // Right-click: Cycle through ticket types for the seat
-    const cycleSeatTicketType = (e, r, c) => {
-        e.preventDefault(); // Prevent context menu
-        setFormData(prev => {
-            const newGrid = [...prev.seatingGrid];
-            const seat = newGrid[r][c];
 
-            // Only allow ticket type change for actual seats
-            if (seat.type !== 'seat') return prev;
-
-            // Get current ticket type index, default to 0 (first ticket)
-            const currentIndex = seat.ticketTypeIndex || 0;
-            // Cycle to next ticket type
-            const nextIndex = (currentIndex + 1) % prev.tickets.length;
-
-            newGrid[r][c] = { ...newGrid[r][c], ticketTypeIndex: nextIndex };
-
-            return { ...prev, seatingGrid: newGrid };
-        });
-    };
 
     // --- Handlers ---
     const handleInputChange = (e) => {
@@ -359,29 +360,27 @@ const CreateEvent = () => {
                 idProofUrl = await uploadToS3(formData.idProofFile, 'organizers/id_proofs');
             }
 
-            // Generate Event Code range for new events
-            // Format: YYYYMMDD + TYPE (ON/OFF/HYB) + SEQUENCE
-            let eventCodePrefix = formData.eventCodePrefix;
-            let eventCodeFirst = formData.eventCodeFirst;
-            let eventCodeLast = formData.eventCodeLast;
+            // Generate/Update Ticket numbering settings
+            let ticketPrefix = formData.ticketPrefix;
+            const capacity = formData.totalCapacity || formData.tickets.reduce((sum, t) => sum + parseInt(t.quantity || 0), 0);
+            const padLength = formData.ticketPadding || String(capacity).length || 2;
 
-            if (!isEditMode || !eventCodePrefix) {
-                const dateStr = formData.startDate.replace(/-/g, ''); // YYYYMMDD
+            if (!ticketPrefix) {
+                const dateStr = (formData.startDate || '').replace(/-/g, '');
                 const typeCode = formData.eventType === 'Online' ? 'ON' :
                     formData.eventType === 'Hybrid' ? 'HYB' : 'OFF';
-                const capacity = formData.totalCapacity || formData.tickets.reduce((sum, t) => sum + parseInt(t.quantity || 0), 0);
-                const padLength = String(capacity).length;
-
-                eventCodePrefix = `${dateStr}${typeCode}`;
-                eventCodeFirst = `${eventCodePrefix}${String(1).padStart(padLength, '0')}`;
-                eventCodeLast = `${eventCodePrefix}${String(capacity).padStart(padLength, '0')}`;
+                ticketPrefix = `${dateStr}${typeCode}`;
             }
+
+            const eventCodeFirst = `${ticketPrefix}${String(1).padStart(padLength, '0')}`;
+            const eventCodeLast = `${ticketPrefix}${String(capacity).padStart(padLength, '0')}`;
 
             // Preparing data
             const eventData = {
                 organizerId: currentUser.uid,
                 ...formData,
-                eventCodePrefix,
+                ticketPrefix,
+                ticketPadding: padLength,
                 eventCodeFirst,
                 eventCodeLast,
                 category: formData.category === 'Other' ? (formData.customCategory || 'Other') : formData.category,
@@ -629,23 +628,25 @@ const CreateEvent = () => {
                                     {/* Enhanced Instructions */}
                                     <div className="bg-yellow-50 border-2 border-yellow-400 p-3 text-xs">
                                         <p className="font-black text-yellow-800 mb-2">📖 HOW TO SET SEATS:</p>
-                                        <ul className="space-y-2 text-gray-700">
-                                            <li className="flex items-start gap-2">
-                                                <span className="font-black text-green-600">1 Click:</span>
-                                                <span>Seat → Aisle (gap/walkway)</span>
-                                            </li>
-                                            <li className="flex items-start gap-2">
-                                                <span className="font-black text-orange-600">2 Clicks:</span>
-                                                <span>Aisle → Blocked (unavailable)</span>
-                                            </li>
-                                            <li className="flex items-start gap-2">
-                                                <span className="font-black text-blue-600">3 Clicks:</span>
-                                                <span>Blocked → Back to Seat</span>
-                                            </li>
-                                        </ul>
-                                        <div className="mt-3 pt-2 border-t border-yellow-300">
-                                            <p className="font-black text-purple-700">🖱️ Right-Click:</p>
-                                            <span>Change Ticket Type (VIP, General, etc.)</span>
+                                        <div className="space-y-1 text-gray-700">
+                                            <p className="font-bold">Click repeatedly to cycle:</p>
+                                            <div className="pl-2 border-l-2 border-yellow-300">
+                                                {/* Dynamic list of ticket types */}
+                                                {formData.tickets.map((t, i) => (
+                                                    <div key={i} className="flex items-center gap-2">
+                                                        <span className="font-black" style={{ color: t.color }}>{i + 1} Click{i > 0 && 's'}:</span>
+                                                        <span>{t.name || `Ticket Type ${i + 1}`} ({t.price > 0 ? `$${t.price}` : 'Free'})</span>
+                                                    </div>
+                                                ))}
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="font-black text-gray-500">Next Click:</span>
+                                                    <span>Aisle (Gap)</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-black text-red-500">Next Click:</span>
+                                                    <span>Blocked</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -706,8 +707,7 @@ const CreateEvent = () => {
                                                         <div
                                                             key={seat.id}
                                                             onClick={() => toggleSeatType(rIndex, cIndex)}
-                                                            onContextMenu={(e) => cycleSeatTicketType(e, rIndex, cIndex)}
-                                                            title={`${seat.label} - ${seat.type === 'seat' ? (ticketType?.name || 'General') : seat.type} (Right-click to change ticket type)`}
+                                                            title={`${seat.label} - ${seat.type === 'seat' ? (ticketType?.name || 'General') : seat.type}`}
                                                             className={`
                                                                 relative w-8 h-8 md:w-10 md:h-10 flex items-center justify-center text-[10px] cursor-pointer select-none transition-all duration-150
                                                                 ${seat.type === 'aisle'
@@ -749,37 +749,71 @@ const CreateEvent = () => {
             )}
         </div>
     );
-
     const renderStep3 = () => {
+
         // Calculate preview event code range
-        const dateStr = formData.startDate ? formData.startDate.replace(/-/g, '') : 'YYYYMMDD';
-        const typeCode = formData.eventType === 'Online' ? 'ON' :
-            formData.eventType === 'Hybrid' ? 'HYB' : 'OFF';
         const totalTickets = formData.tickets.reduce((sum, t) => sum + parseInt(t.quantity || 0), 0);
         const capacity = formData.totalCapacity || totalTickets || 1;
+        const padLength = formData.ticketPadding || String(capacity).length || 2;
 
-        // Generate code range like 20251226OFF01 to 20251226OFF100
-        const firstCode = `${dateStr}${typeCode}${String(1).padStart(String(capacity).length, '0')}`;
-        const lastCode = `${dateStr}${typeCode}${String(capacity).padStart(String(capacity).length, '0')}`;
+        let prefix = formData.ticketPrefix;
+        if (!prefix) {
+            const dateStr = formData.startDate ? formData.startDate.replace(/-/g, '') : 'YYYYMMDD';
+            const typeCode = formData.eventType === 'Online' ? 'ON' :
+                formData.eventType === 'Hybrid' ? 'HYB' : 'OFF';
+            prefix = `${dateStr}${typeCode}`;
+        }
+
+        const firstCode = `${prefix}${String(1).padStart(padLength, '0')}`;
+        const lastCode = `${prefix}${String(capacity).padStart(padLength, '0')}`;
 
         return (
             <div className="space-y-6 animate-fade-in-up">
                 <h2 className="text-2xl font-black uppercase text-[var(--color-text-primary)]">Step 2: Tickets</h2>
 
-                {/* Event Code Preview - Shows Range */}
-                <div className="bg-gradient-to-r from-gray-100 to-gray-200 border-2 border-gray-400 p-4">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-black uppercase text-gray-500">🎫 Ticket Code Range (Auto-Generated)</span>
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 font-bold rounded">{capacity} Tickets</span>
+                {/* Ticket ID Settings - User Requested customization */}
+                <div className="bg-[var(--color-bg-surface)] border-4 border-black p-6 shadow-[8px_8px_0_black]">
+                    <h3 className="text-lg font-black uppercase mb-4 flex items-center gap-2">
+                        🆔 Ticket Number Settings
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label className="block text-xs font-black uppercase text-gray-500 mb-1">Custom Ticket Prefix</label>
+                            <input
+                                type="text"
+                                value={formData.ticketPrefix}
+                                onChange={(e) => setFormData(p => ({ ...p, ticketPrefix: e.target.value.toUpperCase() }))}
+                                placeholder={prefix}
+                                className="w-full neo-input bg-white border-2 border-black px-4 py-3 font-mono font-black placeholder-gray-300"
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1 italic">Example: TICK-2025- (Leave empty for default)</p>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-black uppercase text-gray-500 mb-1">Padding Zeros</label>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="number"
+                                    value={formData.ticketPadding || padLength}
+                                    onChange={(e) => setFormData(p => ({ ...p, ticketPadding: parseInt(e.target.value) }))}
+                                    min="1"
+                                    max="10"
+                                    className="w-20 neo-input bg-white border-2 border-black px-4 py-3 font-black"
+                                />
+                                <span className="text-xs font-bold text-gray-600">Digits (Recommended: {String(capacity).length})</span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="bg-white border-2 border-gray-400 px-4 py-2 font-mono font-black text-gray-800">{firstCode}</div>
-                        <span className="text-gray-400 font-black">→</span>
-                        <div className="bg-white border-2 border-gray-400 px-4 py-2 font-mono font-black text-gray-800">{lastCode}</div>
-                    </div>
-                    <div className="mt-3 text-xs text-gray-500 flex gap-4">
-                        <span>📅 Date: {formData.startDate || 'Not set'}</span>
-                        <span>🏷️ Type: {formData.eventType}</span>
+
+                    <div className="bg-black text-white p-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Live Preview</span>
+                            <span className="text-[10px] font-bold bg-white/20 px-2 py-0.5">{capacity} Tickets Total</span>
+                        </div>
+                        <div className="flex items-center justify-center gap-4 py-2 border-t border-white/10">
+                            <div className="bg-white/10 px-4 py-2 font-mono font-black text-lg tracking-tighter text-[var(--color-accent-primary)]">{firstCode}</div>
+                            <span className="text-white/30 font-black">TO</span>
+                            <div className="bg-white/10 px-4 py-2 font-mono font-black text-lg tracking-tighter text-[var(--color-accent-primary)]">{lastCode}</div>
+                        </div>
                     </div>
                 </div>
 

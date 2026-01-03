@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import ShinyText from '../components/react-bits/ShinyText';
 import SpotlightCard from '../components/react-bits/SpotlightCard';
 import { doc, getDoc } from 'firebase/firestore';
@@ -7,6 +7,7 @@ import { db } from '../config/firebase';
 
 const EventDetails = () => {
     const { id } = useParams();
+    const navigate = useNavigate();
     const [event, setEvent] = useState(null);
     const [loading, setLoading] = useState(true);
     const [ticketQuantity, setTicketQuantity] = useState(1);
@@ -20,11 +21,41 @@ const EventDetails = () => {
                 const docSnap = await getDoc(docRef);
 
                 if (docSnap.exists()) {
-                    const eventData = { id: docSnap.id, ...docSnap.data() };
+                    const data = docSnap.data();
+
+                    let organizerName = 'Tickify Organizer';
+                    if (data.organizerId) {
+                        try {
+                            const orgRef = doc(db, 'organizers', data.organizerId);
+                            const orgSnap = await getDoc(orgRef);
+                            if (orgSnap.exists()) {
+                                organizerName = orgSnap.data().name || orgSnap.data().organizerName || organizerName;
+                            }
+                        } catch (err) {
+                            console.error("Error fetching organizer details:", err);
+                        }
+                    }
+
+                    const eventData = {
+                        id: docSnap.id,
+                        ...data,
+                        title: data.eventTitle || data.title,
+                        description: data.eventDescription || data.description,
+                        image: data.bannerUrl || data.image,
+                        date: data.startDate || data.date,
+                        time: data.startTime || data.time,
+                        location: data.venueName ? `${data.venueName}, ${data.city}` : (data.location || data.city || 'Online'),
+                        organizer: organizerName,
+                        tickets: (data.tickets || []).map(t => ({
+                            ...t,
+                            features: Array.isArray(t.features) ? t.features : (t.description ? [t.description] : [])
+                        }))
+                    };
                     setEvent(eventData);
+
                     // Select first ticket type by default if available
                     if (eventData.tickets && eventData.tickets.length > 0) {
-                        setSelectedTicket(eventData.tickets[0].id);
+                        setSelectedTicket(eventData.tickets[0].id || 0); // Use index 0 if id missing
                     }
                 } else {
                     console.log("No such event!");
@@ -60,7 +91,7 @@ const EventDetails = () => {
         );
     }
 
-    const currentTicketPrice = event.tickets?.find(t => t.id === selectedTicket)?.price || 0;
+    const currentTicketPrice = event.tickets?.find((t, index) => (t.id || index) === selectedTicket)?.price || 0;
     const totalPrice = currentTicketPrice * ticketQuantity;
 
     return (
@@ -145,7 +176,16 @@ const EventDetails = () => {
                                 <h3 className="text-sm font-black text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">Organizer</h3>
                                 <p className="text-2xl font-black text-[var(--color-text-primary)]">{event.organizer || "Unknown Organizer"}</p>
                             </div>
-                            <button className="neo-btn px-6 py-3 bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm">
+                            <button
+                                onClick={() => {
+                                    if (event.organizerId) {
+                                        navigate(`/organizer-public/${event.organizerId}`);
+                                    } else {
+                                        alert("Organizer profile is private or not linked.");
+                                    }
+                                }}
+                                className="neo-btn px-6 py-3 bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm"
+                            >
                                 View Profile
                             </button>
                         </div>
@@ -163,15 +203,15 @@ const EventDetails = () => {
                                 {event.tickets && event.tickets.length > 0 ? (
                                     <>
                                         <div className="space-y-4 mb-8">
-                                            {event.tickets.map(ticket => (
+                                            {event.tickets.map((ticket, index) => (
                                                 <div
-                                                    key={ticket.id}
-                                                    onClick={() => setSelectedTicket(ticket.id)}
-                                                    className={`cursor-pointer rounded-xl p-4 border-4 transition-all ${selectedTicket === ticket.id ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 shadow-[4px_4px_0_var(--color-accent-primary)] translate-x-[-2px] translate-y-[-2px]' : 'border-[var(--color-neutral-200)] hover:border-black hover:shadow-[4px_4px_0_black]'}`}
+                                                    key={ticket.id || index}
+                                                    onClick={() => setSelectedTicket(ticket.id || index)}
+                                                    className={`cursor-pointer rounded-xl p-4 border-4 transition-all ${(selectedTicket === (ticket.id || index)) ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 shadow-[4px_4px_0_var(--color-accent-primary)] translate-x-[-2px] translate-y-[-2px]' : 'border-[var(--color-neutral-200)] hover:border-black hover:shadow-[4px_4px_0_black]'}`}
                                                 >
                                                     <div className="flex justify-between items-center mb-2">
-                                                        <span className={`font-black uppercase ${selectedTicket === ticket.id ? 'text-[var(--color-accent-primary)]' : 'text-[var(--color-text-primary)]'}`}>{ticket.name}</span>
-                                                        <span className="text-xl font-black text-[var(--color-text-primary)]">${ticket.price}</span>
+                                                        <span className={`font-black uppercase ${(selectedTicket === (ticket.id || index)) ? 'text-[var(--color-accent-primary)]' : 'text-[var(--color-text-primary)]'}`}>{ticket.name}</span>
+                                                        <span className="text-xl font-black text-[var(--color-text-primary)]">₹{ticket.price}</span>
                                                     </div>
                                                     {ticket.features && (
                                                         <ul className="text-xs font-bold text-[var(--color-text-muted)] space-y-1">
@@ -209,9 +249,28 @@ const EventDetails = () => {
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-center text-xl font-black uppercase">
                                                 <span className="text-[var(--color-text-secondary)]">Total</span>
-                                                <span className="text-3xl text-[var(--color-text-primary)]">${totalPrice}</span>
+                                                <span className="text-3xl text-[var(--color-text-primary)]">₹{totalPrice}</span>
                                             </div>
-                                            <button className="neo-btn w-full py-4 bg-[var(--color-accent-primary)] text-white text-xl shadow-[6px_6px_0_black] hover:shadow-[8px_8px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-[0_0_0_black] active:translate-x-[0] active:translate-y-[0]">
+                                            <button
+                                                onClick={() => {
+                                                    if (event.seatingType === 'Reserved' || (event.seatingGrid && event.seatingGrid.length > 0)) {
+                                                        navigate(`/events/${event.id}/seats`);
+                                                    } else {
+                                                        const ticket = event.tickets.find((t, idx) => (t.id || idx) === selectedTicket);
+                                                        navigate('/checkout', {
+                                                            state: {
+                                                                event: event,
+                                                                items: [{
+                                                                    ...ticket,
+                                                                    quantity: ticketQuantity,
+                                                                    totalPrice: totalPrice // Use the calculated total price
+                                                                }]
+                                                            }
+                                                        });
+                                                    }
+                                                }}
+                                                className="neo-btn w-full py-4 bg-[var(--color-accent-primary)] text-white text-xl shadow-[6px_6px_0_black] hover:shadow-[8px_8px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-[0_0_0_black] active:translate-x-[0] active:translate-y-[0]"
+                                            >
                                                 CHECKOUT NOW -&gt;
                                             </button>
                                             <p className="text-xs text-center font-bold text-[var(--color-text-muted)] mt-2">

@@ -1,19 +1,85 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 
 const ScanResult = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    // Simulate getting status from URL or state, default to 'valid' for demo
-    const status = searchParams.get('status') || 'valid';
-    const isSuccess = status === 'valid';
+    const bookingId = searchParams.get('bookingId');
+
+    const [booking, setBooking] = useState(null);
+    const [event, setEvent] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const verifyTicket = async () => {
+            if (!bookingId) {
+                setError("No booking ID provided");
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const bookingRef = doc(db, 'bookings', bookingId);
+                const bookingSnap = await getDoc(bookingRef);
+
+                if (bookingSnap.exists()) {
+                    const bookingData = bookingSnap.data();
+
+                    setBooking({ id: bookingId, ...bookingData });
+
+                    if (bookingData.eventId) {
+                        try {
+                            const eventRef = doc(db, 'events', bookingData.eventId);
+                            const eventSnap = await getDoc(eventRef);
+                            if (eventSnap.exists()) {
+                                setEvent(eventSnap.data());
+                            }
+                        } catch (e) {
+                            console.error("Error fetching event:", e);
+                        }
+                    }
+
+                    // Mark as scanned in DB if it's the first time
+                    if (bookingData.status !== 'scanned') {
+                        await updateDoc(bookingRef, {
+                            status: 'scanned',
+                            scannedAt: serverTimestamp()
+                        });
+                    }
+
+                } else {
+                    setError("Invalid Ticket: Booking not found");
+                }
+            } catch (err) {
+                console.error("Verification error:", err);
+                setError("Error verifying ticket");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        verifyTicket();
+    }, [bookingId]);
 
     const handleNextScan = () => {
         navigate('/scanner/scan');
     };
 
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-black flex items-center justify-center text-white">
+                <div className="text-2xl font-black animate-pulse uppercase">Verifying...</div>
+            </div>
+        );
+    }
+
+    const isSuccess = !error && booking && (booking.status === 'confirmed' || booking.status === 'scanned' || booking.scannedAt);
+
     return (
-        <div className={`min-h-screen flex flex-col items-center justify-between p-6 py-12 text-center transition-colors duration-300 ${isSuccess ? 'bg-green-400' : 'bg-red-400'}`}>
+        <div className={`min-h-screen flex flex-col items-center justify-between p-6 py-12 text-center transition-colors duration-300 ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`}>
 
             <div className="w-full max-w-sm bg-white border-4 border-black shadow-[12px_12px_0_rgba(0,0,0,0.5)] p-8 relative overflow-hidden animate-bounce-in">
 
@@ -25,28 +91,38 @@ const ScanResult = () => {
                 {/* Status Message */}
                 <h1 className="text-4xl font-black uppercase mb-2">{isSuccess ? 'Valid Ticket' : 'Invalid Ticket'}</h1>
                 <p className="text-gray-500 font-bold uppercase tracking-widest text-xs mb-8">
-                    {isSuccess ? 'Entry Authorized' : 'Entry Denied - Expired/Duplicate'}
+                    {isSuccess ? (booking.scannedAt ? 'Entry Authorized (Already Scanned)' : 'Entry Authorized') : (error || 'Entry Denied')}
                 </p>
 
                 {/* Attendee Details */}
                 <div className="border-t-2 border-dashed border-black pt-6 space-y-4 text-left">
                     <div>
                         <p className="text-[10px] font-black uppercase text-gray-500">Attendee</p>
-                        <p className="text-xl font-black text-black">Alex Johnson</p>
+                        <p className="text-xl font-black text-black">{booking?.userName || 'Unknown Guest'}</p>
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black uppercase text-gray-500">Event</p>
+                        <p className="text-lg font-bold text-black uppercase">{event?.eventTitle || event?.title || 'Event Name'}</p>
                     </div>
                     <div className="flex justify-between">
                         <div>
-                            <p className="text-[10px] font-black uppercase text-gray-500">Ticket Type</p>
-                            <p className="text-lg font-bold text-black">VIP Access</p>
+                            <p className="text-[10px] font-black uppercase text-gray-500">Tickets</p>
+                            <div className="space-y-1 mt-1">
+                                {booking?.items?.map((item, i) => (
+                                    <p key={i} className="text-sm font-bold text-black">
+                                        {item.name || item.ticketName} {item.label ? `(Seat: ${item.label})` : `x${item.quantity}`}
+                                    </p>
+                                ))}
+                            </div>
                         </div>
                         <div className="text-right">
-                            <p className="text-[10px] font-black uppercase text-gray-500">Scan Time</p>
-                            <p className="text-lg font-bold text-black">20:42</p>
+                            <p className="text-[10px] font-black uppercase text-gray-500">Reference</p>
+                            <p className="text-sm font-mono font-bold text-black underline">{booking?.bookingReference || booking?.id?.slice(0, 8).toUpperCase()}</p>
                         </div>
                     </div>
                 </div>
 
-                {isSuccess && (
+                {isSuccess && booking?.items?.some(i => i.name?.toLowerCase().includes('vip')) && (
                     <div className="absolute -right-12 -top-12 bg-yellow-400 text-black font-black text-[10px] py-1 px-12 rotate-45 border-2 border-black shadow-sm">
                         VIP
                     </div>
@@ -63,8 +139,8 @@ const ScanResult = () => {
                 </button>
 
                 {!isSuccess && (
-                    <button className="w-full py-3 bg-white/20 text-black font-black uppercase border-2 border-black hover:bg-white/40 transition-colors">
-                        Flag Issue
+                    <button onClick={() => navigate('/scanner/scan')} className="w-full py-3 bg-white/20 text-black font-black uppercase border-2 border-black hover:bg-white/40 transition-colors">
+                        Back to Scanner
                     </button>
                 )}
 
