@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 const Footer = () => {
     return (
-        <footer className="bg-[var(--color-bg-secondary)] pt-16 pb-8 border-t-4 border-black relative overflow-hidden">
+        <footer className="bg-[var(--color-bg-secondary)] pt-16 pb-24 md:pb-8 border-t-4 border-black relative overflow-hidden">
             <div className="container mx-auto px-4 relative z-10">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
                     {/* Brand */}
