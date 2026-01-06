@@ -30,6 +30,7 @@ const Events = () => {
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'map'
     const [searchTerm, setSearchTerm] = useState('');
     const [locationFilter, setLocationFilter] = useState('All');
+    const [showFilters, setShowFilters] = useState(false);
 
     useEffect(() => {
         const fetchEvents = async () => {
@@ -129,8 +130,17 @@ const Events = () => {
                         <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 text-[var(--color-text-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </div>
 
+                    {/* Mobile Filter Toggle */}
+                    <button
+                        className="lg:hidden w-full neo-btn bg-[var(--color-bg-surface)] border-2 border-[var(--color-text-primary)] py-3 font-black uppercase flex justify-between px-4 items-center"
+                        onClick={() => setShowFilters(!showFilters)}
+                    >
+                        <span>{showFilters ? 'Hide Filters' : 'Show Filters'}</span>
+                        <svg className={`w-5 h-5 transition-transform ${showFilters ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+
                     {/* Filter Card */}
-                    <div className="neo-card bg-[var(--color-bg-surface)] p-6 sticky top-32 border-2 border-[var(--color-text-primary)]">
+                    <div className={`neo-card bg-[var(--color-bg-surface)] p-6 sticky top-32 border-2 border-[var(--color-text-primary)] ${showFilters ? 'block' : 'hidden'} lg:block`}>
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-extrabold text-[var(--color-text-primary)] uppercase">Filters</h3>
                             <button

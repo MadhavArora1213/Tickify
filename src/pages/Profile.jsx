@@ -346,7 +346,7 @@ const Profile = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[var(--color-bg-primary)] pt-36 pb-24">
+        <div className="min-h-screen bg-[var(--color-bg-primary)] pt-24 md:pt-36 pb-24">
             <div className="container mx-auto px-4">
                 <h1 className="text-4xl md:text-6xl font-black mb-12 uppercase text-center text-[var(--color-text-primary)]">
                     <span className="block dark:hidden" style={{ WebkitTextStroke: '2px black', color: 'white', textShadow: '4px 4px 0px #000' }}>My Profile</span>

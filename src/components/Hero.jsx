@@ -34,7 +34,7 @@ const Hero = () => {
     const laserColor = theme === 'dark' ? '#2563EB' : '#4F46E5';
 
     return (
-        <section className="relative pt-36 pb-20 overflow-hidden bg-[var(--color-bg-primary)]">
+        <section className="relative pt-24 md:pt-36 pb-12 md:pb-20 overflow-hidden bg-[var(--color-bg-primary)]">
             {/* LaserFlow Background */}
             <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
                 <LaserFlow

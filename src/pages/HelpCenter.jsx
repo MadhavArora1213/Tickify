@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 const HelpCenter = () => {
     return (
-        <div className="min-h-screen bg-[var(--color-bg-primary)] pt-24 pb-12 px-4">
+        <div className="min-h-screen bg-[var(--color-bg-primary)] pt-32 md:pt-40 pb-12 px-4">
             <div className="max-w-5xl mx-auto">
                 <h1 className="text-4xl md:text-6xl font-black uppercase text-[var(--color-text-primary)] mb-8 text-center">
                     Help Center

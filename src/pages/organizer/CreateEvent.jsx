@@ -454,7 +454,7 @@ const CreateEvent = () => {
                 {/* Event Type - Online/Offline/Hybrid */}
                 <div>
                     <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-2">Event Type *</label>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         {['Offline', 'Online', 'Hybrid'].map(type => (
                             <button
                                 key={type}
@@ -478,7 +478,7 @@ const CreateEvent = () => {
                         {formData.eventType === 'Hybrid' && '📍 Both physical venue and online streaming.'}
                     </p>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Start Date *</label>
                         <input name="startDate" value={formData.startDate} onChange={handleInputChange} type="date" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold" />
@@ -542,7 +542,7 @@ const CreateEvent = () => {
                             <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Address</label>
                             <input name="venueAddress" value={formData.venueAddress} onChange={handleInputChange} type="text" placeholder="Street Address" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold" />
                         </div>
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">City</label>
                                 <input name="city" value={formData.city} onChange={handleInputChange} type="text" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold" />

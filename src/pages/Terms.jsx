@@ -2,7 +2,7 @@ import React from 'react';
 
 const Terms = () => {
     return (
-        <div className="min-h-screen bg-[var(--color-bg-primary)] pt-24 pb-12 px-4">
+        <div className="min-h-screen bg-[var(--color-bg-primary)] pt-32 md:pt-40 pb-12 px-4">
             <div className="max-w-4xl mx-auto">
                 <h1 className="text-4xl md:text-6xl font-black uppercase text-[var(--color-text-primary)] mb-8 border-b-4 border-[var(--color-text-primary)] pb-4">
                     Terms & Conditions

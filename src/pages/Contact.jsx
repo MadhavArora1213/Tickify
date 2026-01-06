@@ -111,7 +111,7 @@ const Contact = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[var(--color-bg-primary)] pt-24 pb-12 px-4">
+        <div className="min-h-screen bg-[var(--color-bg-primary)] pt-32 md:pt-40 pb-12 px-4">
             {/* Toast Notification */}
             {toast.show && (
                 <div className={`fixed top-24 right-4 z-50 p-4 border-4 border-black shadow-[6px_6px_0_black] font-bold max-w-md animate-fade-in-up ${toast.type === 'success' ? 'bg-green-400 text-black' : 'bg-red-400 text-white'
@@ -133,7 +133,7 @@ const Contact = () => {
 
                 {/* Left: Info */}
                 <div className="space-y-8">
-                    <h1 className="text-6xl font-black uppercase text-[var(--color-text-primary)] leading-none">
+                    <h1 className="text-5xl md:text-6xl font-black uppercase text-[var(--color-text-primary)] leading-none">
                         Let's <br />
                         <span className="text-yellow-400 text-stroke-3 text-stroke-black">Talk.</span>
                     </h1>
@@ -142,15 +142,15 @@ const Contact = () => {
                     </p>
 
                     <div className="neo-card bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] p-6 flex items-center gap-6 shadow-[8px_8px_0_var(--color-text-primary)]">
-                        <div className="w-12 h-12 bg-blue-500 border-2 border-black flex items-center justify-center text-2xl">📧</div>
-                        <div>
+                        <div className="w-12 h-12 bg-blue-500 border-2 border-black flex items-center justify-center text-2xl shrink-0">📧</div>
+                        <div className="overflow-hidden">
                             <p className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Email Us</p>
-                            <a href="mailto:Contacttickify@gmail.com" className="text-xl font-black text-[var(--color-text-primary)] hover:underline">Contacttickify@gmail.com</a>
+                            <a href="mailto:Contacttickify@gmail.com" className="text-lg md:text-xl font-black text-[var(--color-text-primary)] hover:underline break-all">Contacttickify@gmail.com</a>
                         </div>
                     </div>
 
                     <div className="neo-card bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] p-6 flex items-center gap-6 shadow-[8px_8px_0_var(--color-text-primary)]">
-                        <div className="w-12 h-12 bg-green-500 border-2 border-black flex items-center justify-center text-2xl">📱</div>
+                        <div className="w-12 h-12 bg-green-500 border-2 border-black flex items-center justify-center text-2xl shrink-0">📱</div>
                         <div>
                             <p className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Call Us</p>
                             <div className="flex flex-col">
@@ -161,7 +161,7 @@ const Contact = () => {
                     </div>
 
                     <div className="neo-card bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] p-6 flex items-center gap-6 shadow-[8px_8px_0_var(--color-text-primary)]">
-                        <div className="w-12 h-12 bg-pink-500 border-2 border-black flex items-center justify-center text-2xl">🌐</div>
+                        <div className="w-12 h-12 bg-pink-500 border-2 border-black flex items-center justify-center text-2xl shrink-0">🌐</div>
                         <div>
                             <p className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Follow Us</p>
                             <div className="flex gap-4 mt-1">
@@ -173,7 +173,7 @@ const Contact = () => {
                     </div>
 
                     <div className="neo-card bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] p-6 flex items-center gap-6 shadow-[8px_8px_0_var(--color-text-primary)]">
-                        <div className="w-12 h-12 bg-red-500 border-2 border-black flex items-center justify-center text-2xl">📍</div>
+                        <div className="w-12 h-12 bg-red-500 border-2 border-black flex items-center justify-center text-2xl shrink-0">📍</div>
                         <div>
                             <p className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Visit Us</p>
                             <p className="text-xl font-black text-[var(--color-text-primary)]">Bangalore, India</p>
@@ -181,7 +181,7 @@ const Contact = () => {
                     </div>
 
                     <div className="neo-card bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] p-6 flex items-center gap-6 shadow-[8px_8px_0_var(--color-text-primary)]">
-                        <div className="w-12 h-12 bg-purple-500 border-2 border-black flex items-center justify-center text-2xl">⏰</div>
+                        <div className="w-12 h-12 bg-purple-500 border-2 border-black flex items-center justify-center text-2xl shrink-0">⏰</div>
                         <div>
                             <p className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Response Time</p>
                             <p className="text-xl font-black text-[var(--color-text-primary)]">Within 24-48 hours</p>
@@ -194,7 +194,7 @@ const Contact = () => {
                     <h2 className="text-2xl font-black uppercase mb-6">Send us a Message</h2>
 
                     <form onSubmit={handleSubmit} className="space-y-5">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">First Name *</label>
                                 <input
@@ -219,7 +219,7 @@ const Contact = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Email *</label>
                                 <input

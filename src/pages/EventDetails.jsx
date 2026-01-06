@@ -95,38 +95,41 @@ const EventDetails = () => {
     const totalPrice = currentTicketPrice * ticketQuantity;
 
     return (
-        <div className="min-h-screen bg-[var(--color-bg-primary)] pb-20 pt-36">
+        <div className="min-h-screen bg-[var(--color-bg-primary)] pb-20 pt-24 md:pt-36">
             {/* Banner */}
-            <div className="relative h-[50vh] w-full mx-auto container px-4 mb-8">
-                <div className="w-full h-full rounded-3xl overflow-hidden border-4 border-black shadow-[12px_12px_0_black] relative group">
-                    {/* Image */}
-                    <img
-                        src={event.image || "https://via.placeholder.com/1200x600?text=No+Image"}
-                        alt={event.title}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    {/* Overlay Content */}
-                    <div className="absolute bottom-0 left-0 w-full z-20 p-8 bg-gradient-to-t from-black via-black/80 to-transparent">
+            <div className="relative w-full mx-auto container px-4 mb-8">
+                <div className="w-full h-auto md:aspect-[21/9] rounded-3xl overflow-hidden border-4 border-black shadow-[12px_12px_0_black] relative group bg-black flex flex-col md:block">
+                    {/* Image Container */}
+                    <div className="w-full aspect-video md:w-full md:h-full md:absolute md:inset-0 bg-black">
+                        <img
+                            src={event.image || "https://via.placeholder.com/1200x600?text=No+Image"}
+                            alt={event.title}
+                            className="w-full h-full object-contain"
+                        />
+                    </div>
+
+                    {/* Content (Stacked on mobile, Overlay on desktop) */}
+                    <div className="relative md:absolute bottom-0 left-0 w-full z-20 p-6 md:p-8 bg-black md:bg-gradient-to-t md:from-black md:via-black/80 md:to-transparent border-t-2 md:border-t-0 border-[var(--color-bg-secondary)] md:border-none">
                         <div className="max-w-4xl">
-                            <span className="inline-block px-4 py-2 bg-[var(--color-accent-primary)] text-white text-sm font-black uppercase tracking-wider border-2 border-white shadow-[4px_4px_0_white] mb-4 transform -rotate-2">
+                            <span className="inline-block px-3 py-1 md:px-4 md:py-2 bg-[var(--color-accent-primary)] text-white text-xs md:text-sm font-black uppercase tracking-wider border-2 border-white shadow-[2px_2px_0_white] md:shadow-[4px_4px_0_white] mb-3 md:mb-4 transform -rotate-2">
                                 {event.category || 'Event'}
                             </span>
-                            <h1 className="text-4xl md:text-6xl font-black text-white mb-4 uppercase drop-shadow-[4px_4px_0_black]">
+                            <h1 className="text-2xl md:text-5xl lg:text-6xl font-black text-white mb-3 md:mb-4 uppercase drop-shadow-[2px_2px_0_black] md:drop-shadow-[4px_4px_0_black] break-words leading-tight">
                                 {event.title}
                             </h1>
-                            <div className="flex flex-wrap items-center gap-6 text-white font-bold text-lg">
-                                <div className="flex items-center gap-2 bg-black/50 px-3 py-1 rounded border-2 border-white/50">
-                                    <svg className="w-5 h-5 text-[var(--color-accent-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <div className="flex flex-wrap items-center gap-3 md:gap-6 text-white font-bold text-xs md:text-lg">
+                                <div className="flex items-center gap-2 bg-white/10 md:bg-black/50 px-3 py-1.5 md:px-3 md:py-1 rounded border border-white/30 md:border-white/50">
+                                    <svg className="w-4 h-4 md:w-5 md:h-5 text-[var(--color-accent-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                     {event.date}
                                 </div>
                                 {event.time && (
-                                    <div className="flex items-center gap-2 bg-black/50 px-3 py-1 rounded border-2 border-white/50">
-                                        <svg className="w-5 h-5 text-[var(--color-accent-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <div className="flex items-center gap-2 bg-white/10 md:bg-black/50 px-3 py-1.5 md:px-3 md:py-1 rounded border border-white/30 md:border-white/50">
+                                        <svg className="w-4 h-4 md:w-5 md:h-5 text-[var(--color-accent-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                         {event.time}
                                     </div>
                                 )}
-                                <div className="flex items-center gap-2 bg-black/50 px-3 py-1 rounded border-2 border-white/50">
-                                    <svg className="w-5 h-5 text-[var(--color-accent-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                <div className="flex items-center gap-2 bg-white/10 md:bg-black/50 px-3 py-1.5 md:px-3 md:py-1 rounded border border-white/30 md:border-white/50">
+                                    <svg className="w-4 h-4 md:w-5 md:h-5 text-[var(--color-accent-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                                     {event.location}
                                 </div>
                             </div>

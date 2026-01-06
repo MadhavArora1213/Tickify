@@ -7,6 +7,7 @@ import { uploadToS3 } from '../../services/s3Service';
 
 const OrganizerDashboard = () => {
     const [activeTab, setActiveTab] = useState('overview');
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const { currentUser } = useAuth();
     const [events, setEvents] = useState([]);
@@ -712,24 +713,34 @@ const OrganizerDashboard = () => {
                     {/* Sidebar */}
                     <aside className="w-full lg:w-64 flex-shrink-0">
                         <div className="bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] shadow-[8px_8px_0_var(--color-text-primary)] p-4 sticky top-28">
-                            <nav className="space-y-2">
-                                {['Overview', 'Events', 'Attendees', 'Analytics', 'Finances', 'Settings'].map((item) => (
-                                    <button
-                                        key={item}
-                                        onClick={() => setActiveTab(item.toLowerCase())}
-                                        className={`w-full text-left px-4 py-3 font-black uppercase border-2 border-transparent hover:border-[var(--color-text-primary)] hover:bg-[var(--color-accent-secondary)] hover:text-white transition-all flex justify-between items-center group
-                                        ${activeTab === item.toLowerCase() ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] border-[var(--color-text-primary)] shadow-[4px_4px_0_gray]' : 'text-[var(--color-text-secondary)]'}`}
-                                    >
-                                        {item}
-                                        <span className={`opacity-0 group-hover:opacity-100 ${activeTab === item.toLowerCase() ? 'opacity-100' : ''}`}>&rarr;</span>
-                                    </button>
-                                ))}
-                            </nav>
+                            <button
+                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                                className="lg:hidden w-full flex justify-between items-center font-black uppercase mb-2"
+                            >
+                                <span>Menu</span>
+                                <span>{mobileMenuOpen ? '▲' : '▼'}</span>
+                            </button>
 
-                            <div className="mt-8 pt-8 border-t-4 border-[var(--color-text-primary)]">
-                                <Link to="/organizer/events/create" className="block text-center w-full py-3 bg-red-500 text-white font-black uppercase border-2 border-[var(--color-text-primary)] shadow-[4px_4px_0_var(--color-text-primary)] hover:shadow-[6px_6px_0_var(--color-text-primary)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all">
-                                    Create Event +
-                                </Link>
+                            <div className={`${mobileMenuOpen ? 'block' : 'hidden'} lg:block`}>
+                                <nav className="space-y-2">
+                                    {['Overview', 'Events', 'Attendees', 'Analytics', 'Finances', 'Settings'].map((item) => (
+                                        <button
+                                            key={item}
+                                            onClick={() => { setActiveTab(item.toLowerCase()); setMobileMenuOpen(false); }}
+                                            className={`w-full text-left px-4 py-3 font-black uppercase border-2 border-transparent hover:border-[var(--color-text-primary)] hover:bg-[var(--color-accent-secondary)] hover:text-white transition-all flex justify-between items-center group
+                                            ${activeTab === item.toLowerCase() ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] border-[var(--color-text-primary)] shadow-[4px_4px_0_gray]' : 'text-[var(--color-text-secondary)]'}`}
+                                        >
+                                            {item}
+                                            <span className={`opacity-0 group-hover:opacity-100 ${activeTab === item.toLowerCase() ? 'opacity-100' : ''}`}>&rarr;</span>
+                                        </button>
+                                    ))}
+                                </nav>
+
+                                <div className="mt-8 pt-8 border-t-4 border-[var(--color-text-primary)]">
+                                    <Link to="/organizer/events/create" className="block text-center w-full py-3 bg-red-500 text-white font-black uppercase border-2 border-[var(--color-text-primary)] shadow-[4px_4px_0_var(--color-text-primary)] hover:shadow-[6px_6px_0_var(--color-text-primary)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all">
+                                        Create Event +
+                                    </Link>
+                                </div>
                             </div>
                         </div>
                     </aside>

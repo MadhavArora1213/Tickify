@@ -165,7 +165,7 @@ const SeatSelection = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[var(--color-bg-primary)] pt-24 pb-32 px-4">
+        <div className="min-h-screen bg-[var(--color-bg-primary)] pt-32 md:pt-40 pb-48 px-4">
             <div className="max-w-4xl mx-auto">
                 <div className="text-center mb-8">
                     <h1 className="text-3xl md:text-5xl font-black uppercase text-[var(--color-text-primary)]">Select Your Seats</h1>
@@ -173,97 +173,99 @@ const SeatSelection = () => {
                 </div>
 
                 {/* Legend */}
-                <div className="flex justify-center gap-6 mb-12 flex-wrap">
+                <div className="flex justify-center gap-4 md:gap-8 mb-12 flex-wrap text-[var(--color-text-primary)]">
                     <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 border-2 border-[var(--color-text-primary)] rounded bg-white"></div>
-                        <span className="text-xs font-black uppercase">Available</span>
+                        <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-[var(--color-text-primary)] rounded bg-white"></div>
+                        <span className="text-[10px] md:text-xs font-black uppercase">Available</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 border-2 border-[var(--color-text-primary)] rounded bg-[var(--color-accent-primary)]"></div>
-                        <span className="text-xs font-black uppercase">Selected</span>
+                        <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-[var(--color-text-primary)] rounded bg-[var(--color-accent-primary)]"></div>
+                        <span className="text-[10px] md:text-xs font-black uppercase">Selected</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 border-2 border-[var(--color-text-primary)] rounded bg-[var(--color-text-secondary)] opacity-50"></div>
-                        <span className="text-xs font-black uppercase">Sold Out</span>
+                        <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-[var(--color-text-primary)] rounded bg-[var(--color-text-secondary)] opacity-50"></div>
+                        <span className="text-[10px] md:text-xs font-black uppercase">Sold Out</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 border-2 border-[var(--color-text-primary)] rounded bg-yellow-300"></div>
-                        <span className="text-xs font-black uppercase">VIP/Premium</span>
+                        <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-[var(--color-text-primary)] rounded bg-yellow-300"></div>
+                        <span className="text-[10px] md:text-xs font-black uppercase">VIP</span>
                     </div>
                 </div>
 
                 {/* Stage */}
-                <div className="w-full h-16 bg-gradient-to-b from-[var(--color-text-primary)] to-transparent opacity-20 transform perspective(500px) rotateX(20deg) mb-12 rounded-t-[50%] text-center pt-2">
-                    <span className="text-2xl font-black uppercase tracking-[1em] text-[var(--color-text-primary)] opacity-50">STAGE</span>
+                <div className="w-full h-12 md:h-16 bg-gradient-to-b from-[var(--color-text-primary)] to-transparent opacity-20 transform perspective(500px) rotateX(20deg) mb-12 rounded-t-[50%] text-center pt-2">
+                    <span className="text-xl md:text-2xl font-black uppercase tracking-[0.5em] md:tracking-[1em] text-[var(--color-text-primary)] opacity-50">STAGE</span>
                 </div>
 
                 {/* Seat Map */}
-                <div className="flex flex-col items-center gap-4 mb-12 overflow-x-auto pb-4">
-                    {rows.map((row) => (
-                        <div key={row.id} className="flex items-center gap-4">
-                            <span className="text-sm font-black w-6 text-center text-[var(--color-text-secondary)]">{row.id}</span>
-                            <div className="flex gap-2 md:gap-4">
-                                {row.seats.map((seat, index) => {
-                                    const isSelected = selectedSeats.find(s => s.id === seat.id);
+                <div className="flex flex-col items-center gap-3 md:gap-4 mb-2 overflow-x-auto pb-8 w-full">
+                    <div className="min-w-max px-4">
+                        {rows.map((row) => (
+                            <div key={row.id} className="flex items-center gap-2 md:gap-4 mb-2">
+                                <span className="text-xs md:text-sm font-black w-4 md:w-6 text-center text-[var(--color-text-secondary)]">{row.id}</span>
+                                <div className="flex gap-1 md:gap-2 lg:gap-4">
+                                    {row.seats.map((seat, index) => {
+                                        const isSelected = selectedSeats.find(s => s.id === seat.id);
 
-                                    // Aisle
-                                    if (seat.status === 'aisle') {
-                                        return <div key={index} className="w-8 h-8 md:w-10"></div>; // Invisible gap
-                                    }
+                                        // Aisle
+                                        if (seat.status === 'aisle') {
+                                            return <div key={index} className="w-6 h-6 md:w-10 md:h-10"></div>; // Invisible gap
+                                        }
 
-                                    // Blocked / Sold
-                                    if (seat.status === 'blocked' || seat.status === 'sold') {
+                                        // Blocked / Sold
+                                        if (seat.status === 'blocked' || seat.status === 'sold') {
+                                            return (
+                                                <div key={index} className="w-6 h-6 md:w-10 md:h-10 rounded-t md:rounded-t-lg bg-[var(--color-text-secondary)] opacity-30 border md:border-2 border-transparent cursor-not-allowed flex items-center justify-center">
+                                                    <span className="text-[8px] md:text-[10px]">✕</span>
+                                                </div>
+                                            );
+                                        }
+
+                                        // Available Seat
                                         return (
-                                            <div key={index} className="w-8 h-8 md:w-10 md:h-10 rounded-t-lg bg-[var(--color-text-secondary)] opacity-30 border-2 border-transparent cursor-not-allowed flex items-center justify-center">
-                                                <span className="text-[10px]">✕</span>
-                                            </div>
+                                            <button
+                                                key={index}
+                                                onClick={() => toggleSeat(seat)}
+                                                style={!isSelected && seat.color ? { backgroundColor: seat.color + '40' /* 25% opacity */, borderColor: seat.color } : {}}
+                                                className={`w-6 h-6 md:w-10 md:h-10 rounded-t md:rounded-t-lg border md:border-2 border-[var(--color-text-primary)] transition-all font-black text-[8px] md:text-xs flex items-center justify-center
+                                                ${isSelected
+                                                        ? 'bg-[var(--color-accent-primary)] text-white translate-y-[-2px] md:translate-y-[-4px] shadow-[0_2px_0_var(--color-text-primary)] md:shadow-[0_4px_0_var(--color-text-primary)] !bg-[var(--color-accent-primary)] !border-black'
+                                                        : 'bg-white hover:bg-gray-100'
+                                                    }`}
+                                                title={`${seat.ticketName} - ₹${seat.price} (${seat.label || seat.id})`}
+                                            >
+                                                {seat.status === 'available' ? (seat.label || seat.id) : ''}
+                                            </button>
                                         );
-                                    }
-
-                                    // Available Seat
-                                    return (
-                                        <button
-                                            key={index}
-                                            onClick={() => toggleSeat(seat)}
-                                            style={!isSelected && seat.color ? { backgroundColor: seat.color + '40' /* 25% opacity */, borderColor: seat.color } : {}}
-                                            className={`w-8 h-8 md:w-10 md:h-10 rounded-t-lg border-2 border-[var(--color-text-primary)] transition-all font-black text-[10px] md:text-xs flex items-center justify-center
-                                            ${isSelected
-                                                    ? 'bg-[var(--color-accent-primary)] text-white translate-y-[-4px] shadow-[0_4px_0_var(--color-text-primary)] !bg-[var(--color-accent-primary)] !border-black'
-                                                    : 'bg-white hover:bg-gray-100'
-                                                }`}
-                                            title={`${seat.ticketName} - ₹${seat.price} (${seat.label || seat.id})`}
-                                        >
-                                            {seat.status === 'available' ? (seat.label || seat.id) : ''}
-                                        </button>
-                                    );
-                                })}
+                                    })}
+                                </div>
+                                <span className="text-xs md:text-sm font-black w-4 md:w-6 text-center text-[var(--color-text-secondary)]">{row.id}</span>
                             </div>
-                            <span className="text-sm font-black w-6 text-center text-[var(--color-text-secondary)]">{row.id}</span>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             </div>
 
             {/* Bottom Bar */}
             <div className="fixed bottom-0 left-0 w-full bg-[var(--color-bg-surface)] border-t-4 border-[var(--color-text-primary)] p-4 md:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-40 animate-slide-up">
-                <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div>
-                        <p className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Selected Seats ({selectedSeats.length})</p>
-                        <p className="text-lg font-black text-[var(--color-text-primary)] truncate max-w-xs">
+                <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 md:gap-8">
+                    <div className="w-full md:w-auto text-center md:text-left">
+                        <p className="text-xs font-black uppercase text-[var(--color-text-secondary)] animate-pulse">Selected Seats ({selectedSeats.length})</p>
+                        <p className="text-lg font-black text-[var(--color-text-primary)] truncate max-w-xs md:max-w-md mx-auto md:mx-0">
                             {selectedSeats.length > 0 ? selectedSeats.map(s => s.label || s.id).join(', ') : 'None'}
                         </p>
                     </div>
-                    <div className="flex items-center gap-6 w-full md:w-auto">
-                        <div className="text-right flex-1 md:flex-none">
-                            <p className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Total Amount</p>
-                            <p className="text-3xl font-black text-[var(--color-text-primary)]">₹{totalPrice}</p>
+                    <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                        <div className="flex justify-between w-full md:w-auto md:block items-baseline gap-4 border-b-2 md:border-none border-dashed border-[var(--color-text-secondary)]/30 pb-2 md:pb-0">
+                            <p className="text-xs font-black uppercase text-[var(--color-text-secondary)] md:text-right">Total Amount</p>
+                            <p className="text-3xl font-black text-[var(--color-text-primary)] md:text-right">₹{totalPrice}</p>
                         </div>
                         <button
                             onClick={handleConfirmBooking}
                             disabled={selectedSeats.length === 0}
-                            className={`px-8 py-3 font-black uppercase text-xl border-2 border-[var(--color-text-primary)] transition-all flex-1 md:flex-none
+                            className={`w-full md:w-auto px-8 py-4 md:py-3 font-black uppercase text-xl border-2 border-[var(--color-text-primary)] transition-all
                             ${selectedSeats.length > 0
-                                    ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] shadow-[6px_6px_0_var(--color-text-secondary)] hover:shadow-[8px_8px_0_var(--color-text-primary)] hover:translate-x-[-2px] hover:translate-y-[-2px]'
+                                    ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] shadow-[4px_4px_0_var(--color-text-secondary)] hover:shadow-[6px_6px_0_var(--color-text-primary)] hover:translate-x-[-1px] hover:translate-y-[-1px]'
                                     : 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-50'}`}
                         >
                             Confirm Booking

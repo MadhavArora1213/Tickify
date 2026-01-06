@@ -23,14 +23,16 @@ const AdminEventApproval = () => {
                 <div className="text-xs font-bold text-yellow-400">Queue: {events.length} Pending</div>
             </div>
 
-            <div className="p-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Mobile View Toggle Logic */}
+            <div className="p-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 relative">
 
                 {/* List Column */}
-                <div className="lg:col-span-1 space-y-4">
+                <div className={`lg:col-span-1 space-y-4 ${selectedEvent ? 'hidden lg:block' : 'block'}`}>
+                    <h2 className="lg:hidden text-xl font-black uppercase mb-4">Pending Events</h2>
                     {events.map(event => (
                         <div
                             key={event.id}
-                            onClick={() => { setSelectedEvent(event); setRejectMode(false); }}
+                            onClick={() => { setSelectedEvent(event); setRejectMode(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                             className={`p-4 border-2 cursor-pointer transition-all hover:bg-yellow-50
                             ${selectedEvent?.id === event.id ? 'bg-yellow-100 border-black shadow-[4px_4px_0_black]' : 'bg-white border-gray-400'}`}
                         >
@@ -39,19 +41,28 @@ const AdminEventApproval = () => {
                             <p className="text-xs font-bold">{event.organizer}</p>
                         </div>
                     ))}
+                    {events.length === 0 && <p className="text-gray-500 italic">No pending events.</p>}
                 </div>
 
                 {/* Detail Column */}
-                <div className="lg:col-span-2">
+                <div className={`lg:col-span-2 ${!selectedEvent ? 'hidden lg:block' : 'block'}`}>
                     {selectedEvent ? (
-                        <div className="bg-white border-4 border-black p-8 shadow-[8px_8px_0_gray] relative">
+                        <div className="bg-white border-4 border-black p-8 shadow-[8px_8px_0_gray] relative animate-fade-in">
+                            {/* Mobile Back Button */}
+                            <button
+                                onClick={() => setSelectedEvent(null)}
+                                className="lg:hidden mb-4 flex items-center gap-2 text-sm font-black uppercase underline"
+                            >
+                                &larr; Back to List
+                            </button>
+
                             <div className="absolute top-0 right-0 bg-yellow-400 text-black px-4 py-1 text-xs font-black uppercase border-b-2 border-l-2 border-black">
                                 Reviewing ID: #{selectedEvent.id}
                             </div>
 
-                            <h2 className="text-3xl font-black uppercase mb-4">{selectedEvent.title}</h2>
+                            <h2 className="text-3xl font-black uppercase mb-4 mt-4 lg:mt-0">{selectedEvent.title}</h2>
 
-                            <div className="grid grid-cols-2 gap-4 mb-6 border-b-2 border-gray-200 pb-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 border-b-2 border-gray-200 pb-6">
                                 <div>
                                     <span className="block text-xs font-bold uppercase text-gray-500">Organizer</span>
                                     <span className="text-lg font-bold">{selectedEvent.organizer}</span>
@@ -71,7 +82,7 @@ const AdminEventApproval = () => {
 
                             {/* Actions */}
                             {!rejectMode ? (
-                                <div className="flex gap-4">
+                                <div className="flex flex-col sm:flex-row gap-4">
                                     <button className="flex-1 py-4 bg-green-600 text-white font-black uppercase border-2 border-black hover:bg-green-500 shadow-[4px_4px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_black] transition-all">
                                         Approve Event
                                     </button>
@@ -95,12 +106,11 @@ const AdminEventApproval = () => {
 
                         </div>
                     ) : (
-                        <div className="h-full flex items-center justify-center border-4 border-dashed border-gray-300 text-gray-400 font-bold uppercase">
+                        <div className="h-full hidden lg:flex items-center justify-center border-4 border-dashed border-gray-300 text-gray-400 font-bold uppercase min-h-[400px]">
                             Select an event to review
                         </div>
                     )}
                 </div>
-
             </div>
         </div>
     );

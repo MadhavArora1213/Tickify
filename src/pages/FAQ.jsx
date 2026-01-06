@@ -146,7 +146,7 @@ const FAQ = () => {
         : questions.filter(q => q.category === activeCategory);
 
     return (
-        <div className="min-h-screen bg-[var(--color-bg-primary)] pt-24 pb-12 px-4">
+        <div className="min-h-screen bg-[var(--color-bg-primary)] pt-32 md:pt-40 pb-12 px-4">
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-12">

@@ -2,7 +2,7 @@ import React from 'react';
 
 const About = () => {
     return (
-        <div className="min-h-screen bg-[var(--color-bg-primary)] pt-24 pb-12 px-4">
+        <div className="min-h-screen bg-[var(--color-bg-primary)] pt-32 md:pt-40 pb-12 px-4">
             <div className="max-w-4xl mx-auto space-y-12">
 
                 {/* Hero Section */}
