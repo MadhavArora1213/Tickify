@@ -1,27 +1,19 @@
 import React, { useEffect, useState } from 'react';
+import { useTheme } from 'next-themes';
 
 const ThemeToggle = () => {
-    const [theme, setTheme] = useState('dark');
+    const { theme, setTheme, resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
 
-    // Initialize theme
+    // Prevent hydration mismatch
     useEffect(() => {
-        const savedTheme = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-        if (savedTheme) {
-            setTheme(savedTheme);
-            document.documentElement.setAttribute('data-theme', savedTheme);
-        } else {
-            setTheme(prefersDark ? 'dark' : 'light');
-            document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-        }
+        setMounted(true);
     }, []);
 
+    if (!mounted) return null;
+
     const toggleTheme = () => {
-        const newTheme = theme === 'dark' ? 'light' : 'dark';
-        setTheme(newTheme);
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
+        setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
     };
 
     return (
@@ -30,7 +22,7 @@ const ThemeToggle = () => {
             className="fixed bottom-4 right-4 md:bottom-8 md:left-8 md:right-auto z-40 w-12 h-12 flex items-center justify-center rounded-full bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-lg border border-[var(--color-neutral-200)]/10 hover:scale-110 transition-transform duration-300 group"
             aria-label="Toggle theme"
         >
-            {theme === 'dark' ? (
+            {resolvedTheme === 'dark' ? (
                 // Sun icon for dark mode (click to switch to light)
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:text-yellow-400 transition-colors">
                     <circle cx="12" cy="12" r="5"></circle>

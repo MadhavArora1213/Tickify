@@ -247,28 +247,42 @@ const SeatSelection = () => {
             </div>
 
             {/* Bottom Bar */}
-            <div className="fixed bottom-0 left-0 w-full bg-[var(--color-bg-surface)] border-t-4 border-[var(--color-text-primary)] p-4 md:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-40 animate-slide-up">
-                <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 md:gap-8">
-                    <div className="w-full md:w-auto text-center md:text-left">
-                        <p className="text-xs font-black uppercase text-[var(--color-text-secondary)] animate-pulse">Selected Seats ({selectedSeats.length})</p>
-                        <p className="text-lg font-black text-[var(--color-text-primary)] truncate max-w-xs md:max-w-md mx-auto md:mx-0">
-                            {selectedSeats.length > 0 ? selectedSeats.map(s => s.label || s.id).join(', ') : 'None'}
-                        </p>
-                    </div>
-                    <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-                        <div className="flex justify-between w-full md:w-auto md:block items-baseline gap-4 border-b-2 md:border-none border-dashed border-[var(--color-text-secondary)]/30 pb-2 md:pb-0">
-                            <p className="text-xs font-black uppercase text-[var(--color-text-secondary)] md:text-right">Total Amount</p>
-                            <p className="text-3xl font-black text-[var(--color-text-primary)] md:text-right">₹{totalPrice}</p>
+            <div className="fixed bottom-0 left-0 w-full bg-[var(--color-bg-surface)] border-t-4 border-[var(--color-text-primary)] p-3 md:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-40 animate-slide-up">
+                <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3 md:gap-8">
+
+                    {/* Mobile: Row with Seats and Price */}
+                    <div className="w-full flex justify-between items-end md:block md:w-auto text-left">
+                        <div>
+                            <p className="text-[10px] md:text-xs font-black uppercase text-[var(--color-text-secondary)]">Selected ({selectedSeats.length})</p>
+                            <p className="text-sm md:text-lg font-black text-[var(--color-text-primary)] truncate max-w-[200px] md:max-w-md">
+                                {selectedSeats.length > 0 ? selectedSeats.map(s => s.label || s.id).join(', ') : 'None'}
+                            </p>
                         </div>
+
+                        {/* Price shown here only on mobile */}
+                        <div className="text-right md:hidden">
+                            <p className="text-[10px] font-black uppercase text-[var(--color-text-secondary)]">Total</p>
+                            <p className="text-xl font-black text-[var(--color-text-primary)]">₹{totalPrice}</p>
+                        </div>
+                    </div>
+
+                    {/* Desktop: Price and Button */}
+                    <div className="flex items-center gap-6 w-full md:w-auto">
+                        {/* Price shown here only on desktop */}
+                        <div className="hidden md:block text-right">
+                            <p className="text-xs font-black uppercase text-[var(--color-text-secondary)]">Total Amount</p>
+                            <p className="text-3xl font-black text-[var(--color-text-primary)]">₹{totalPrice}</p>
+                        </div>
+
                         <button
                             onClick={handleConfirmBooking}
                             disabled={selectedSeats.length === 0}
-                            className={`w-full md:w-auto px-8 py-4 md:py-3 font-black uppercase text-xl border-2 border-[var(--color-text-primary)] transition-all
+                            className={`w-full md:w-auto px-6 py-3 font-black uppercase text-lg md:text-xl border-2 border-[var(--color-text-primary)] transition-all
                             ${selectedSeats.length > 0
                                     ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] shadow-[4px_4px_0_var(--color-text-secondary)] hover:shadow-[6px_6px_0_var(--color-text-primary)] hover:translate-x-[-1px] hover:translate-y-[-1px]'
                                     : 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-50'}`}
                         >
-                            Confirm Booking
+                            Confirm
                         </button>
                     </div>
                 </div>

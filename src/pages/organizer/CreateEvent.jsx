@@ -30,6 +30,8 @@ const CreateEvent = () => {
         startTime: '',
         endDate: '',
         endTime: '',
+        registrationEndDate: '',
+        registrationEndTime: '',
 
         // Stage 2: Venue & Seating
         venueName: '',
@@ -62,7 +64,7 @@ const CreateEvent = () => {
         bannerImageFile: null, // File object
 
         // Status
-        status: 'pending_approval',
+        status: 'pending',
 
         // Ticket ID Settings
         ticketPrefix: '',
@@ -271,8 +273,8 @@ const CreateEvent = () => {
     const validateStep = () => {
         setError('');
         if (step === 1) {
-            if (!formData.eventTitle || !formData.startDate || !formData.startTime) {
-                setError('Please fill in all required basic details.');
+            if (!formData.eventTitle || !formData.startDate || !formData.startTime || !formData.registrationEndDate) {
+                setError('Please fill in all required basic details and registration deadline.');
                 return false;
             }
         }
@@ -494,6 +496,24 @@ const CreateEvent = () => {
                     <div>
                         <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">End Time</label>
                         <input name="endTime" value={formData.endTime} onChange={handleInputChange} type="time" className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold" />
+                    </div>
+                </div>
+
+                {/* Registration Deadline */}
+                <div className="p-4 bg-[var(--color-accent-secondary)]/10 border-2 border-dashed border-[var(--color-accent-secondary)] rounded-xl space-y-4">
+                    <h3 className="font-black uppercase text-sm flex items-center gap-2">
+                        ⏳ Registration Deadline
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Reg. End Date *</label>
+                            <input name="registrationEndDate" value={formData.registrationEndDate} onChange={handleInputChange} type="date" className="w-full neo-input bg-white border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold" />
+                            <p className="text-[10px] font-bold text-gray-500 mt-1">When tickets stop being available</p>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-black uppercase text-[var(--color-text-secondary)] mb-1">Reg. End Time *</label>
+                            <input name="registrationEndTime" value={formData.registrationEndTime} onChange={handleInputChange} type="time" className="w-full neo-input bg-white border-2 border-[var(--color-text-primary)] px-4 py-3 font-bold" />
+                        </div>
                     </div>
                 </div>
             </div>

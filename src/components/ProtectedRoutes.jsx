@@ -14,7 +14,7 @@ const LoadingSpinner = () => (
 
 // Protected Route - Requires authentication
 export const ProtectedRoute = ({ children }) => {
-    const { currentUser, loading } = useAuth();
+    const { currentUser, userStatus, loading } = useAuth();
     const location = useLocation();
 
     if (loading) {
@@ -24,6 +24,28 @@ export const ProtectedRoute = ({ children }) => {
     if (!currentUser) {
         // Redirect to login with return URL
         return <Navigate to="/login" state={{ from: location }} replace />;
+    }
+
+    if (userStatus === 'suspended') {
+        return (
+            <div className="min-h-screen bg-[var(--color-bg-primary)] flex items-center justify-center p-6 text-center transition-colors duration-300">
+                <div className="neo-card bg-[var(--color-bg-surface)] p-12 border-4 border-red-500 shadow-[12px_12px_0_red] max-w-lg relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/10 -rotate-45 translate-x-10 -translate-y-10"></div>
+                    <div className="text-7xl mb-6">🚫</div>
+                    <h1 className="text-4xl font-black text-red-600 uppercase tracking-tighter mb-4">Account Blocked</h1>
+                    <div className="w-20 h-2 bg-red-600 mx-auto mb-6"></div>
+                    <p className="text-[var(--color-text-secondary)] font-bold mb-8 text-lg">
+                        Your account has been suspended due to a violation of our terms of service.
+                    </p>
+                    <a
+                        href="/contact"
+                        className="neo-btn inline-block bg-red-600 text-white font-black py-4 px-8 border-2 border-black shadow-[6px_6px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0_black] transition-all uppercase"
+                    >
+                        Contact Support
+                    </a>
+                </div>
+            </div>
+        );
     }
 
     return children;
@@ -74,7 +96,7 @@ export const AdminRoute = ({ children }) => {
 
 // Organizer Protected Route - Requires organizer role
 export const OrganizerRoute = ({ children }) => {
-    const { currentUser, userRole, loading } = useAuth();
+    const { currentUser, userRole, userStatus, loading } = useAuth();
     const location = useLocation();
 
     if (loading) {
@@ -111,12 +133,69 @@ export const OrganizerRoute = ({ children }) => {
         );
     }
 
+    if (userRole === 'organizer' && userStatus === 'pending') {
+        return (
+            <div className="min-h-screen bg-[var(--color-bg-primary)] flex items-center justify-center p-6 text-center">
+                <div className="neo-card bg-[var(--color-bg-surface)] p-12 border-4 border-[var(--color-text-primary)] shadow-[12px_12px_0_var(--color-text-primary)] max-w-lg">
+                    <div className="text-7xl mb-6 animate-bounce">⏳</div>
+                    <h1 className="text-4xl font-black text-[var(--color-text-primary)] uppercase tracking-tighter mb-4">Approval Pending</h1>
+                    <div className="w-20 h-2 bg-yellow-500 mx-auto mb-6"></div>
+                    <p className="text-[var(--color-text-secondary)] font-bold mb-8 text-lg leading-relaxed">
+                        Your account is currently being reviewed by our team. You'll be notified via email once you're cleared to host events!
+                    </p>
+                    <a
+                        href="/organizer/login"
+                        className="neo-btn inline-block bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] font-black py-4 px-8 border-2 border-[var(--color-text-primary)] shadow-[6px_6px_0_var(--color-accent-secondary)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0_var(--color-text-primary)] transition-all uppercase"
+                    >
+                        Back to Login
+                    </a>
+                </div>
+            </div>
+        );
+    }
+
+    if (userRole === 'organizer' && userStatus === 'suspended') {
+        return (
+            <div className="min-h-screen bg-[var(--color-bg-primary)] flex items-center justify-center p-6 text-center">
+                <div className="neo-card bg-[var(--color-bg-surface)] p-12 border-4 border-red-500 shadow-[12px_12px_0_red] max-w-lg">
+                    <div className="text-7xl mb-6">🚫</div>
+                    <h1 className="text-4xl font-black text-red-600 uppercase tracking-tighter mb-4">Account Suspended</h1>
+                    <div className="w-20 h-2 bg-red-600 mx-auto mb-6"></div>
+                    <p className="text-[var(--color-text-secondary)] font-bold mb-8 text-lg">
+                        Your organizer account has been suspended. Please contact our support team for more information.
+                    </p>
+                    <a
+                        href="/contact"
+                        className="neo-btn inline-block bg-red-600 text-white font-black py-4 px-8 border-2 border-black shadow-[6px_6px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0_black] transition-all uppercase"
+                    >
+                        Contact Support
+                    </a>
+                </div>
+            </div>
+        );
+    }
+
+    return children;
+};
+
+// Organizer Guest Route - Redirects already logged-in organizers to their dashboard
+export const OrganizerGuestRoute = ({ children }) => {
+    const { currentUser, userRole, loading } = useAuth();
+
+    if (loading) {
+        return <LoadingSpinner />;
+    }
+
+    if (currentUser && (userRole === 'organizer' || userRole === 'admin')) {
+        return <Navigate to="/organizer/dashboard" replace />;
+    }
+
     return children;
 };
 
 // Scanner Protected Route - Requires scanner role
 export const ScannerRoute = ({ children }) => {
-    const { currentUser, userRole, loading } = useAuth();
+    const { currentUser, userRole, userStatus, loading } = useAuth();
     const location = useLocation();
 
     if (loading) {
@@ -125,6 +204,20 @@ export const ScannerRoute = ({ children }) => {
 
     if (!currentUser) {
         return <Navigate to="/scanner/login" state={{ from: location }} replace />;
+    }
+
+    if (userRole === 'scanner' && userStatus === 'suspended') {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6 text-center">
+                <div className="bg-gray-800 border-4 border-red-500 p-12 max-w-lg shadow-[12px_12px_0_red]">
+                    <div className="text-7xl mb-6">🚫</div>
+                    <h1 className="text-4xl font-black text-white uppercase tracking-tighter mb-4">Access Revoked</h1>
+                    <p className="text-gray-400 font-bold mb-8 text-lg">
+                        This scanner account has been disabled. Please contact your organizer.
+                    </p>
+                </div>
+            </div>
+        );
     }
 
     if (userRole !== 'scanner' && userRole !== 'organizer' && userRole !== 'admin') {

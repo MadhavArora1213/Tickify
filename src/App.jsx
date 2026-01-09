@@ -15,6 +15,7 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import OrganizerLogin from './pages/organizer/OrganizerLogin';
 import OrganizerRegister from './pages/organizer/OrganizerRegister';
+import OrganizerForgotPassword from './pages/organizer/OrganizerForgotPassword';
 import OrganizerDashboard from './pages/organizer/OrganizerDashboard';
 import CreateEvent from './pages/organizer/CreateEvent';
 import ManageEvents from './pages/organizer/ManageEvents';
@@ -50,12 +51,12 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import BubbleMenu from './components/react-bits/BubbleMenu';
 import ThemeToggle from './components/ThemeToggle';
-import { UserRoute, AdminRoute, PublicRoute, AdminPublicRoute } from './components/ProtectedRoutes';
+import { UserRoute, AdminRoute, PublicRoute, AdminPublicRoute, OrganizerRoute, OrganizerGuestRoute } from './components/ProtectedRoutes';
 
 
 function App() {
     const location = useLocation();
-    const hideUiElements = location.pathname.startsWith('/organizer') || location.pathname.startsWith('/scanner') || location.pathname.startsWith('/admin') || location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/forgot-password';
+    const hideUiElements = location.pathname.startsWith('/organizer') || location.pathname.startsWith('/scanner') || location.pathname.startsWith('/admin') || location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/forgot-password' || location.pathname === '/organizer/forgot-password';
 
     return (
         <div className="min-h-screen flex flex-col font-sans bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] transition-colors duration-300">
@@ -103,15 +104,57 @@ function App() {
                     } />
 
                     {/* Organizer Routes */}
-                    <Route path="/organizer/login" element={<OrganizerLogin />} />
-                    <Route path="/organizer/register" element={<OrganizerRegister />} />
-                    <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
-                    <Route path="/organizer/events" element={<ManageEvents />} />
-                    <Route path="/organizer/events/create" element={<CreateEvent />} />
-                    <Route path="/organizer/events/:eventId/edit" element={<CreateEvent />} />
-                    <Route path="/organizer/events/:eventId/analytics" element={<EventAnalytics />} />
-                    <Route path="/organizer/settlements" element={<Settlements />} />
-                    <Route path="/organizer/profile" element={<OrganizerProfile />} />
+                    <Route path="/organizer/login" element={
+                        <OrganizerGuestRoute>
+                            <OrganizerLogin />
+                        </OrganizerGuestRoute>
+                    } />
+                    <Route path="/organizer/register" element={
+                        <OrganizerGuestRoute>
+                            <OrganizerRegister />
+                        </OrganizerGuestRoute>
+                    } />
+                    <Route path="/organizer/forgot-password" element={
+                        <OrganizerGuestRoute>
+                            <OrganizerForgotPassword />
+                        </OrganizerGuestRoute>
+                    } />
+
+                    <Route path="/organizer/dashboard" element={
+                        <OrganizerRoute>
+                            <OrganizerDashboard />
+                        </OrganizerRoute>
+                    } />
+                    <Route path="/organizer/events" element={
+                        <OrganizerRoute>
+                            <ManageEvents />
+                        </OrganizerRoute>
+                    } />
+                    <Route path="/organizer/events/create" element={
+                        <OrganizerRoute>
+                            <CreateEvent />
+                        </OrganizerRoute>
+                    } />
+                    <Route path="/organizer/events/:eventId/edit" element={
+                        <OrganizerRoute>
+                            <CreateEvent />
+                        </OrganizerRoute>
+                    } />
+                    <Route path="/organizer/events/:eventId/analytics" element={
+                        <OrganizerRoute>
+                            <EventAnalytics />
+                        </OrganizerRoute>
+                    } />
+                    <Route path="/organizer/settlements" element={
+                        <OrganizerRoute>
+                            <Settlements />
+                        </OrganizerRoute>
+                    } />
+                    <Route path="/organizer/profile" element={
+                        <OrganizerRoute>
+                            <OrganizerProfile />
+                        </OrganizerRoute>
+                    } />
 
                     {/* Scanner Routes */}
                     <Route path="/scanner/login" element={<ScannerLogin />} />

@@ -24,11 +24,12 @@ const PaymentSuccess = () => {
             const options = {
                 cacheBust: true,
                 pixelRatio: 3,
-                backgroundColor: '#f8fafc', // Light gray background to ensure card shadows are captured
+                backgroundColor: '#ffffff',
                 style: {
-                    transform: 'scale(1)', // Ensure no hover scale is active
-                    margin: '0',
-                    padding: '20px'
+                    transform: 'scale(1)',
+                    margin: '0 auto',
+                    width: '800px', // Force fixed horizontal width
+                    padding: '20px' // Padding around the card to capture shadows
                 }
             };
 
@@ -135,86 +136,96 @@ const PaymentSuccess = () => {
                         You're going to have a blast! A confirmation email has been sent to <span className="text-[var(--color-accent-primary)] underline decoration-2">{booking.userEmail}</span>.
                     </p>
 
-                    {/* Ticket Preview Card */}
-                    <div ref={ticketRef} className="max-w-md mx-auto bg-white border-4 border-black rounded-xl overflow-hidden shadow-[8px_8px_0_black] mb-10 transition-transform duration-300">
-                        <div className="bg-[var(--color-accent-primary)] p-4 text-white border-b-4 border-black border-dashed">
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <h3 className="font-black text-xl uppercase tracking-wider">Tickify Ticket</h3>
-                                    <span className="text-sm font-bold opacity-80">Order #{booking.bookingReference || booking.id.slice(0, 8).toUpperCase()}</span>
-                                </div>
-                                <div className="bg-white p-1 rounded">
-                                    <QRCodeSVG
-                                        value={`${window.location.origin}/verify/${booking.id}`}
-                                        size={50}
-                                        level="H"
-                                        includeMargin={false}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-6 bg-white text-black text-left relative">
-                            {/* Holes for "ticket" look */}
-                            <div className="absolute top-[40%] -left-3 w-6 h-6 bg-[var(--color-bg-primary)] rounded-full border-r-4 border-black transform -translate-y-1/2"></div>
-                            <div className="absolute top-[40%] -right-3 w-6 h-6 bg-[var(--color-bg-primary)] rounded-full border-l-4 border-black transform -translate-y-1/2"></div>
-
-                            {/* Event Info */}
-                            <div className="mb-6 border-b-2 border-dashed border-gray-300 pb-4">
-                                <span className="text-xs font-black uppercase text-gray-500 block mb-1">Event</span>
-                                <h4 className="text-xl font-black uppercase leading-tight mb-2">{event?.title}</h4>
-                                <div className="flex flex-wrap gap-4 text-sm font-bold text-gray-700">
-                                    <span className="flex items-center gap-1">
-                                        📅 {(() => {
-                                            if (!event?.date) return "Date TBA";
-                                            if (event.date && typeof event.date.toDate === 'function') {
-                                                return event.date.toDate().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-                                            }
-                                            const d = new Date(event.date);
-                                            if (!isNaN(d.getTime())) {
-                                                return d.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-                                            }
-                                            return event.date;
-                                        })()}
-                                    </span>
-                                    <span className="flex items-center gap-1">📍 {event?.location}</span>
-                                </div>
-                            </div>
-
-                            {/* Ticket Details (Loop through items) */}
-                            <div className="space-y-3 mb-6">
-                                {booking.items && booking.items.map((item, idx) => (
-                                    <div key={idx} className="bg-gray-50 p-3 rounded border border-gray-200">
-                                        <div className="flex justify-between items-start mb-1">
-                                            <span className="block font-black uppercase text-sm">{item.name || item.ticketName}</span>
-                                            <span className="font-bold">₹{item.price}</span>
+                    {/* Horizontal Scroll Wrapper for Mobile View */}
+                    <div className="overflow-x-auto pb-6 -mx-4 px-4 scrollbar-hide">
+                        {/* Premium Horizontal ID Card Ticket */}
+                        <div ref={ticketRef} className="min-w-[600px] md:min-w-0 max-w-3xl mx-auto bg-white border-4 border-black rounded-3xl shadow-[12px_12px_0_black] mb-10 overflow-hidden transition-transform duration-300">
+                            <div className="flex flex-col md:flex-row h-full min-h-[320px]">
+                                {/* Left Side: Event Image & Details */}
+                                <div className="flex-[1.5] relative p-0 flex flex-col">
+                                    <div className="h-32 w-full relative">
+                                        <img
+                                            src={event?.image || "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80"}
+                                            alt="Banner"
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                                        <div className="absolute bottom-4 left-6">
+                                            <h3 className="text-white font-black text-2xl uppercase tracking-tight drop-shadow-md">{event?.title}</h3>
                                         </div>
-
-                                        <div className="text-xs text-gray-600 space-y-1">
-                                            {item.label && <span className="block font-bold text-[var(--color-accent-secondary)]">Seat: {item.label}</span>}
-
-                                            {/* Display Ticket Number(s) */}
-                                            {item.ticketNumbers && item.ticketNumbers.length > 0 ? (
-                                                <div className="flex flex-wrap gap-1 mt-1">
-                                                    {item.ticketNumbers.map((num, i) => (
-                                                        <span key={i} className="bg-black text-white px-2 py-0.5 rounded text-[10px] font-mono">{num}</span>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <span className="block">Qty: {item.quantity}</span>
-                                            )}
+                                        <div className="absolute top-4 left-6">
+                                            <span className="bg-white text-black text-[9px] font-black px-2 py-1 uppercase border-2 border-black shadow-[2px_2px_0_black]">
+                                                Official Entry Pass
+                                            </span>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
 
-                            <div className="flex flex-col items-center justify-center py-4 border-4 border-black rounded-lg bg-gray-50 shadow-[4px_4px_0_black]">
-                                <QRCodeSVG
-                                    value={`${window.location.origin}/verify/${booking.id}`}
-                                    size={120}
-                                    level="H"
-                                    includeMargin={true}
-                                />
-                                <span className="text-xs font-black uppercase mt-4 tracking-widest bg-black text-white px-4 py-1">Official Verification</span>
+                                    <div className="p-6 flex flex-col justify-between flex-1 bg-white">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <span className="text-[9px] font-black uppercase text-gray-400 block mb-0.5">Attendee</span>
+                                                <p className="font-black text-sm uppercase truncate text-black">{booking.userName}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-[9px] font-black uppercase text-gray-400 block mb-0.5">Booking Ref</span>
+                                                <p className="font-mono text-xs font-bold text-gray-800">#{booking.bookingReference || booking.id.slice(0, 8).toUpperCase()}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-[9px] font-black uppercase text-gray-400 block mb-0.5">Date & Time</span>
+                                                <p className="font-black text-xs uppercase text-black">
+                                                    {(() => {
+                                                        if (!event?.date) return "TBA";
+                                                        const date = event.date?.toDate ? event.date.toDate() : new Date(event.date);
+                                                        return !isNaN(date.getTime()) ? date.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) : event.date;
+                                                    })()} • {event?.time || 'TBA'}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <span className="text-[9px] font-black uppercase text-gray-400 block mb-0.5">Venue</span>
+                                                <p className="font-black text-xs uppercase truncate text-black">{event?.location || 'Venue TBA'}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Seat/Ticket List */}
+                                        <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-100">
+                                            <div className="flex flex-wrap gap-2">
+                                                {booking.items?.map((item, idx) => (
+                                                    <div key={idx} className="bg-black text-white px-3 py-1 text-[10px] font-black uppercase flex items-center gap-2">
+                                                        <span>{item.name || item.ticketName}</span>
+                                                        {item.label && <span className="bg-yellow-400 text-black px-1.5 rounded-sm">SEAT: {item.label}</span>}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Right Side: QR Stub (Perforated Edge) */}
+                                <div className="flex-1 bg-gray-50 border-t-4 md:border-t-0 md:border-l-4 border-dashed border-black p-6 flex flex-col items-center justify-center relative overflow-hidden">
+                                    {/* Side notches for "Ticket Stub" look */}
+                                    <div className="absolute top-[-10px] left-[-10px] w-5 h-5 bg-white border-2 border-black rounded-full hidden md:block"></div>
+                                    <div className="absolute bottom-[-10px] left-[-10px] w-5 h-5 bg-white border-2 border-black rounded-full hidden md:block"></div>
+
+                                    <div className="bg-white p-3 border-2 border-black shadow-[6px_6px_0_black] mb-4">
+                                        <QRCodeSVG
+                                            value={`${window.location.origin}/verify/${booking.id}`}
+                                            size={120}
+                                            level="H"
+                                            includeMargin={false}
+                                        />
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-black mb-1">Scan for Verified Entry</p>
+                                        <div className="bg-black text-white px-4 py-0.5 text-[8px] font-mono tracking-tighter rounded">
+                                            ID_{booking.id.slice(-10).toUpperCase()}
+                                        </div>
+                                    </div>
+
+                                    {/* Vertical text on side */}
+                                    <div className="absolute right-2 top-1/2 -rotate-90 origin-right translate-y-1/2 opacity-10 font-black text-2xl whitespace-nowrap pointer-events-none">
+                                        TICKIFY OFFICIAL PASS
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -239,7 +250,7 @@ const PaymentSuccess = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

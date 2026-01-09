@@ -32,6 +32,13 @@ const Events = () => {
     const [locationFilter, setLocationFilter] = useState('All');
     const [showFilters, setShowFilters] = useState(false);
 
+    const isRegistrationClosed = (event) => {
+        if (!event.registrationEndDate) return false;
+        const now = new Date();
+        const endDate = new Date(`${event.registrationEndDate}T${event.registrationEndTime || '23:59'}`);
+        return now > endDate;
+    };
+
     useEffect(() => {
         const fetchEvents = async () => {
             try {
@@ -258,20 +265,29 @@ const Events = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                                 {filteredEvents.length > 0 ? (
                                     filteredEvents.map(event => (
-                                        <Link key={event.id} to={`/events/${event.id}`}>
-                                            <div className="neo-card bg-[var(--color-bg-surface)] overflow-hidden group h-full flex flex-col">
+                                        <Link key={event.id} to={isRegistrationClosed(event) ? '#' : `/events/${event.id}`} className={isRegistrationClosed(event) ? 'cursor-not-allowed' : ''}>
+                                            <div className={`neo-card bg-[var(--color-bg-surface)] overflow-hidden group h-full flex flex-col ${isRegistrationClosed(event) ? 'opacity-70 grayscale' : ''}`}>
                                                 <div className="h-48 overflow-hidden relative border-b-2 border-black">
                                                     <img src={event.image || "https://via.placeholder.com/400x200?text=No+Image"} alt={event.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                                                     <div className="absolute top-2 right-2 neo-btn bg-[var(--color-accent-primary)] text-white text-xs px-2 py-1 rotate-3">
                                                         {event.price ? (typeof event.price === 'number' ? `$${event.price}` : event.price) : 'Free'}
                                                     </div>
+                                                    {isRegistrationClosed(event) && (
+                                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                                            <span className="bg-red-500 text-white font-black px-4 py-2 border-2 border-white shadow-[4px_4px_0_black] -rotate-6 uppercase">
+                                                                Registration Closed
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div className="p-4 flex-1 flex flex-col">
                                                     <div className="text-xs font-black text-[var(--color-accent-secondary)] mb-1 uppercase tracking-widest">{event.category || 'General'}</div>
                                                     <h3 className="text-xl font-black text-[var(--color-text-primary)] mb-2 leading-tight">{event.title}</h3>
                                                     <div className="mt-auto flex items-center justify-between">
                                                         <span className="text-sm font-bold text-[var(--color-text-muted)]">{event.date}</span>
-                                                        <span className="neo-btn bg-white text-black px-3 py-1 text-xs">DETAILS</span>
+                                                        <span className={`neo-btn ${isRegistrationClosed(event) ? 'bg-gray-300 text-gray-500' : 'bg-white text-black'} px-3 py-1 text-xs`}>
+                                                            {isRegistrationClosed(event) ? 'CLOSED' : 'DETAILS'}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>

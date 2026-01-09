@@ -119,7 +119,7 @@ const OrganizerLogin = () => {
                         <div className="space-y-2">
                             <div className="flex justify-between">
                                 <label className="text-xs font-black uppercase text-[var(--color-text-secondary)] tracking-widest">Password</label>
-                                <a href="#" className="text-xs font-black uppercase text-[var(--color-accent-primary)] hover:underline">Forgot?</a>
+                                <Link to="/organizer/forgot-password" title='Forgot Password' className="text-xs font-black uppercase text-[var(--color-accent-primary)] hover:underline">Forgot?</Link>
                             </div>
                             <input
                                 type="password"

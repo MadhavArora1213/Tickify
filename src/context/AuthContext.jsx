@@ -29,6 +29,7 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
     const [currentUser, setCurrentUser] = useState(null);
     const [userRole, setUserRole] = useState(null);
+    const [userStatus, setUserStatus] = useState(null);
     const [loading, setLoading] = useState(true);
 
     // Sign up with email and password
@@ -320,8 +321,25 @@ export const AuthProvider = ({ children }) => {
             if (user) {
                 const role = await getUserRole(user.uid);
                 setUserRole(role);
+
+                // Get status as well
+                let status = 'active';
+                const adminDoc = await getDoc(doc(db, 'admins', user.uid));
+                if (!adminDoc.exists()) {
+                    const orgDoc = await getDoc(doc(db, 'organizers', user.uid));
+                    if (orgDoc.exists()) {
+                        status = orgDoc.data().status;
+                    } else {
+                        const userDoc = await getDoc(doc(db, 'users', user.uid));
+                        if (userDoc.exists()) {
+                            status = userDoc.data().status;
+                        }
+                    }
+                }
+                setUserStatus(status);
             } else {
                 setUserRole(null);
+                setUserStatus(null);
             }
             setLoading(false);
         });
@@ -355,6 +373,7 @@ export const AuthProvider = ({ children }) => {
     const value = {
         currentUser,
         userRole,
+        userStatus,
         loading,
         signup,
         login,

@@ -1,12 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { db } from '../../config/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { useAuth } from '../../context/AuthContext';
 
 const Settlements = () => {
-    // Mock Data
-    const settlements = [
-        { id: "SET-8821", date: "May 15, 2025", amount: "$12,450.00", status: "completed", method: "Bank Transfer •••• 4421" },
-        { id: "SET-8902", date: "Jun 01, 2025", amount: "$4,200.00", status: "processing", method: "PayPal" },
-        { id: "SET-9100", date: "Jul 10, 2025", amount: "$8,150.00", status: "pending", method: "Bank Transfer •••• 4421" },
-    ];
+    const { currentUser } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [totalRevenue, setTotalRevenue] = useState(0);
+    const [payouts, setPayouts] = useState([]);
+
+    useEffect(() => {
+        const fetchFinances = async () => {
+            if (!currentUser) return;
+            try {
+                setLoading(true);
+                // 1. Fetch all events for this organizer
+                const eventsRef = collection(db, 'events');
+                const eq = query(eventsRef, where('organizerId', '==', currentUser.uid));
+                const eSnap = await getDocs(eq);
+                const eventIds = eSnap.docs.map(doc => doc.id);
+
+                if (eventIds.length > 0) {
+                    // 2. Fetch all bookings for these events
+                    const bookingsRef = collection(db, 'bookings');
+                    let revenue = 0;
+
+                    for (let i = 0; i < eventIds.length; i += 10) {
+                        const chunk = eventIds.slice(i, i + 10);
+                        const bq = query(bookingsRef, where('eventId', 'in', chunk));
+                        const bSnap = await getDocs(bq);
+                        bSnap.docs.forEach(doc => {
+                            revenue += (doc.data().totalAmount || 0);
+                        });
+                    }
+                    setTotalRevenue(revenue);
+                }
+
+                // 3. Fetch Payouts (Mocking for now as we don't have a payouts collection yet)
+                // In a real app, you'd fetch from a 'payouts' collection
+                setPayouts([
+                    { id: "SET-INIT", date: "Account Connected", amount: "₹0.00", status: "completed", method: "System" },
+                ]);
+
+            } catch (error) {
+                console.error("Error fetching finances:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchFinances();
+    }, [currentUser]);
 
     const getStatusBadge = (status) => {
         const styles = {
@@ -22,6 +66,14 @@ const Settlements = () => {
         );
     };
 
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[var(--color-bg-primary)] flex items-center justify-center">
+                <div className="font-black text-2xl animate-spin">💰</div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-[var(--color-bg-primary)] pt-24 pb-12">
             <div className="container mx-auto px-4">
@@ -36,11 +88,12 @@ const Settlements = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[6px_6px_0_var(--color-text-primary)]">
                                 <p className="text-sm font-black uppercase text-[var(--color-text-secondary)]">Available to Withdraw</p>
-                                <h2 className="text-4xl font-black text-[var(--color-text-primary)]">$8,150.00</h2>
+                                <h2 className="text-4xl font-black text-[var(--color-text-primary)]">₹{totalRevenue.toLocaleString()}</h2>
+                                <p className="text-[10px] font-bold text-gray-400 mt-2">7-Day Clearance Cycle</p>
                             </div>
                             <div className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[6px_6px_0_var(--color-text-primary)]">
                                 <p className="text-sm font-black uppercase text-[var(--color-text-secondary)]">Total Payouts</p>
-                                <h2 className="text-4xl font-black text-[var(--color-success)]">$45,200.00</h2>
+                                <h2 className="text-4xl font-black text-green-500">₹0</h2>
                             </div>
                         </div>
 
@@ -48,71 +101,49 @@ const Settlements = () => {
                         <div className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[8px_8px_0_var(--color-text-primary)]">
                             <h3 className="text-xl font-black uppercase mb-6 border-b-2 border-black pb-2">Settlement History</h3>
                             <div className="space-y-4">
-                                {settlements.map((s) => (
-                                    <div key={s.id} className="flex flex-col md:flex-row justify-between items-center p-4 border-2 border-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors">
-                                        <div className="mb-2 md:mb-0">
-                                            <div className="flex items-center gap-3">
-                                                <span className="font-black text-lg text-[var(--color-text-primary)]">{s.id}</span>
-                                                {getStatusBadge(s.status)}
+                                {payouts.length === 0 ? (
+                                    <p className="text-center font-bold text-gray-500 py-8">No payout history yet.</p>
+                                ) : (
+                                    payouts.map((s) => (
+                                        <div key={s.id} className="flex flex-col md:flex-row justify-between items-center p-4 border-2 border-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors">
+                                            <div className="mb-2 md:mb-0">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="font-black text-lg text-[var(--color-text-primary)]">{s.id}</span>
+                                                    {getStatusBadge(s.status)}
+                                                </div>
+                                                <p className="text-xs font-bold text-[var(--color-text-secondary)]">{s.date} • {s.method}</p>
                                             </div>
-                                            <p className="text-xs font-bold text-[var(--color-text-secondary)]">{s.date} • {s.method}</p>
+                                            <div className="text-right">
+                                                <span className="block text-xl font-black text-[var(--color-text-primary)]">{s.amount}</span>
+                                                {s.status === 'completed' && <span className="text-[10px] font-bold text-green-600 block">PROCESSED</span>}
+                                            </div>
                                         </div>
-                                        <div className="text-right">
-                                            <span className="block text-xl font-black text-[var(--color-text-primary)]">{s.amount}</span>
-                                            {s.status === 'completed' && <span className="text-[10px] font-bold text-green-600 block">PAID</span>}
-                                        </div>
-                                    </div>
-                                ))}
+                                    ))
+                                )}
                             </div>
-                            <button className="w-full mt-6 py-2 bg-[var(--color-bg-secondary)] border-2 border-dashed border-[var(--color-text-primary)] font-black uppercase hover:bg-[var(--color-text-primary)] hover:text-[var(--color-bg-primary)] transition-colors">
-                                View Full History
-                            </button>
                         </div>
                     </div>
 
                     {/* Sidebar: Request & Methods */}
-                    <div className="space-y-8 animate-fade-in-up animation-delay-200">
+                    <div className="space-y-8 animate-fade-in-up">
                         {/* Request Settlement */}
                         <div className="neo-card bg-[var(--color-accent-secondary)] p-6 border-4 border-black shadow-[8px_8px_0_black] text-white">
                             <h3 className="text-xl font-black uppercase mb-4">Request Payout</h3>
                             <p className="font-bold text-sm mb-6 opacity-90">
-                                Funds become available for withdrawal 3 days after event completion.
+                                Minimum withdrawal amount is ₹500. Processing takes 2-3 business days.
                             </p>
                             <div className="mb-4">
                                 <label className="block text-xs font-black uppercase mb-1">Amount</label>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-black font-black">$</span>
-                                    <input type="number" defaultValue="8150.00" className="w-full pl-8 pr-4 py-3 bg-white text-black font-black border-2 border-black" />
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-black font-black">₹</span>
+                                    <input type="number" defaultValue={totalRevenue} className="w-full pl-8 pr-4 py-3 bg-white text-black font-black border-2 border-black" />
                                 </div>
                             </div>
                             <button className="w-full py-3 bg-black text-white font-black uppercase border-2 border-white hover:bg-white hover:text-black hover:border-black transition-colors shadow-[4px_4px_0_black]">
                                 Withdraw Funds
                             </button>
                         </div>
-
-                        {/* Bank Accounts */}
-                        <div className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[8px_8px_0_var(--color-text-primary)]">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-black uppercase">Payout Methods</h3>
-                                <button className="text-xs font-black uppercase underline">Edit</button>
-                            </div>
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-3 p-3 border-2 border-black bg-gray-100">
-                                    <span className="text-2xl">🏦</span>
-                                    <div className="flex-1">
-                                        <p className="font-black text-sm">Chase Bank</p>
-                                        <p className="text-xs font-bold text-gray-500">Checking •••• 4421</p>
-                                    </div>
-                                    <span className="text-xs font-black bg-black text-white px-2 py-0.5">Primary</span>
-                                </div>
-                                <div className="flex items-center gap-3 p-3 border-2 border-dashed border-gray-400 text-gray-400 hover:border-black hover:text-black cursor-pointer transition-colors">
-                                    <span className="text-2xl">+</span>
-                                    <span className="font-black text-sm uppercase">Add Method</span>
-                                </div>
-                            </div>
-                        </div>
                     </div>
-
                 </div>
             </div>
         </div>

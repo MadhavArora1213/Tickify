@@ -94,11 +94,18 @@ const EventDetails = () => {
     const currentTicketPrice = event.tickets?.find((t, index) => (t.id || index) === selectedTicket)?.price || 0;
     const totalPrice = currentTicketPrice * ticketQuantity;
 
+    const isRegistrationClosed = event ? (() => {
+        if (!event.registrationEndDate) return false;
+        const now = new Date();
+        const endDate = new Date(`${event.registrationEndDate}T${event.registrationEndTime || '23:59'}`);
+        return now > endDate;
+    })() : false;
+
     return (
         <div className="min-h-screen bg-[var(--color-bg-primary)] pb-20 pt-24 md:pt-36">
             {/* Banner */}
             <div className="relative w-full mx-auto container px-4 mb-8">
-                <div className="w-full h-auto md:aspect-[21/9] rounded-3xl overflow-hidden border-4 border-black shadow-[12px_12px_0_black] relative group bg-black flex flex-col md:block">
+                <div className={`w-full h-auto md:aspect-[21/9] rounded-3xl overflow-hidden border-4 border-black shadow-[12px_12px_0_black] relative group bg-black flex flex-col md:block ${isRegistrationClosed ? 'grayscale' : ''}`}>
                     {/* Image Container */}
                     <div className="w-full aspect-video md:w-full md:h-full md:absolute md:inset-0 bg-black">
                         <img
@@ -107,6 +114,15 @@ const EventDetails = () => {
                             className="w-full h-full object-contain"
                         />
                     </div>
+
+                    {isRegistrationClosed && (
+                        <div className="absolute inset-0 bg-black/40 z-30 flex items-center justify-center p-4">
+                            <div className="bg-red-500 text-white font-black text-2xl md:text-5xl border-4 border-white shadow-[8px_8px_0_black] px-8 py-4 -rotate-3 uppercase flex flex-col items-center gap-2">
+                                <span>🚫 Registration Closed</span>
+                                <span className="text-sm md:text-lg opacity-90">This event is no longer accepting new bookings</span>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Content (Stacked on mobile, Overlay on desktop) */}
                     <div className="relative md:absolute bottom-0 left-0 w-full z-20 p-6 md:p-8 bg-black md:bg-gradient-to-t md:from-black md:via-black/80 md:to-transparent border-t-2 md:border-t-0 border-[var(--color-bg-secondary)] md:border-none">
@@ -256,6 +272,7 @@ const EventDetails = () => {
                                             </div>
                                             <button
                                                 onClick={() => {
+                                                    if (isRegistrationClosed) return;
                                                     if (event.seatingType === 'Reserved' || (event.seatingGrid && event.seatingGrid.length > 0)) {
                                                         navigate(`/events/${event.id}/seats`);
                                                     } else {
@@ -272,9 +289,14 @@ const EventDetails = () => {
                                                         });
                                                     }
                                                 }}
-                                                className="neo-btn w-full py-4 bg-[var(--color-accent-primary)] text-white text-xl shadow-[6px_6px_0_black] hover:shadow-[8px_8px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-[0_0_0_black] active:translate-x-[0] active:translate-y-[0]"
+                                                disabled={isRegistrationClosed}
+                                                className={`w-full py-4 text-white text-xl shadow-[6px_6px_0_black] transition-all
+                                                    ${isRegistrationClosed
+                                                        ? 'bg-gray-400 cursor-not-allowed grayscale'
+                                                        : 'bg-[var(--color-accent-primary)] hover:shadow-[8px_8px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-[0_0_0_black] active:translate-x-[0] active:translate-y-[0]'
+                                                    }`}
                                             >
-                                                CHECKOUT NOW -&gt;
+                                                {isRegistrationClosed ? 'REGISTRATION CLOSED' : 'CHECKOUT NOW ->'}
                                             </button>
                                             <p className="text-xs text-center font-bold text-[var(--color-text-muted)] mt-2">
                                                 POWERED BY TICKIFY
