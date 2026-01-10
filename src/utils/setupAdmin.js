@@ -47,7 +47,7 @@ export const setupDefaultAdmin = async () => {
             console.log('ℹ️ Admin account already exists.');
             return { success: true, message: 'Admin already exists' };
         }
-        console.error('❌ Error creating admin:', error);
+        console.warn('❌ Error creating admin:', error);
         return { success: false, error: error.message };
     }
 };

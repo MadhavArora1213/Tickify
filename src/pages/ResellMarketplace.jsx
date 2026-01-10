@@ -5,6 +5,7 @@ import { collection, onSnapshot, query, where, orderBy, addDoc, serverTimestamp,
 import { db } from '../config/firebase';
 import { uploadToS3 } from '../services/s3Service';
 import Tesseract from 'tesseract.js';
+import toast from 'react-hot-toast';
 
 const ResellMarketplace = () => {
     const navigate = useNavigate();
@@ -54,7 +55,7 @@ const ResellMarketplace = () => {
             setTickets(sortedTickets);
             setLoading(false);
         }, (error) => {
-            console.error("Error fetching resell tickets:", error);
+            toast.error("Error fetching resell tickets");
             setLoading(false);
         });
 
@@ -146,7 +147,7 @@ const ResellMarketplace = () => {
                     if (possibleTitle) eventTitle = possibleTitle;
                 }
             } catch (e) {
-                console.error("Event matching error:", e);
+                // Fail silently for event matching
             }
 
             // Update UI with REAL Extracted Data
@@ -161,8 +162,7 @@ const ResellMarketplace = () => {
             }));
 
         } catch (error) {
-            console.error("OCR Analysis failed:", error);
-            alert("Analysis failed to read the image properly. Please enter details manually.");
+            toast.error("Analysis failed to read the image properly. Please enter details manually.");
         } finally {
             setIsAnalyzing(false);
             setModalStep(3);
@@ -173,13 +173,13 @@ const ResellMarketplace = () => {
         e.preventDefault();
 
         if (!currentUser) {
-            alert("Please login to list a ticket.");
+            toast.error("Please login to list a ticket.");
             navigate('/login');
             return;
         }
 
         if (Number(listingData.resalePrice) > Number(listingData.originalPrice)) {
-            alert(`Fair Price Policy: You cannot list for more than the original price (₹${listingData.originalPrice}).`);
+            toast.error(`Fair Price Policy: You cannot list for more than the original price (₹${listingData.originalPrice}).`);
             return;
         }
 
@@ -210,7 +210,7 @@ const ResellMarketplace = () => {
                 isAIVerified: true
             });
 
-            alert("Ticket listed successfully on the marketplace!");
+            toast.success("Ticket listed successfully on the marketplace!");
             setShowModal(false);
             setModalStep(1);
             setListingData({
@@ -223,8 +223,7 @@ const ResellMarketplace = () => {
                 verificationFlag: 'PENDING'
             });
         } catch (err) {
-            console.error("Listing error:", err);
-            alert("Failed to post listing. Please try again.");
+            toast.error("Failed to post listing. Please try again.");
         } finally {
             setIsSubmitting(false);
         }

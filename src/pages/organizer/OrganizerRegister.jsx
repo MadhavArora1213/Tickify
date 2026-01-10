@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import toast from 'react-hot-toast';
 import { sendOTPSMS, verifyOTP as verifyPhoneOTP, clearOTP as clearPhoneOTP } from '../../services/messageCentralOTPService';
 import { sendOTPEmail, verifyOTP as verifyEmailOTP, clearOTP as clearEmailOTP, sendRegistrationReceivedEmail } from '../../services/brevoService';
 import { indianLocations } from '../../data/indianLocations';
@@ -116,7 +117,7 @@ const OrganizerRegister = () => {
                 setError(result.message);
             }
         } catch (err) {
-            console.error(err);
+            toast.error('Failed to initiate registration.');
             setError('Failed to initiate registration.');
         } finally {
             setLoading(false);
@@ -191,9 +192,8 @@ const OrganizerRegister = () => {
 
             setSuccess('Registration Successful! You will be informed via email once your account is approved. Redirecting...');
             setTimeout(() => navigate('/organizer/login'), 4000);
-
         } catch (err) {
-            console.error(err);
+            toast.error(err.message || 'Registration failed');
             if (err.message.includes('Organizer account') || err.message.includes('Account with this email exists')) {
                 setError(err.message);
             } else if (err.code === 'auth/email-already-in-use') {

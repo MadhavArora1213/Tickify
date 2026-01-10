@@ -1,20 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SpotlightCard from './react-bits/SpotlightCard';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { gsap } from 'gsap';
 
 const categories = [
-    { id: 'all', name: 'All Events', icon: '🔥' },
-    { id: 'music', name: 'Music', icon: '🎵' },
-    { id: 'tech', name: 'Technology', icon: '💻' },
-    { id: 'arts', name: 'Arts & Theater', icon: '🎭' },
-    { id: 'food', name: 'Food & Drink', icon: '🍔' },
-    { id: 'sports', name: 'Sports', icon: '⚽' },
-    { id: 'business', name: 'Business', icon: '💼' },
-    { id: 'wellness', name: 'Wellness', icon: '🧘' },
+    { id: 'All', name: 'All Events', icon: '🔥' },
+    { id: 'Music', name: 'Music', icon: '🎵' },
+    { id: 'Technology', name: 'Technology', icon: '💻' },
+    { id: 'Arts', name: 'Arts & Theater', icon: '🎭' },
+    { id: 'Food', name: 'Food & Drink', icon: '🍔' },
+    { id: 'Sports', name: 'Sports', icon: '⚽' },
+    { id: 'Business', name: 'Business', icon: '💼' },
+    { id: 'Wellness', name: 'Wellness', icon: '🧘' },
 ];
 
 const CategoryFilters = () => {
-    const [active, setActive] = useState('all');
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const activeCategory = searchParams.get('cat') || 'All';
     const containerRef = useRef(null);
 
     useEffect(() => {
@@ -60,21 +63,21 @@ const CategoryFilters = () => {
                 {categories.map((cat) => (
                     <div
                         key={cat.id}
-                        onClick={() => setActive(cat.id)}
+                        onClick={() => navigate(`/events?cat=${cat.id}`)}
                         className={`
                           category-card cursor-pointer group flex flex-col items-center justify-center p-4 min-h-[120px] transition-all duration-200 border-2 border-black rounded-xl
-                          ${active === cat.id
+                          ${activeCategory === cat.id
                                 ? 'bg-[var(--color-accent-primary)] text-white shadow-[4px_4px_0_black] translate-y-[-2px] translate-x-[-2px]'
                                 : 'bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-secondary)] shadow-[4px_4px_0_black] hover:translate-y-[-4px] hover:translate-x-[-4px] hover:shadow-[6px_6px_0_black]'}
                         `}
                     >
                         <div className="relative z-10 flex flex-col items-center text-center">
                             <span
-                                className={`text-4xl mb-2 transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12 ${active === cat.id ? 'animate-bounce' : ''}`}
+                                className={`text-4xl mb-2 transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12 ${activeCategory === cat.id ? 'animate-bounce' : ''}`}
                             >
                                 {cat.icon}
                             </span>
-                            <span className={`text-sm font-black tracking-tight uppercase transition-colors duration-300 ${active === cat.id ? 'text-white' : 'text-[var(--color-text-primary)]'}`}>
+                            <span className={`text-sm font-black tracking-tight uppercase transition-colors duration-300 ${activeCategory === cat.id ? 'text-white' : 'text-[var(--color-text-primary)]'}`}>
                                 {cat.name}
                             </span>
                         </div>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import toast from 'react-hot-toast';
 
 const ScanResult = () => {
     const navigate = useNavigate();
@@ -38,7 +39,7 @@ const ScanResult = () => {
                                 setEvent(eventSnap.data());
                             }
                         } catch (e) {
-                            console.error("Error fetching event:", e);
+                            // Silent failure for event fetch
                         }
                     }
 
@@ -54,7 +55,7 @@ const ScanResult = () => {
                     setError("Invalid Ticket: Booking not found");
                 }
             } catch (err) {
-                console.error("Verification error:", err);
+                toast.error("Verification error");
                 setError("Error verifying ticket");
             } finally {
                 setLoading(false);

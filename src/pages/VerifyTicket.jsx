@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import toast from 'react-hot-toast';
 
 const VerifyTicket = () => {
     const { bookingId } = useParams();
@@ -37,7 +38,7 @@ const VerifyTicket = () => {
                     setError("Invalid Ticket: Booking not found");
                 }
             } catch (err) {
-                console.error("Verification error:", err);
+                toast.error("Error verifying ticket");
                 setError("Error verifying ticket");
             } finally {
                 setLoading(false);

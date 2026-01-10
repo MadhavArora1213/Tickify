@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { sendOTPSMS, verifyOTP as verifyPhoneOTP, clearOTP as clearPhoneOTP } from '../services/messageCentralOTPService';
 import { sendOTPEmail, verifyOTP as verifyEmailOTP, clearOTP as clearEmailOTP } from '../services/brevoService';
+import toast from 'react-hot-toast';
 
 const Register = () => {
     const [step, setStep] = useState(1); // 1: Info, 2: Email Verify, 3: Phone Input, 4: Phone Verify
@@ -36,7 +37,7 @@ const Register = () => {
             await signInWithGoogle();
             navigate('/');
         } catch (err) {
-            console.error('Google sign-in error:', err);
+            toast.error('Google sign-in failed');
             if (err.code === 'auth/popup-closed-by-user') {
                 setError('Sign-in cancelled. Please try again.');
             } else if (err.code === 'auth/popup-blocked') {
@@ -202,7 +203,6 @@ const Register = () => {
                 setOtp(['', '', '', '']); // 4 digit OTP for phone
                 setSuccess('Verification code sent to your phone!');
                 startResendTimer();
-                if (result.otp) console.log('📱 DEV PHONE OTP:', result.otp);
             } else {
                 setError(result.message);
             }
@@ -235,11 +235,12 @@ const Register = () => {
             await signup(formData.email, formData.password, formData.fullName, formData.phoneNumber);
 
             setSuccess('Account created successfully! Redirecting...');
+            toast.success('Account created successfully!');
             setTimeout(() => {
                 navigate('/');
             }, 1500);
         } catch (err) {
-            console.error('Registration error:', err);
+            toast.error('Registration failed');
             if (err.code === 'auth/email-already-in-use') {
                 setError('An account with this email already exists.');
             } else {
@@ -262,7 +263,6 @@ const Register = () => {
                 if (result.success) {
                     setSuccess('New email code sent!');
                     startResendTimer();
-                    if (result.otp) console.log('📧 DEV EMAIL OTP:', result.otp);
                 } else setError(result.message);
             } else if (verificationType === 'phone') {
                 clearPhoneOTP(formData.phoneNumber);
@@ -271,7 +271,6 @@ const Register = () => {
                     setSuccess('New phone code sent!');
                     setOtp(['', '', '', '']); // Reset to 4
                     startResendTimer();
-                    if (result.otp) console.log('📱 DEV PHONE OTP:', result.otp);
                 } else setError(result.message);
             }
         } catch (err) {

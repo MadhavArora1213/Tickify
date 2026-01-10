@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../../config/firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import toast from 'react-hot-toast';
 
 const AdminAnalytics = () => {
     const [stats, setStats] = useState({
@@ -45,7 +46,7 @@ const AdminAnalytics = () => {
                     averageTicketPrice: tickets > 0 ? (revenue / tickets) : 0
                 });
             } catch (error) {
-                console.error("Error fetching analytics:", error);
+                toast.error("Error fetching analytics");
             } finally {
                 setLoading(false);
             }

@@ -5,6 +5,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { signOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import toast from 'react-hot-toast';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -36,7 +37,7 @@ const Login = () => {
 
             navigate('/');
         } catch (err) {
-            console.error('Login error:', err);
+            toast.error('Login failed');
             switch (err.code) {
                 case 'auth/user-not-found':
                     setError('No account found with this email.');
@@ -66,7 +67,7 @@ const Login = () => {
             await signInWithGoogle();
             navigate('/');
         } catch (err) {
-            console.error('Google sign-in error:', err);
+            toast.error('Google sign-in failed');
             if (err.code === 'auth/popup-closed-by-user') {
                 setError('Sign-in cancelled. Please try again.');
             } else if (err.code === 'auth/popup-blocked') {

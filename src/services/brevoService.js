@@ -1,5 +1,6 @@
 // Brevo Email Service for OTP Verification
 // API Documentation: https://developers.brevo.com/
+import toast from 'react-hot-toast';
 
 const BREVO_API_KEY = import.meta.env.VITE_BREVO_API_KEY || '';
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
@@ -117,11 +118,10 @@ export const sendOTPEmail = async (email, name = 'User') => {
             return { success: true, message: 'OTP sent successfully' };
         } else {
             const error = await response.json();
-            console.error('Brevo API Error:', error);
             return { success: false, message: error.message || 'Failed to send OTP' };
         }
     } catch (error) {
-        console.error('Error sending OTP:', error);
+        toast.error('Error sending OTP');
         return { success: false, message: 'Network error. Please try again.' };
     }
 };

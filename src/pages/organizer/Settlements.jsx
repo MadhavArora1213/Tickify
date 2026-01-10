@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../../config/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const Settlements = () => {
     const { currentUser } = useAuth();
@@ -43,7 +44,7 @@ const Settlements = () => {
                 ]);
 
             } catch (error) {
-                console.error("Error fetching finances:", error);
+                toast.error("Error fetching finances");
             } finally {
                 setLoading(false);
             }

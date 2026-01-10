@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { doc, runTransaction, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const Checkout = () => {
     const location = useLocation();
@@ -70,7 +71,7 @@ const Checkout = () => {
                     }
 
                     if (resaleDoc.data().status !== 'available') {
-                        console.error("❌ Resale Ticket Not Available. Status:", resaleDoc.data().status);
+                        toast.error("This ticket is no longer available.");
                         throw new Error("This ticket is no longer available.");
                     }
 
@@ -168,19 +169,25 @@ const Checkout = () => {
                         eventCodePrefix = `${dateStr}${titlePart}`;
                     }
 
-                    const capacity = currentEventData.totalCapacity || currentEventData.tickets?.reduce((sum, t) => sum + parseInt(t.quantity || 0), 0) || 100;
-                    const padding = currentEventData.ticketPadding || String(capacity).length || 2;
-
+                    const padding = currentEventData.ticketPadding || 3;
                     let nextSequence = currentSequence;
 
                     // Add ticketNumber to each item
                     const itemsWithTicketNumbers = items.map(item => {
                         const quantity = item.quantity || 1;
                         const numbers = [];
+
+                        // Get 3-letter category code
+                        const categoryCode = (item.name || item.ticketName || 'GEN')
+                            .substring(0, 3)
+                            .toUpperCase()
+                            .replace(/\s/g, '');
+
                         for (let i = 0; i < quantity; i++) {
                             nextSequence++;
                             const seqStr = String(nextSequence).padStart(padding, '0');
-                            numbers.push(`${eventCodePrefix}${seqStr}`);
+                            // Format: [Prefix][Sequence][Category]
+                            numbers.push(`${eventCodePrefix}${seqStr}${categoryCode}`);
                         }
 
                         return {
@@ -208,7 +215,7 @@ const Checkout = () => {
                         paymentStatus: 'paid',
                         bookingDate: serverTimestamp(),
                         status: 'confirmed',
-                        bookingReference: `${eventCodePrefix}-${String(nextSequence).padStart(padding, '0')}` // Padded Reference
+                        bookingReference: `${eventCodePrefix}${String(nextSequence).padStart(padding, '0')}` // Padded Reference (No Hyphen)
                     });
 
                     return bookingRef.id; // Return ID from transaction
@@ -219,24 +226,25 @@ const Checkout = () => {
             navigate('/payment/success', { state: { bookingId: resultId, amount: totalAmount } });
 
         } catch (error) {
-            console.error("Booking failed: ", error);
-            alert("Booking failed: " + error.message);
+            toast.error("Booking failed: " + error.message);
             setIsProcessing(false);
         }
     };
 
     const handlePayment = async () => {
         if (!formData.firstName || !formData.email || !formData.phone) {
-            alert("Please fill in contact details.");
-            return;
-        }
-
-        if (totalAmount <= 0) {
-            alert("Invalid total amount.");
+            toast.error("Please fill in contact details.");
             return;
         }
 
         setIsProcessing(true);
+
+        // --- HANDLE FREE BOOKINGS (₹0) ---
+        if (totalAmount <= 0) {
+            toast.success("Processing free ticket...");
+            await processBooking('FREE_ORDER_' + Date.now());
+            return;
+        }
 
         // --- PRE-CHECK FOR RESALE ---
         if (state.isResale && state.resaleTicketId) {
@@ -246,12 +254,12 @@ const Checkout = () => {
                 const resaleSnap = await getDoc(resaleRef);
 
                 if (!resaleSnap.exists() || resaleSnap.data().status !== 'available') {
-                    alert("Sorry, this resale ticket has just been sold or is no longer available.");
+                    toast.error("Sorry, this resale ticket has just been sold or is no longer available.");
                     navigate('/resell');
                     return;
                 }
             } catch (err) {
-                console.error("Availability check failed", err);
+                toast.error("Availability check failed");
             }
         }
 
@@ -262,7 +270,7 @@ const Checkout = () => {
         const res = await loadRazorpay();
 
         if (!res) {
-            alert('Razorpay SDK failed to load. Are you online?');
+            toast.error('Razorpay SDK failed to load. Are you online?');
             setIsProcessing(false);
             return;
         }
@@ -296,7 +304,7 @@ const Checkout = () => {
         paymentObject.open();
 
         paymentObject.on('payment.failed', function (response) {
-            alert("Payment Failed: " + response.error.description);
+            toast.error("Payment Failed: " + response.error.description);
             setIsProcessing(false);
         });
     };
@@ -403,7 +411,9 @@ const Checkout = () => {
                                 className={`neo-btn w-full bg-[var(--color-success)] text-white text-xl py-4 shadow-[6px_6px_0_black] hover:shadow-[8px_8px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] 
                                     ${isProcessing ? 'opacity-70 cursor-not-allowed' : ''}`}
                             >
-                                {isProcessing ? 'PROCESSING...' : `PAY ₹${totalAmount.toFixed(2)}`}
+                                {isProcessing
+                                    ? 'PROCESSING...'
+                                    : (totalAmount <= 0 ? 'CONFIRM FREE BOOKING' : `PAY ₹${totalAmount.toFixed(2)}`)}
                             </button>
                         </div>
                     </div>

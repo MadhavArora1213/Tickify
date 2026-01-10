@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import ShinyText from '../components/react-bits/ShinyText';
 import SpotlightCard from '../components/react-bits/SpotlightCard';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import toast from 'react-hot-toast';
 
 const EventDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { currentUser } = useAuth();
     const [event, setEvent] = useState(null);
     const [loading, setLoading] = useState(true);
     const [ticketQuantity, setTicketQuantity] = useState(1);
@@ -32,7 +35,7 @@ const EventDetails = () => {
                                 organizerName = orgSnap.data().name || orgSnap.data().organizerName || organizerName;
                             }
                         } catch (err) {
-                            console.error("Error fetching organizer details:", err);
+                            // Fail silently for organizer fetch
                         }
                     }
 
@@ -58,11 +61,10 @@ const EventDetails = () => {
                         setSelectedTicket(eventData.tickets[0].id || 0); // Use index 0 if id missing
                     }
                 } else {
-                    console.log("No such event!");
                     setEvent(null);
                 }
             } catch (error) {
-                console.error("Error fetching event:", error);
+                toast.error("Error fetching event details");
             } finally {
                 setLoading(false);
             }
@@ -102,142 +104,183 @@ const EventDetails = () => {
     })() : false;
 
     return (
-        <div className="min-h-screen bg-[var(--color-bg-primary)] pb-20 pt-24 md:pt-36">
-            {/* Banner */}
-            <div className="relative w-full mx-auto container px-4 mb-8">
-                <div className={`w-full h-auto md:aspect-[21/9] rounded-3xl overflow-hidden border-4 border-black shadow-[12px_12px_0_black] relative group bg-black flex flex-col md:block ${isRegistrationClosed ? 'grayscale' : ''}`}>
-                    {/* Image Container */}
-                    <div className="w-full aspect-video md:w-full md:h-full md:absolute md:inset-0 bg-black">
-                        <img
-                            src={event.image || "https://via.placeholder.com/1200x600?text=No+Image"}
-                            alt={event.title}
-                            className="w-full h-full object-contain"
-                        />
-                    </div>
+        <div className="min-h-screen bg-[var(--color-bg-primary)] pb-32 pt-24 md:pt-36 relative overflow-hidden">
+            {/* Background Ornaments */}
+            <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--color-accent-primary)]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-[var(--color-accent-secondary)]/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
 
-                    {isRegistrationClosed && (
-                        <div className="absolute inset-0 bg-black/40 z-30 flex items-center justify-center p-4">
-                            <div className="bg-red-500 text-white font-black text-2xl md:text-5xl border-4 border-white shadow-[8px_8px_0_black] px-8 py-4 -rotate-3 uppercase flex flex-col items-center gap-2">
-                                <span>🚫 Registration Closed</span>
-                                <span className="text-sm md:text-lg opacity-90">This event is no longer accepting new bookings</span>
-                            </div>
+            <div className="container mx-auto px-4 relative z-10">
+                {/* Hero Layout */}
+                <div className="flex flex-col lg:flex-row gap-12 mb-16">
+                    {/* Left: Content & Visuals */}
+                    <div className="flex-1">
+                        {/* Breadcrumbs */}
+                        <div className="flex items-center gap-2 mb-8 text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                            <Link to="/" className="hover:text-[var(--color-accent-primary)] transition-colors">Home</Link>
+                            <span>/</span>
+                            <Link to="/events" className="hover:text-[var(--color-accent-primary)] transition-colors">Events</Link>
+                            <span>/</span>
+                            <span className="text-[var(--color-text-primary)]">{event.title}</span>
                         </div>
-                    )}
 
-                    {/* Content (Stacked on mobile, Overlay on desktop) */}
-                    <div className="relative md:absolute bottom-0 left-0 w-full z-20 p-6 md:p-8 bg-black md:bg-gradient-to-t md:from-black md:via-black/80 md:to-transparent border-t-2 md:border-t-0 border-[var(--color-bg-secondary)] md:border-none">
-                        <div className="max-w-4xl">
-                            <span className="inline-block px-3 py-1 md:px-4 md:py-2 bg-[var(--color-accent-primary)] text-white text-xs md:text-sm font-black uppercase tracking-wider border-2 border-white shadow-[2px_2px_0_white] md:shadow-[4px_4px_0_white] mb-3 md:mb-4 transform -rotate-2">
-                                {event.category || 'Event'}
-                            </span>
-                            <h1 className="text-2xl md:text-5xl lg:text-6xl font-black text-white mb-3 md:mb-4 uppercase drop-shadow-[2px_2px_0_black] md:drop-shadow-[4px_4px_0_black] break-words leading-tight">
+                        {/* Title & Chips */}
+                        <div className="mb-10">
+                            <div className="flex flex-wrap gap-3 mb-6">
+                                <span className="bg-yellow-400 text-black px-4 py-1.5 border-2 border-black font-black uppercase text-xs shadow-[2px_2px_0_black] -rotate-2">
+                                    {event.category || 'Featured'}
+                                </span>
+                                {event.isVerified && (
+                                    <span className="bg-blue-500 text-white px-4 py-1.5 border-2 border-black font-black uppercase text-xs shadow-[2px_2px_0_black] rotate-1 flex items-center gap-1">
+                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path></svg>
+                                        Verified Event
+                                    </span>
+                                )}
+                            </div>
+                            <h1 className="text-4xl md:text-7xl font-black text-[var(--color-text-primary)] uppercase leading-[0.9] tracking-tighter mb-8 max-w-4xl italic">
                                 {event.title}
                             </h1>
-                            <div className="flex flex-wrap items-center gap-3 md:gap-6 text-white font-bold text-xs md:text-lg">
-                                <div className="flex items-center gap-2 bg-white/10 md:bg-black/50 px-3 py-1.5 md:px-3 md:py-1 rounded border border-white/30 md:border-white/50">
-                                    <svg className="w-4 h-4 md:w-5 md:h-5 text-[var(--color-accent-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                    {event.date}
-                                </div>
-                                {event.time && (
-                                    <div className="flex items-center gap-2 bg-white/10 md:bg-black/50 px-3 py-1.5 md:px-3 md:py-1 rounded border border-white/30 md:border-white/50">
-                                        <svg className="w-4 h-4 md:w-5 md:h-5 text-[var(--color-accent-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        {event.time}
+
+                            {/* Main Visual */}
+                            <div className="neo-card w-full aspect-video md:aspect-[21/9] bg-black overflow-hidden border-4 border-black shadow-[16px_16px_0_black] relative mb-12 transform hover:translate-x-[-4px] hover:translate-y-[-4px] transition-all group">
+                                <img
+                                    src={event.image || "https://via.placeholder.com/1200x600?text=No+Image"}
+                                    alt={event.title}
+                                    className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
+                                />
+                                {isRegistrationClosed && (
+                                    <div className="absolute inset-0 bg-black/60 z-30 flex items-center justify-center p-4">
+                                        <div className="bg-red-500 text-white font-black text-2xl md:text-4xl border-4 border-white shadow-[8px_8px_0_black] px-8 py-4 -rotate-3 uppercase">
+                                            SOLD OUT
+                                        </div>
                                     </div>
                                 )}
-                                <div className="flex items-center gap-2 bg-white/10 md:bg-black/50 px-3 py-1.5 md:px-3 md:py-1 rounded border border-white/30 md:border-white/50">
-                                    <svg className="w-4 h-4 md:w-5 md:h-5 text-[var(--color-accent-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                    {event.location}
+                            </div>
+
+                            {/* Info Bar */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                                <div className="neo-card bg-white p-6 border-2 border-black shadow-[4px_4px_0_black] flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-purple-100 flex items-center justify-center border-2 border-black rounded shadow-[2px_2px_0_black]">
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase text-gray-400">Date</p>
+                                        <p className="font-black uppercase text-sm">{event.date}</p>
+                                    </div>
+                                </div>
+                                <div className="neo-card bg-white p-6 border-2 border-black shadow-[4px_4px_0_black] flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-blue-100 flex items-center justify-center border-2 border-black rounded shadow-[2px_2px_0_black]">
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase text-gray-400">Time</p>
+                                        <p className="font-black uppercase text-sm">{event.time || 'TBA'}</p>
+                                    </div>
+                                </div>
+                                <div className="neo-card bg-white p-6 border-2 border-black shadow-[4px_4px_0_black] flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-yellow-100 flex items-center justify-center border-2 border-black rounded shadow-[2px_2px_0_black]">
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase text-gray-400">Location</p>
+                                        <p className="font-black uppercase text-sm line-clamp-1">{event.location}</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <div className="container mx-auto px-4 -mt-4 relative z-30">
-                <div className="flex flex-col lg:flex-row gap-8">
-                    {/* Main Content */}
-                    <div className="flex-1 space-y-8">
-                        {/* Description */}
-                        <div className="neo-card bg-[var(--color-bg-surface)] p-8">
-                            <h2 className="text-2xl font-black text-[var(--color-text-primary)] mb-4 uppercase decoration-4 underline decoration-[var(--color-accent-secondary)]">
-                                <span className="block dark:hidden" style={{ WebkitTextStroke: '1px black', color: 'white', textShadow: '2px 2px 0px #000' }}>About the Event</span>
-                                <span className="hidden dark:block">About the Event</span>
-                            </h2>
-                            <p className="text-[var(--color-text-secondary)] leading-relaxed text-lg font-medium">
-                                {event.description}
-                            </p>
-                        </div>
+                            {/* About */}
+                            <div className="prose prose-xl max-w-none">
+                                <h2 className="text-3xl font-black uppercase italic mb-6 border-b-8 border-yellow-200 inline-block">The Details</h2>
+                                <p className="text-xl leading-relaxed text-[var(--color-text-secondary)] font-medium whitespace-pre-line mb-12">
+                                    {event.description}
+                                </p>
+                            </div>
 
-                        {/* Lineup */}
-                        {event.lineup && event.lineup.length > 0 && (
-                            <div className="neo-card bg-[var(--color-bg-surface)] p-8">
-                                <h2 className="text-2xl font-black text-[var(--color-text-primary)] mb-6 uppercase decoration-4 underline decoration-[var(--color-accent-secondary)]">
-                                    <span className="block dark:hidden" style={{ WebkitTextStroke: '1px black', color: 'white', textShadow: '2px 2px 0px #000' }}>The Lineup</span>
-                                    <span className="hidden dark:block">The Lineup</span>
-                                </h2>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                    {event.lineup.map((artist, idx) => (
-                                        <div key={idx} className="neo-card bg-[var(--color-bg-secondary)] p-4 text-center hover:scale-105 transition-transform flex flex-col items-center">
-                                            <div className="w-20 h-20 rounded-full border-4 border-black bg-[var(--color-accent-primary)] mb-3 flex items-center justify-center text-3xl shadow-[4px_4px_0_black]">
-                                                😎
+                            {/* Lineup Section */}
+                            {event.lineup && event.lineup.length > 0 && (
+                                <div className="mb-16">
+                                    <h2 className="text-3xl font-black uppercase italic mb-8 border-b-8 border-blue-200 inline-block">On the stage</h2>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {event.lineup.map((artist, idx) => (
+                                            <div key={idx} className="neo-card bg-white p-6 border-2 border-black shadow-[6px_6px_0_black] flex items-center gap-4 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0_black] transition-all cursor-crosshair">
+                                                <div className="w-14 h-14 bg-black flex items-center justify-center text-white font-black text-2xl rotate-3">
+                                                    {artist.charAt(0)}
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="font-black uppercase text-lg leading-none">{artist}</span>
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase mt-1 tracking-widest">Special Guest</span>
+                                                </div>
                                             </div>
-                                            <span className="font-black text-[var(--color-text-primary)] text-lg uppercase">{artist}</span>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {/* Organizer */}
-                        <div className="neo-card bg-[var(--color-bg-surface)] p-8 flex items-center justify-between">
-                            <div>
-                                <h3 className="text-sm font-black text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">Organizer</h3>
-                                <p className="text-2xl font-black text-[var(--color-text-primary)]">{event.organizer || "Unknown Organizer"}</p>
+                            {/* Organizer Profile Summary */}
+                            <div className="neo-card bg-[var(--color-bg-surface)] p-8 border-2 border-black shadow-[4px_4px_0_black] flex flex-col md:flex-row justify-between items-center gap-6">
+                                <div className="flex items-center gap-6">
+                                    <div className="w-16 h-16 rounded-full border-2 border-black bg-[var(--color-accent-secondary)] flex items-center justify-center text-white text-3xl shadow-[4px_4px_0_black]">
+                                        🎭
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Presented By</h3>
+                                        <p className="text-2xl font-black text-[var(--color-text-primary)] uppercase">{event.organizer}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => event.organizerId && navigate(`/organizer-public/${event.organizerId}`)}
+                                    className="neo-btn px-8 py-3 bg-black text-white text-sm font-black uppercase hover:shadow-[4px_4px_0_var(--color-accent-primary)] transition-all"
+                                >
+                                    Explore Profile
+                                </button>
                             </div>
-                            <button
-                                onClick={() => {
-                                    if (event.organizerId) {
-                                        navigate(`/organizer-public/${event.organizerId}`);
-                                    } else {
-                                        alert("Organizer profile is private or not linked.");
-                                    }
-                                }}
-                                className="neo-btn px-6 py-3 bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm"
-                            >
-                                View Profile
-                            </button>
                         </div>
                     </div>
 
-                    {/* Booking Sidebar */}
-                    <div className="w-full lg:w-[400px] flex-shrink-0">
-                        <div className="sticky top-24">
-                            <div className="neo-card bg-[var(--color-bg-surface)] p-8 border-4 border-[var(--color-accent-primary)] shadow-[12px_12px_0_rgba(0,0,0,1)]">
-                                <h3 className="text-2xl font-black text-[var(--color-text-primary)] mb-6 uppercase">
-                                    <span className="block dark:hidden" style={{ WebkitTextStroke: '1px black', color: 'white', textShadow: '2px 2px 0px #000' }}>Get Tickets</span>
-                                    <span className="hidden dark:block">Get Tickets</span>
+                    {/* Right: Booking Sidebar (Sticky) */}
+                    <div className="w-full lg:w-[450px]">
+                        <div className="sticky top-28">
+                            <div className="neo-card bg-white p-8 border-4 border-black shadow-[16px_16px_0_black] relative mb-8">
+                                {/* Top Label */}
+                                <div className="absolute top-0 right-10 -translate-y-1/2 bg-[var(--color-accent-secondary)] text-white px-4 py-1.5 border-2 border-black font-black uppercase text-xs shadow-[4px_4px_0_black] rotate-2">
+                                    Official Tickets
+                                </div>
+
+                                <h3 className="text-3xl font-black text-black mb-10 uppercase italic tracking-tighter decoration-8 underline decoration-yellow-300">
+                                    Grab Your Pass
                                 </h3>
 
                                 {event.tickets && event.tickets.length > 0 ? (
                                     <>
-                                        <div className="space-y-4 mb-8">
+                                        <div className="space-y-4 mb-10">
                                             {event.tickets.map((ticket, index) => (
                                                 <div
                                                     key={ticket.id || index}
                                                     onClick={() => setSelectedTicket(ticket.id || index)}
-                                                    className={`cursor-pointer rounded-xl p-4 border-4 transition-all ${(selectedTicket === (ticket.id || index)) ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 shadow-[4px_4px_0_var(--color-accent-primary)] translate-x-[-2px] translate-y-[-2px]' : 'border-[var(--color-neutral-200)] hover:border-black hover:shadow-[4px_4px_0_black]'}`}
+                                                    className={`cursor-pointer border-4 p-6 transition-all group relative overflow-hidden
+                                                        ${(selectedTicket === (ticket.id || index))
+                                                            ? 'border-black bg-yellow-50 shadow-[4px_4px_0_black] translate-x-[-2px] translate-y-[-2px]'
+                                                            : 'border-transparent bg-gray-50 hover:bg-white hover:border-black'}`}
                                                 >
-                                                    <div className="flex justify-between items-center mb-2">
-                                                        <span className={`font-black uppercase ${(selectedTicket === (ticket.id || index)) ? 'text-[var(--color-accent-primary)]' : 'text-[var(--color-text-primary)]'}`}>{ticket.name}</span>
-                                                        <span className="text-xl font-black text-[var(--color-text-primary)]">₹{ticket.price}</span>
+                                                    {/* Selection Indicator */}
+                                                    {(selectedTicket === (ticket.id || index)) && (
+                                                        <div className="absolute top-0 right-0 w-12 h-12 bg-black flex items-center justify-center translate-x-6 -translate-y-6 rotate-45">
+                                                            <svg className="w-4 h-4 text-white -rotate-45 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7"></path></svg>
+                                                        </div>
+                                                    )}
+
+                                                    <div className="flex justify-between items-start mb-4">
+                                                        <div>
+                                                            <span className="block font-black uppercase text-xl text-black">{ticket.name}</span>
+                                                            <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest italic">{ticket.description || 'Access All Areas'}</span>
+                                                        </div>
+                                                        <span className="text-3xl font-black text-black leading-none">₹{ticket.price}</span>
                                                     </div>
-                                                    {ticket.features && (
-                                                        <ul className="text-xs font-bold text-[var(--color-text-muted)] space-y-1">
-                                                            {ticket.features.map((f, i) => (
-                                                                <li key={i} className="flex items-center gap-2">
-                                                                    <span className="text-green-500 text-lg">✓</span>
-                                                                    {f}
+
+                                                    {ticket.features && ticket.features.length > 0 && (
+                                                        <ul className="flex flex-wrap gap-2">
+                                                            {ticket.features.slice(0, 3).map((f, i) => (
+                                                                <li key={i} className="text-[9px] font-black uppercase bg-white border border-black px-2 py-0.5 rounded-full">
+                                                                    • {f}
                                                                 </li>
                                                             ))}
                                                         </ul>
@@ -246,33 +289,78 @@ const EventDetails = () => {
                                             ))}
                                         </div>
 
-                                        <div className="flex items-center justify-between mb-8 pb-8 border-b-4 border-dashed border-[var(--color-neutral-200)]">
-                                            <span className="font-black text-[var(--color-text-primary)] uppercase">Quantity</span>
-                                            <div className="flex items-center gap-4 bg-[var(--color-bg-secondary)] rounded p-2 border-2 border-black shadow-[2px_2px_0_black]">
+                                        {/* Quantity Selector */}
+                                        <div className="flex items-center justify-between mb-10 pb-8 border-b-4 border-black border-dashed">
+                                            <div>
+                                                <span className="block font-black text-black uppercase text-sm tracking-widest">Quantity</span>
+                                                <span className="text-[10px] font-black text-gray-400 uppercase">Limit 10 tickets</span>
+                                            </div>
+                                            <div className="flex items-center gap-4 bg-white border-4 border-black p-2 shadow-[4px_4px_0_black]">
                                                 <button
                                                     onClick={() => handleQuantityChange(-1)}
-                                                    className="w-8 h-8 flex items-center justify-center font-black hover:bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] rounded"
+                                                    className="w-10 h-10 flex items-center justify-center font-black hover:bg-black hover:text-white transition-all text-xl"
                                                 >
                                                     -
                                                 </button>
-                                                <span className="font-black w-6 text-center text-[var(--color-text-primary)] text-xl">{ticketQuantity}</span>
+                                                <span className="font-black w-8 text-center text-2xl">{ticketQuantity}</span>
                                                 <button
                                                     onClick={() => handleQuantityChange(1)}
-                                                    className="w-8 h-8 flex items-center justify-center font-black hover:bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] rounded"
+                                                    className="w-10 h-10 flex items-center justify-center font-black hover:bg-black hover:text-white transition-all text-xl"
                                                 >
                                                     +
                                                 </button>
                                             </div>
                                         </div>
 
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between items-center text-xl font-black uppercase">
-                                                <span className="text-[var(--color-text-secondary)]">Total</span>
-                                                <span className="text-3xl text-[var(--color-text-primary)]">₹{totalPrice}</span>
+                                        {/* Checkout Section */}
+                                        <div className="space-y-6">
+                                            <div className="flex justify-between items-end mb-4 group cursor-help">
+                                                <div className="font-black text-gray-400 uppercase text-xs">Final Price</div>
+                                                <div className="text-5xl font-black text-black group-hover:text-[var(--color-accent-primary)] transition-colors">
+                                                    ₹{totalPrice}
+                                                </div>
                                             </div>
+
                                             <button
                                                 onClick={() => {
                                                     if (isRegistrationClosed) return;
+
+                                                    if (!currentUser) {
+                                                        toast((t) => (
+                                                            <div className="flex flex-col gap-2 p-1">
+                                                                <span className="font-black text-xs uppercase tracking-tight">Hold on! You need to login first.</span>
+                                                                <div className="flex gap-2">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            toast.dismiss(t.id);
+                                                                            navigate('/login', { state: { from: `/events/${event.id}` } });
+                                                                        }}
+                                                                        className="bg-black text-white px-4 py-2 text-[10px] font-black uppercase border-2 border-black shadow-[2px_2px_0_white]"
+                                                                    >
+                                                                        Login
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => toast.dismiss(t.id)}
+                                                                        className="bg-white text-black px-4 py-2 text-[10px] font-black uppercase border-2 border-black"
+                                                                    >
+                                                                        Cancel
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ), {
+                                                            duration: 4000,
+                                                            position: 'top-center',
+                                                            style: {
+                                                                border: '4px solid black',
+                                                                borderRadius: '0',
+                                                                background: '#fff',
+                                                                boxShadow: '8px 8px_0 black',
+                                                                padding: '12px'
+                                                            }
+                                                        });
+                                                        return;
+                                                    }
+
                                                     if (event.seatingType === 'Reserved' || (event.seatingGrid && event.seatingGrid.length > 0)) {
                                                         navigate(`/events/${event.id}/seats`);
                                                     } else {
@@ -283,32 +371,49 @@ const EventDetails = () => {
                                                                 items: [{
                                                                     ...ticket,
                                                                     quantity: ticketQuantity,
-                                                                    totalPrice: totalPrice // Use the calculated total price
+                                                                    totalPrice: totalPrice
                                                                 }]
                                                             }
                                                         });
                                                     }
                                                 }}
                                                 disabled={isRegistrationClosed}
-                                                className={`w-full py-4 text-white text-xl shadow-[6px_6px_0_black] transition-all
+                                                className={`w-full py-5 text-white text-2xl font-black italic shadow-[8px_8px_0_black] transition-all relative overflow-hidden group
                                                     ${isRegistrationClosed
-                                                        ? 'bg-gray-400 cursor-not-allowed grayscale'
-                                                        : 'bg-[var(--color-accent-primary)] hover:shadow-[8px_8px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-[0_0_0_black] active:translate-x-[0] active:translate-y-[0]'
+                                                        ? 'bg-gray-400 cursor-not-allowed opacity-50'
+                                                        : 'bg-[var(--color-accent-primary)] hover:shadow-[12px_12px_0_black] hover:translate-x-[-4px] hover:translate-y-[-4px] active:shadow-none active:translate-x-0 active:translate-y-0'
                                                     }`}
                                             >
-                                                {isRegistrationClosed ? 'REGISTRATION CLOSED' : 'CHECKOUT NOW ->'}
+                                                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                                                <span className="relative z-10 flex items-center justify-center gap-3">
+                                                    {isRegistrationClosed ? 'REGISTRATION CLOSED' : (
+                                                        <>CONFIRM BOOKING <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg></>
+                                                    )}
+                                                </span>
                                             </button>
-                                            <p className="text-xs text-center font-bold text-[var(--color-text-muted)] mt-2">
-                                                POWERED BY TICKIFY
-                                            </p>
+
+                                            <div className="bg-yellow-100 p-4 border-2 border-black border-dashed flex items-start gap-3">
+                                                <div className="text-xl">💡</div>
+                                                <p className="text-[10px] font-bold text-gray-600 leading-tight">
+                                                    Tickets are non-refundable but can be resold on our <Link to="/resell" className="text-blue-600 underline font-black">Marketplace</Link>.
+                                                    VAT and Service fees apply at checkout.
+                                                </p>
+                                            </div>
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="text-center p-4">
-                                        <p className="font-bold text-lg">Tickets not available</p>
+                                    <div className="text-center p-12 bg-gray-50 border-4 border-black border-dashed">
+                                        <div className="text-5xl mb-4">🎫</div>
+                                        <p className="font-black uppercase text-gray-400">Inventory Empty</p>
+                                        <p className="text-xs font-bold text-gray-400 mt-2">Check back later or contact organizer</p>
                                     </div>
                                 )}
                             </div>
+
+                            {/* Sticky Footer Message */}
+                            <p className="text-center text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                                Verified & Secured Secure by Tickify API
+                            </p>
                         </div>
                     </div>
                 </div>

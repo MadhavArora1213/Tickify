@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { collection, getDocs, query, where, limit } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import toast from 'react-hot-toast';
 
 const FeaturedEvents = () => {
     const [events, setEvents] = useState([]);
@@ -51,7 +52,7 @@ const FeaturedEvents = () => {
 
                 setEvents(activeFeatured);
             } catch (error) {
-                console.error("Error fetching featured events:", error);
+                toast.error("Error fetching featured events");
             } finally {
                 setLoading(false);
             }

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { db } from '../../config/firebase';
 import { collection, query, where, getDocs, doc, getDoc, setDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import toast from 'react-hot-toast';
 import { uploadToS3 } from '../../services/s3Service';
 import { Map, MapControls, MapMarker, MarkerContent, MarkerPopup, MarkerLabel } from '@/components/ui/map';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -65,7 +66,7 @@ const OrganizerDashboard = () => {
                         }
                     }
                 } catch (error) {
-                    console.error("Geocoding error:", error);
+                    // Fail silently for geocoding but don't use console.error
                 }
             }
         };
@@ -80,7 +81,7 @@ const OrganizerDashboard = () => {
     // CSV Export Helper
     const downloadCSV = (data, filename) => {
         if (!data || data.length === 0) {
-            alert("No data available to download.");
+            toast.error("No data available to download.");
             return;
         }
 
@@ -205,7 +206,7 @@ const OrganizerDashboard = () => {
                 }
 
             } catch (error) {
-                console.error("Error fetching dashboard data:", error);
+                toast.error("Error fetching dashboard data");
             } finally {
                 setLoading(false);
             }
@@ -524,7 +525,7 @@ const OrganizerDashboard = () => {
                                 className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
                                 alt={event.eventTitle}
                                 onError={(e) => {
-                                    console.error(`Failed to load image for event ${event.id}:`, e.target.src);
+                                    console.warn(`Failed to load image for event ${event.id}`);
                                     e.target.src = 'https://via.placeholder.com/300x200?text=Image+Load+Error';
                                 }}
                             />
@@ -1035,13 +1036,13 @@ const OrganizerDashboard = () => {
 
     const handleWithdraw = async (amount) => {
         if (!settingsForm.bankAccountNumber || !settingsForm.bankIfsc) {
-            alert("Please complete your bank details in 'Settings' first!");
+            toast.error("Please complete your bank details in 'Settings' first!");
             setActiveTab('settings');
             return;
         }
 
         if (amount <= 0) {
-            alert("Invalid withdrawal amount.");
+            toast.error("Invalid withdrawal amount.");
             return;
         }
 
@@ -1062,7 +1063,7 @@ const OrganizerDashboard = () => {
                 requestedAt: serverTimestamp(),
             });
 
-            alert("Withdrawal request submitted! Admin will process it within 2-3 business days.");
+            toast.success("Withdrawal request submitted! Admin will process it within 2-3 business days.");
             setIsWithdrawModalOpen(false);
 
             // Refresh requests
@@ -1070,8 +1071,7 @@ const OrganizerDashboard = () => {
             setWithdrawalRequests(wSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
         } catch (error) {
-            console.error("Withdrawal error:", error);
-            alert("Failed to submit request.");
+            toast.error("Failed to submit request.");
         } finally {
             setWithdrawLoading(false);
         }
@@ -1272,11 +1272,9 @@ const OrganizerDashboard = () => {
                 profileImage: profileImageUrl,
                 profileImageFile: null
             }));
-            setSettingsSuccess(true);
-            setTimeout(() => setSettingsSuccess(false), 3000);
+            toast.success('Settings saved successfully! ✅');
         } catch (error) {
-            console.error('Error saving settings:', error);
-            alert('Failed to save settings: ' + error.message);
+            toast.error('Failed to save settings: ' + error.message);
         } finally {
             setSettingsSaving(false);
         }
@@ -1285,12 +1283,6 @@ const OrganizerDashboard = () => {
     const renderSettings = () => (
         <div className="space-y-6 animate-fade-in-up">
             <h2 className="text-3xl font-black uppercase text-[var(--color-text-primary)] mb-6">Organizer Settings</h2>
-
-            {settingsSuccess && (
-                <div className="p-4 bg-green-100 border-2 border-green-500 text-green-700 font-bold mb-4">
-                    ✅ Settings saved successfully!
-                </div>
-            )}
 
             {/* Profile Info */}
             <div className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[6px_6px_0_var(--color-text-primary)]">

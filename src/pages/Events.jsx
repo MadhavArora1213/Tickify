@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import ShinyText from '../components/react-bits/ShinyText';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import toast from 'react-hot-toast';
 
 // Fix for default Leaflet icon not finding images in Webpack/Vite
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -22,14 +23,28 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 const FILTER_CATEGORIES = ['All', 'Music', 'Technology', 'Arts', 'Food', 'Wellness', 'Business', 'Sports'];
 
+// Helper to auto-center map on first result
+const SetViewOnClick = ({ coords }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (coords) map.setView(coords, map.getZoom());
+    }, [coords, map]);
+    return null;
+};
+
 const Events = () => {
+    const [searchParams] = useSearchParams();
+    const queryTerm = searchParams.get('q') || '';
+    const queryLocation = searchParams.get('l') || 'All';
+    const queryCategory = searchParams.get('cat') || 'All';
+
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [selectedCategory, setSelectedCategory] = useState('All');
-    const [priceRange, setPriceRange] = useState(1000);
+    const [selectedCategory, setSelectedCategory] = useState(queryCategory);
+    const [priceRange, setPriceRange] = useState(100000);
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'map'
-    const [searchTerm, setSearchTerm] = useState('');
-    const [locationFilter, setLocationFilter] = useState('All');
+    const [searchTerm, setSearchTerm] = useState(queryTerm);
+    const [locationFilter, setLocationFilter] = useState(queryLocation);
     const [showFilters, setShowFilters] = useState(false);
 
     const isRegistrationClosed = (event) => {
@@ -72,7 +87,7 @@ const Events = () => {
 
                 setEvents(fetchedEvents);
             } catch (error) {
-                console.error("Error fetching events: ", error);
+                toast.error("Error fetching events");
             } finally {
                 setLoading(false);
             }
@@ -80,6 +95,13 @@ const Events = () => {
 
         fetchEvents();
     }, []);
+
+    // Effect to update search term and location from URL params
+    useEffect(() => {
+        if (queryTerm) setSearchTerm(queryTerm);
+        if (queryLocation) setLocationFilter(queryLocation);
+        if (queryCategory) setSelectedCategory(queryCategory);
+    }, [queryTerm, queryLocation, queryCategory]);
 
     // Filter logic
     const filteredEvents = events.filter(event => {
@@ -156,7 +178,7 @@ const Events = () => {
                             <button
                                 onClick={() => {
                                     setSelectedCategory('All');
-                                    setPriceRange(1000);
+                                    setPriceRange(100000);
                                     setSearchTerm('');
                                     setLocationFilter('All');
                                 }}
@@ -192,12 +214,12 @@ const Events = () => {
                         <div className="mb-6">
                             <div className="flex justify-between text-sm mb-2 font-bold">
                                 <span className="text-[var(--color-text-primary)]">Max Price</span>
-                                <span className="text-[var(--color-accent-primary)]">${priceRange}</span>
+                                <span className="text-[var(--color-accent-primary)]">₹{priceRange}</span>
                             </div>
                             <input
                                 type="range"
                                 min="0"
-                                max="1000"
+                                max="100000"
                                 value={priceRange}
                                 onChange={(e) => setPriceRange(e.target.value)}
                                 className="w-full h-4 bg-[var(--color-text-primary)] rounded-full appearance-none cursor-pointer border-2 border-black"
@@ -273,7 +295,7 @@ const Events = () => {
                                                 <div className="h-48 overflow-hidden relative border-b-2 border-black">
                                                     <img src={event.image || "https://via.placeholder.com/400x200?text=No+Image"} alt={event.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                                                     <div className="absolute top-2 right-2 neo-btn bg-[var(--color-accent-primary)] text-white text-xs px-2 py-1 rotate-3">
-                                                        {event.price ? (typeof event.price === 'number' ? `$${event.price}` : event.price) : 'Free'}
+                                                        {event.price ? (typeof event.price === 'number' ? `₹${event.price}` : event.price) : 'Free'}
                                                     </div>
                                                     {isRegistrationClosed(event) && (
                                                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
@@ -314,22 +336,45 @@ const Events = () => {
                         </>
                     ) : (
                         <div className="neo-card w-full h-[600px] bg-[var(--color-bg-surface)] overflow-hidden relative border-4 border-black shadow-[8px_8px_0_black]">
-                            <MapContainer center={[39.8283, -98.5795]} zoom={4} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
+                            <MapContainer
+                                center={[20.5937, 78.9629]}
+                                zoom={5}
+                                scrollWheelZoom={true}
+                                style={{ height: "100%", width: "100%", zIndex: 0 }}
+                                className="grayscale hover:grayscale-0 transition-all duration-500"
+                            >
                                 <TileLayer
-                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                                    url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                                 />
+                                {filteredEvents.length > 0 && filteredEvents[0].lat && (
+                                    <SetViewOnClick coords={[filteredEvents[0].lat, filteredEvents[0].lng]} />
+                                )}
                                 {filteredEvents.map((event) => (
                                     (event.coordinates || (event.lat && event.lng)) && (
                                         <Marker
                                             key={event.id}
                                             position={event.coordinates || [event.lat, event.lng]}
                                         >
-                                            <Popup>
-                                                <div className="text-center">
-                                                    <h3 className="font-bold text-lg mb-1">{event.title}</h3>
-                                                    <p className="text-sm mb-2">{event.location}</p>
-                                                    <Link to={`/events/${event.id}`} className="inline-block bg-blue-600 text-white px-3 py-1 rounded text-xs font-bold uppercase">View</Link>
+                                            <Tooltip permanent direction="top" offset={[0, -20]} className="neo-map-tooltip">
+                                                <span className="font-black uppercase text-[8px] bg-black text-white px-1 py-0.5 border border-white">
+                                                    {event.city || event.location?.split(',').pop()?.trim()}
+                                                </span>
+                                            </Tooltip>
+                                            <Popup className="neo-popup">
+                                                <div className="p-2 min-w-[200px]">
+                                                    <div className="h-24 bg-gray-200 mb-2 border-2 border-black overflow-hidden relative">
+                                                        <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
+                                                        <div className="absolute top-1 right-1 bg-black text-white text-[8px] font-black uppercase px-1 py-0.5">₹{event.price || 'FREE'}</div>
+                                                    </div>
+                                                    <h3 className="font-black uppercase text-sm mb-1 leading-tight tracking-tighter">{event.title}</h3>
+                                                    <p className="text-[10px] font-bold text-gray-500 uppercase mb-2 border-l-2 border-black pl-1">{event.location}</p>
+                                                    <Link
+                                                        to={`/events/${event.id}`}
+                                                        className="block w-full text-center bg-[var(--color-accent-primary)] text-white py-1.5 border-2 border-black font-black text-[10px] uppercase shadow-[2px_2px_0_black] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0_black] transition-all"
+                                                    >
+                                                        Details
+                                                    </Link>
                                                 </div>
                                             </Popup>
                                         </Marker>

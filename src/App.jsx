@@ -52,7 +52,7 @@ import Footer from './components/Footer';
 import BubbleMenu from './components/react-bits/BubbleMenu';
 import ThemeToggle from './components/ThemeToggle';
 import { UserRoute, AdminRoute, PublicRoute, AdminPublicRoute, OrganizerRoute, OrganizerGuestRoute, ScannerRoute, GuestRoute } from './components/ProtectedRoutes';
-
+import { Toaster } from 'react-hot-toast';
 
 function App() {
     const location = useLocation();
@@ -60,6 +60,7 @@ function App() {
 
     return (
         <div className="min-h-screen flex flex-col font-sans bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] transition-colors duration-300">
+            <Toaster position="top-right" />
             {/* <Header /> */}
             <main className="flex-grow">
                 <Routes>

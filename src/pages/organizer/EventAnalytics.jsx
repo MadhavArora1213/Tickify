@@ -4,6 +4,7 @@ import { db } from '../../config/firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import toast from 'react-hot-toast';
 
 const EventAnalytics = () => {
     const { eventId } = useParams();
@@ -37,7 +38,7 @@ const EventAnalytics = () => {
 
                 setBookings(fetchedBookings);
             } catch (error) {
-                console.error("Error fetching event analytics:", error);
+                toast.error("Error fetching event analytics");
             } finally {
                 setLoading(false);
             }

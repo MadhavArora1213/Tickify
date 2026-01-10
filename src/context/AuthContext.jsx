@@ -21,6 +21,7 @@ import {
     serverTimestamp
 } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
+import toast from 'react-hot-toast';
 
 const AuthContext = createContext({});
 
@@ -190,7 +191,7 @@ export const AuthProvider = ({ children }) => {
 
             return 'user';
         } catch (error) {
-            console.error('Error getting user role:', error);
+            toast.error('Error getting user role');
             return 'user';
         }
     };
@@ -218,7 +219,7 @@ export const AuthProvider = ({ children }) => {
 
             return [...users, ...organizers];
         } catch (error) {
-            console.error('Error getting users:', error);
+            toast.error('Error getting users');
             return [];
         }
     };
@@ -252,7 +253,7 @@ export const AuthProvider = ({ children }) => {
 
             return { success: false, error: 'User not found in either collection' };
         } catch (error) {
-            console.error('Error updating user:', error);
+            toast.error('Error updating user');
             return { success: false, error: error.message };
         }
     };
@@ -278,7 +279,7 @@ export const AuthProvider = ({ children }) => {
 
             return { success: false, error: 'User not found' };
         } catch (error) {
-            console.error('Error deleting user:', error);
+            toast.error('Error deleting user');
             return { success: false, error: error.message };
         }
     };
@@ -309,7 +310,7 @@ export const AuthProvider = ({ children }) => {
 
             return { success: true, user };
         } catch (error) {
-            console.error('Error creating user:', error);
+            toast.error('Error creating user');
             return { success: false, error: error.message };
         }
     };
@@ -357,7 +358,7 @@ export const AuthProvider = ({ children }) => {
                 ...doc.data()
             }));
         } catch (error) {
-            console.error('Error getting admins:', error);
+            toast.error('Error getting admins');
             return [];
         }
     };

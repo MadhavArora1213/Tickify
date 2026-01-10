@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../config/firebase';
+import toast from 'react-hot-toast';
 
 const OrganizerForgotPassword = () => {
     const [email, setEmail] = useState('');
@@ -30,8 +31,9 @@ const OrganizerForgotPassword = () => {
                 type: 'success',
                 text: 'Password reset email sent! Check your inbox.'
             });
+            toast.success('Password reset email sent!');
         } catch (error) {
-            console.error('Organizer password reset error:', error);
+            toast.error('Failed to send reset email');
 
             switch (error.code) {
                 case 'auth/user-not-found':

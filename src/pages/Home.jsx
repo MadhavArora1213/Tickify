@@ -1,5 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { Link } from 'react-router-dom';
 import Hero from '../components/Hero';
+import toast from 'react-hot-toast';
 import FeaturedEvents from '../components/FeaturedEvents';
 import CategoryFilters from '../components/CategoryFilters';
 import HowItWorks from '../components/HowItWorks';
@@ -18,9 +22,105 @@ const logos = [
 ];
 
 const Home = () => {
+    const [allEvents, setAllEvents] = useState([]);
+    const [filteredEvents, setFilteredEvents] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [locationQuery, setLocationQuery] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
+
+    // Initial fetch of all events for local filtering (Optimization: Fetch once)
+    useEffect(() => {
+        const fetchAllEvents = async () => {
+            try {
+                const eventsRef = collection(db, 'events');
+                const q = query(eventsRef, where('status', '==', 'published'));
+                const querySnapshot = await getDocs(q);
+                const fetched = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    title: doc.data().eventTitle || doc.data().title,
+                    location: doc.data().city ? `${doc.data().venueName ? doc.data().venueName + ', ' : ''}${doc.data().city}` : doc.data().location,
+                    image: doc.data().bannerUrl || doc.data().image,
+                    date: doc.data().startDate || doc.data().date,
+                    price: doc.data().price || (doc.data().tickets?.[0]?.price)
+                }));
+                setAllEvents(fetched);
+            } catch (error) {
+                toast.error("Failed to load search index");
+            }
+        };
+        fetchAllEvents();
+    }, []);
+
+    // Local filtering logic (Optimization: No API call on type)
+    useEffect(() => {
+        if (!searchQuery && !locationQuery) {
+            setFilteredEvents([]);
+            setIsSearching(false);
+            return;
+        }
+
+        setIsSearching(true);
+        const filtered = allEvents.filter(event => {
+            const matchesName = !searchQuery || event.title?.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesLocation = !locationQuery || event.location?.toLowerCase().includes(locationQuery.toLowerCase());
+            return matchesName && matchesLocation;
+        });
+        setFilteredEvents(filtered);
+    }, [searchQuery, locationQuery, allEvents]);
+
     return (
         <div className="flex flex-col gap-0">
-            <Hero />
+            <Hero
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                location={locationQuery}
+                setLocation={setLocationQuery}
+            />
+
+            {/* Live Search Results Section */}
+            {isSearching && (
+                <section className="container mx-auto px-4 py-12 bg-yellow-50 border-y-4 border-black -mt-4 mb-12">
+                    <div className="flex justify-between items-center mb-8">
+                        <h2 className="text-3xl font-black uppercase italic">
+                            Search Results ({filteredEvents.length})
+                        </h2>
+                        <button
+                            onClick={() => { setSearchQuery(''); setLocationQuery(''); }}
+                            className="neo-btn bg-white px-4 py-2 text-xs font-black uppercase border-2 border-black"
+                        >
+                            Clear X
+                        </button>
+                    </div>
+
+                    {filteredEvents.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                            {filteredEvents.map(event => (
+                                <Link
+                                    key={event.id}
+                                    to={`/events/${event.id}`}
+                                    className="neo-card bg-white p-4 border-2 border-black shadow-[4px_4px_0_black] hover:translate-y-[-2px] transition-all"
+                                >
+                                    <div className="h-32 bg-gray-100 mb-4 border-2 border-black overflow-hidden">
+                                        <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
+                                    </div>
+                                    <h3 className="font-black uppercase text-sm truncate">{event.title}</h3>
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase">{event.location}</p>
+                                    <div className="mt-2 flex justify-between items-center">
+                                        <span className="text-xs font-black text-blue-600">₹{event.price || 'FREE'}</span>
+                                        <span className="text-[10px] uppercase font-bold">{event.date}</span>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-12">
+                            <p className="text-xl font-black uppercase opacity-50">No matches found for your search.</p>
+                        </div>
+                    )}
+                </section>
+            )}
+
             <RollingGallery images={logos} />
             <CategoryFilters />
             <FeaturedEvents />

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import toast from 'react-hot-toast';
 
 const SeatSelection = () => {
     const navigate = useNavigate();
@@ -61,7 +62,7 @@ const SeatSelection = () => {
 
                         setRows(mappedRows);
                     } catch (e) {
-                        console.error("Failed to parse seating grid", e);
+                        toast.error("Failed to parse seating grid");
                         setRows([]);
                     }
                 } else if (data.tickets) {
@@ -88,12 +89,10 @@ const SeatSelection = () => {
                     });
                     setRows(generatedRows);
                 }
-            } else {
-                console.log("No such event!");
             }
             setLoading(false);
         }, (error) => {
-            console.error("Error listening to event:", error);
+            toast.error("Error listening to event updates");
             setLoading(false);
         });
 
@@ -110,7 +109,7 @@ const SeatSelection = () => {
         } else {
             // Limit to 6 seats max
             if (selectedSeats.length >= 6) {
-                alert("You can only select up to 6 seats.");
+                toast.error("You can only select up to 6 seats.");
                 return;
             }
             setSelectedSeats([...selectedSeats, {

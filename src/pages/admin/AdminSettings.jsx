@@ -1,8 +1,71 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { db } from '../../config/firebase';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import toast from 'react-hot-toast';
 
 const AdminSettings = () => {
-    const [maintenance, setMaintenance] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [config, setConfig] = useState({
+        commissionPercent: 5.0,
+        fixedFee: 50,
+        taxRate: 8.0,
+        payoutDelay: 3,
+        maintenanceMode: false
+    });
+
+    useEffect(() => {
+        const fetchConfig = async () => {
+            try {
+                const docRef = doc(db, 'system_config', 'platform_settings');
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    setConfig(docSnap.data());
+                }
+            } catch (error) {
+                toast.error("Error fetching configuration");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchConfig();
+    }, []);
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const docRef = doc(db, 'system_config', 'platform_settings');
+            await setDoc(docRef, {
+                ...config,
+                updatedAt: serverTimestamp()
+            });
+            toast.success("Configuration saved successfully! ✅");
+        } catch (error) {
+            toast.error("Failed to save configuration.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setConfig(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : parseFloat(value) || value
+        }));
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-100 flex items-center justify-center font-mono">
+                <div className="text-center">
+                    <div className="text-4xl animate-spin mb-4">⚙️</div>
+                    <p className="font-black uppercase">Loading Config...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-100 font-mono text-sm text-black">
@@ -12,6 +75,7 @@ const AdminSettings = () => {
                     <Link to="/admin/dashboard" className="w-8 h-8 bg-gray-700 flex items-center justify-center font-black text-white border border-gray-500 hover:bg-red-600 transition-colors">&larr;</Link>
                     <span className="font-bold uppercase tracking-widest">System Configuration</span>
                 </div>
+                {saving && <span className="text-[10px] font-black uppercase text-yellow-400 animate-pulse">Saving Changes...</span>}
             </div>
 
             <div className="p-6 max-w-4xl mx-auto space-y-8">
@@ -22,19 +86,43 @@ const AdminSettings = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className="block text-xs font-black uppercase mb-1">Platform Commission (%)</label>
-                            <input type="number" defaultValue="5.0" className="w-full border-2 border-black p-2 font-bold focus:bg-yellow-100 outline-none" />
+                            <input
+                                type="number"
+                                name="commissionPercent"
+                                value={config.commissionPercent}
+                                onChange={handleChange}
+                                className="w-full border-2 border-black p-2 font-bold focus:bg-yellow-100 outline-none"
+                            />
                         </div>
                         <div>
                             <label className="block text-xs font-black uppercase mb-1">Fixed Fee Per Ticket (₹)</label>
-                            <input type="number" defaultValue="50" className="w-full border-2 border-black p-2 font-bold focus:bg-yellow-100 outline-none" />
+                            <input
+                                type="number"
+                                name="fixedFee"
+                                value={config.fixedFee}
+                                onChange={handleChange}
+                                className="w-full border-2 border-black p-2 font-bold focus:bg-yellow-100 outline-none"
+                            />
                         </div>
                         <div>
                             <label className="block text-xs font-black uppercase mb-1">Tax Rate (%)</label>
-                            <input type="number" defaultValue="8.0" className="w-full border-2 border-black p-2 font-bold focus:bg-yellow-100 outline-none" />
+                            <input
+                                type="number"
+                                name="taxRate"
+                                value={config.taxRate}
+                                onChange={handleChange}
+                                className="w-full border-2 border-black p-2 font-bold focus:bg-yellow-100 outline-none"
+                            />
                         </div>
                         <div>
                             <label className="block text-xs font-black uppercase mb-1">Payout Delay (Days)</label>
-                            <input type="number" defaultValue="3" className="w-full border-2 border-black p-2 font-bold focus:bg-yellow-100 outline-none" />
+                            <input
+                                type="number"
+                                name="payoutDelay"
+                                value={config.payoutDelay}
+                                onChange={handleChange}
+                                className="w-full border-2 border-black p-2 font-bold focus:bg-yellow-100 outline-none"
+                            />
                         </div>
                     </div>
                 </div>
@@ -49,10 +137,10 @@ const AdminSettings = () => {
                             <p className="text-xs text-red-800">Disable all user access immediately.</p>
                         </div>
                         <button
-                            onClick={() => setMaintenance(!maintenance)}
-                            className={`w-12 h-6 rounded-full border-2 border-black p-0.5 transition-colors ${maintenance ? 'bg-red-600' : 'bg-gray-300'}`}
+                            onClick={() => setConfig(p => ({ ...p, maintenanceMode: !p.maintenanceMode }))}
+                            className={`w-12 h-6 rounded-full border-2 border-black p-0.5 transition-colors ${config.maintenanceMode ? 'bg-red-600' : 'bg-gray-300'}`}
                         >
-                            <div className={`w-4 h-4 bg-white rounded-full border border-black shadow-sm transform transition-transform ${maintenance ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                            <div className={`w-4 h-4 bg-white rounded-full border border-black shadow-sm transform transition-transform ${config.maintenanceMode ? 'translate-x-6' : 'translate-x-0'}`}></div>
                         </button>
                     </div>
 
@@ -69,8 +157,12 @@ const AdminSettings = () => {
 
                 {/* Save */}
                 <div className="flex justify-end pt-4">
-                    <button className="px-8 py-3 bg-black text-white font-black uppercase text-lg border-2 border-gray-500 hover:bg-green-600 hover:border-green-800 shadow-[6px_6px_0_gray] transition-all transform hover:translate-x-[-2px] hover:translate-y-[-2px]">
-                        Save Configuration
+                    <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="px-8 py-3 bg-black text-white font-black uppercase text-lg border-2 border-gray-500 hover:bg-green-600 hover:border-green-800 shadow-[6px_6px_0_gray] transition-all transform hover:translate-x-[-2px] hover:translate-y-[-2px] disabled:opacity-50"
+                    >
+                        {saving ? 'Saving...' : 'Save Configuration'}
                     </button>
                 </div>
 

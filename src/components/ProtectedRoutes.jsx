@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 // Loading spinner component
@@ -22,8 +22,35 @@ export const UserRoute = ({ children }) => {
     }
 
     if (!currentUser) {
-        // Redirect to login with return URL
-        return <Navigate to="/login" state={{ from: location }} replace />;
+        // Show a "Login Required" prompt instead of a direct redirect
+        return (
+            <div className="min-h-screen bg-[var(--color-bg-primary)] flex items-center justify-center p-6 text-center transition-colors duration-300">
+                <div className="neo-card bg-[var(--color-bg-surface)] p-12 border-4 border-black shadow-[12px_12px_0_black] max-w-lg relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-[var(--color-accent-primary)]/10 -rotate-45 translate-x-10 -translate-y-10"></div>
+                    <div className="text-7xl mb-6">🔑</div>
+                    <h1 className="text-4xl font-black text-[var(--color-text-primary)] uppercase tracking-tighter mb-4">Login Required</h1>
+                    <div className="w-20 h-2 bg-[var(--color-accent-primary)] mx-auto mb-6"></div>
+                    <p className="text-[var(--color-text-secondary)] font-bold mb-8 text-lg">
+                        You need to be logged in to access this page. Please sign in to your Tickify account to continue.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <Link
+                            to="/login"
+                            state={{ from: location }}
+                            className="neo-btn bg-[var(--color-accent-primary)] text-white font-black py-4 px-8 border-2 border-black shadow-[4px_4px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0_black] transition-all uppercase"
+                        >
+                            Log In Now
+                        </Link>
+                        <Link
+                            to="/"
+                            className="neo-btn bg-white text-black font-black py-4 px-8 border-2 border-black shadow-[4px_4px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0_black] transition-all uppercase"
+                        >
+                            Back Home
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     if (userStatus === 'suspended') {

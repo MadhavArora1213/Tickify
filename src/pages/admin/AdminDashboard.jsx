@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, onSnapshot, query, where, orderBy, limit, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import toast from 'react-hot-toast';
 
 const AdminDashboard = () => {
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -19,6 +20,9 @@ const AdminDashboard = () => {
     const [pendingEventsList, setPendingEventsList] = useState([]);
     const [activeEventsList, setActiveEventsList] = useState([]);
     const [adminProfile, setAdminProfile] = useState(null);
+    const [notifications, setNotifications] = useState([]);
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
 
     const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
@@ -34,12 +38,47 @@ const AdminDashboard = () => {
                         setAdminProfile(adminDoc.data());
                     }
                 } catch (error) {
-                    console.error('Error fetching admin profile:', error);
+                    toast.error('Error fetching admin profile');
                 }
             }
         };
+
         fetchAdminProfile();
     }, [currentUser]);
+
+    // Real-time notifications listener
+    useEffect(() => {
+        if (!currentUser) return;
+
+        const q = query(
+            collection(db, 'notifications'),
+            where('recipient', 'in', ['admin', currentUser.uid]),
+            orderBy('createdAt', 'desc'),
+            limit(20)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const notifs = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            setNotifications(notifs);
+            setUnreadCount(notifs.filter(n => !n.read).length);
+        });
+
+        return () => unsubscribe();
+    }, [currentUser]);
+
+    const markAllAsRead = async () => {
+        const unreadNotifs = notifications.filter(n => !n.read);
+        for (const notif of unreadNotifs) {
+            await updateDoc(doc(db, 'notifications', notif.id), { read: true });
+        }
+    };
+
+    const markAsRead = async (id) => {
+        await updateDoc(doc(db, 'notifications', id), { read: true });
+    };
 
     // Fetch stats and lists from Firebase
     useEffect(() => {
@@ -86,13 +125,13 @@ const AdminDashboard = () => {
                     totalRevenue = bookingsData.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
                 } catch (e) { console.log('Bookings collection not found'); }
 
-                // 4. Fetch Settlements
+                // 4. Fetch Settlements (Withdrawals)
                 let pendingSettlementsCount = 0;
                 try {
-                    const settlementsRef = collection(db, 'settlements');
+                    const settlementsRef = collection(db, 'withdrawals');
                     const settlementsSnapshot = await getDocs(settlementsRef);
                     pendingSettlementsCount = settlementsSnapshot.docs.filter(s => s.data().status === 'pending').length;
-                } catch (e) { console.log('Settlements collection not found'); }
+                } catch (e) { console.log('Withdrawals collection not found'); }
 
                 setStats({
                     totalUsers: regularUsers.length,
@@ -106,7 +145,7 @@ const AdminDashboard = () => {
                 setActiveEventsList(activeList);
                 setPendingEventsList(pendingList);
             } catch (error) {
-                console.error('Error fetching admin data:', error);
+                toast.error('Error fetching admin data');
             } finally {
                 setLoading(false);
             }
@@ -127,7 +166,7 @@ const AdminDashboard = () => {
             await logout();
             navigate('/admin/login');
         } catch (error) {
-            console.error('Logout error:', error);
+            toast.error('Logout error');
         }
     };
 
@@ -163,10 +202,68 @@ const AdminDashboard = () => {
                             <span className="font-bold">{currentTime.toLocaleTimeString()}</span>
                         </div>
                         {/* Notifications */}
-                        <button className="relative p-2 hover:bg-gray-800 transition-colors">
-                            <span className="text-xl">🔔</span>
-                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-xs font-black rounded-full flex items-center justify-center">3</span>
-                        </button>
+                        <div className="relative">
+                            <button
+                                onClick={() => {
+                                    setShowNotifications(!showNotifications);
+                                    if (!showNotifications) markAllAsRead();
+                                }}
+                                className={`relative p-2 hover:bg-gray-800 transition-colors ${showNotifications ? 'bg-gray-800' : ''}`}
+                            >
+                                <span className="text-xl">🔔</span>
+                                {unreadCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-[10px] font-black rounded-full flex items-center justify-center animate-bounce">
+                                        {unreadCount}
+                                    </span>
+                                )}
+                            </button>
+
+                            {/* Notifications Dropdown */}
+                            {showNotifications && (
+                                <div className="absolute right-0 mt-2 w-80 bg-white border-4 border-black shadow-[8px_8px_0_black] z-[100] text-black">
+                                    <div className="bg-black text-white p-3 flex justify-between items-center">
+                                        <span className="font-black uppercase text-xs tracking-widest">System Alerts</span>
+                                        <button onClick={() => setShowNotifications(false)} className="hover:text-red-500">✕</button>
+                                    </div>
+                                    <div className="max-h-96 overflow-y-auto">
+                                        {notifications.length === 0 ? (
+                                            <div className="p-8 text-center text-gray-400 italic">
+                                                Zero alerts. All clear! 🌈
+                                            </div>
+                                        ) : (
+                                            notifications.map(notif => (
+                                                <div
+                                                    key={notif.id}
+                                                    onClick={() => markAsRead(notif.id)}
+                                                    className={`p-4 border-b-2 border-dashed border-gray-100 last:border-0 hover:bg-gray-50 cursor-pointer transition-colors ${!notif.read ? 'bg-yellow-50' : ''}`}
+                                                >
+                                                    <div className="flex gap-3">
+                                                        <span className="text-xl">
+                                                            {notif.type === 'event_pending' ? '📑' :
+                                                                notif.type === 'payment' ? '💰' :
+                                                                    notif.type === 'user_new' ? '👤' : '🔔'}
+                                                        </span>
+                                                        <div>
+                                                            <p className={`text-xs ${!notif.read ? 'font-black' : 'font-bold'}`}>{notif.message}</p>
+                                                            <p className="text-[10px] text-gray-500 mt-1 uppercase">
+                                                                {notif.createdAt?.toDate ? notif.createdAt.toDate().toLocaleString() : 'Just now'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                    <Link
+                                        to="/admin/events/pending"
+                                        className="block p-3 text-center bg-gray-50 text-[10px] font-black uppercase hover:bg-red-50 transition-colors"
+                                        onClick={() => setShowNotifications(false)}
+                                    >
+                                        View All Pending Approvals →
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
                         {/* Logout */}
                         <button
                             onClick={handleLogout}

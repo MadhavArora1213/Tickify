@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { sendOrganizerApprovalEmail } from '../../services/brevoService';
+import toast from 'react-hot-toast';
 
 const AdminUsers = () => {
     // ... (existing state)
@@ -48,8 +49,7 @@ const AdminUsers = () => {
                 setUsers([]);
             }
         } catch (error) {
-            console.error('Error loading users:', error);
-            // setUsers(mockUsers); // Don't fallback to mock data on error usually, but for dev it's ok
+            toast.error('Error loading users');
         } finally {
             setLoading(false);
         }
@@ -127,14 +127,14 @@ const AdminUsers = () => {
         try {
             const result = await createUser(formData);
             if (result.success) {
-                setMessage({ type: 'success', text: 'User created successfully!' });
+                toast.success('User created successfully!');
                 await loadUsers();
                 setTimeout(closeModal, 1500);
             } else {
-                setMessage({ type: 'error', text: result.error || 'Failed to create user.' });
+                toast.error(result.error || 'Failed to create user.');
             }
         } catch (error) {
-            setMessage({ type: 'error', text: 'An error occurred. Please try again.' });
+            toast.error('An error occurred. Please try again.');
         } finally {
             setActionLoading(false);
         }

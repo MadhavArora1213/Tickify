@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { db } from '../../config/firebase';
 import { collection, query, where, getDocs, doc, deleteDoc } from 'firebase/firestore';
+import toast from 'react-hot-toast';
 
 const ManageEvents = () => {
     const { currentUser } = useAuth();
@@ -30,7 +31,7 @@ const ManageEvents = () => {
 
                 setEvents(fetchedEvents);
             } catch (error) {
-                console.error("Error fetching events:", error);
+                toast.error("Error fetching events");
             } finally {
                 setLoading(false);
             }
@@ -51,10 +52,9 @@ const ManageEvents = () => {
         try {
             await deleteDoc(doc(db, 'events', eventId));
             setEvents(events.filter(e => e.id !== eventId));
-            alert("Event deleted successfully.");
+            toast.success("Event deleted successfully.");
         } catch (error) {
-            console.error("Error deleting event:", error);
-            alert("Failed to delete event.");
+            toast.error("Failed to delete event.");
         }
     };
 

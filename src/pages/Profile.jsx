@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { db, auth } from '../config/firebase';
+import toast from 'react-hot-toast';
 
 const Profile = () => {
     const [activeTab, setActiveTab] = useState('info');
@@ -78,8 +79,7 @@ const Profile = () => {
                     });
                 }
             } catch (error) {
-                console.error('Error fetching user data:', error);
-                setMessage({ type: 'error', text: 'Failed to load profile data.' });
+                toast.error('Failed to load profile data.');
             } finally {
                 setLoading(false);
             }
@@ -105,10 +105,9 @@ const Profile = () => {
             });
 
             setProfileData(prev => ({ ...prev, displayName: fullName }));
-            setMessage({ type: 'success', text: 'Profile updated successfully!' });
+            toast.success('Profile updated successfully!');
         } catch (error) {
-            console.error('Error updating profile:', error);
-            setMessage({ type: 'error', text: 'Failed to update profile. Please try again.' });
+            toast.error('Failed to update profile. Please try again.');
         } finally {
             setSaving(false);
         }
@@ -143,15 +142,14 @@ const Profile = () => {
             await updatePassword(auth.currentUser, passwordData.newPassword);
 
             setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-            setMessage({ type: 'success', text: 'Password updated successfully!' });
+            toast.success('Password updated successfully!');
         } catch (error) {
-            console.error('Error changing password:', error);
             if (error.code === 'auth/wrong-password') {
-                setMessage({ type: 'error', text: 'Current password is incorrect.' });
+                toast.error('Current password is incorrect.');
             } else if (error.code === 'auth/requires-recent-login') {
-                setMessage({ type: 'error', text: 'Please log out and log in again before changing password.' });
+                toast.error('Please log out and log in again before changing password.');
             } else {
-                setMessage({ type: 'error', text: 'Failed to change password. Please try again.' });
+                toast.error('Failed to change password. Please try again.');
             }
         } finally {
             setSaving(false);
@@ -164,7 +162,8 @@ const Profile = () => {
             await logout();
             navigate('/login');
         } catch (error) {
-            console.error('Logout error:', error);
+            // Fail silently or toast
+            toast.error('Logout failed');
         }
     };
 
@@ -353,16 +352,6 @@ const Profile = () => {
                     <span className="hidden dark:block drop-shadow-[4px_4px_0_var(--color-accent-primary)]">My Profile</span>
                 </h1>
 
-                {/* Message Display */}
-                {message.text && (
-                    <div className={`max-w-5xl mx-auto mb-6 p-4 border-2 font-bold ${message.type === 'success'
-                        ? 'bg-green-100 dark:bg-green-900/30 border-[var(--color-success)] text-[var(--color-success)]'
-                        : 'bg-red-100 dark:bg-red-900/30 border-[var(--color-error)] text-[var(--color-error)]'
-                        }`}>
-                        <span className="mr-2">{message.type === 'success' ? '✅' : '⚠️'}</span>
-                        {message.text}
-                    </div>
-                )}
 
                 <div className="flex flex-col lg:flex-row gap-8 max-w-5xl mx-auto">
                     {/* Sidebar */}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import toast from 'react-hot-toast';
 
 const ForgotPassword = () => {
     const [email, setEmail] = useState('');
@@ -30,8 +31,9 @@ const ForgotPassword = () => {
                 type: 'success',
                 text: 'Password reset email sent! Check your inbox.'
             });
+            toast.success('Password reset email sent!');
         } catch (error) {
-            console.error('Password reset error:', error);
+            toast.error('Failed to send reset email');
 
             switch (error.code) {
                 case 'auth/user-not-found':
@@ -91,8 +93,8 @@ const ForgotPassword = () => {
                     {/* Messages */}
                     {message.text && (
                         <div className={`mb-6 p-4 border-2 font-bold text-sm ${message.type === 'success'
-                                ? 'bg-green-100 dark:bg-green-900/30 border-[var(--color-success)] text-[var(--color-success)]'
-                                : 'bg-red-100 dark:bg-red-900/30 border-[var(--color-error)] text-[var(--color-error)]'
+                            ? 'bg-green-100 dark:bg-green-900/30 border-[var(--color-success)] text-[var(--color-success)]'
+                            : 'bg-red-100 dark:bg-red-900/30 border-[var(--color-error)] text-[var(--color-error)]'
                             }`}>
                             <span className="mr-2">{message.type === 'success' ? '✅' : '⚠️'}</span>
                             {message.text}

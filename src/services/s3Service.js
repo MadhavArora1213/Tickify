@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import imageCompression from 'browser-image-compression';
+import toast from 'react-hot-toast';
 
 const bucketName = import.meta.env.VITE_AWS_BUCKET_NAME;
 const region = import.meta.env.VITE_AWS_REGION;
@@ -45,7 +46,7 @@ export const compressImage = async (file) => {
         console.log(`📸 Compressed size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
         return compressedFile;
     } catch (error) {
-        console.error("Error compressing image:", error);
+        toast.error("Error compressing image");
         throw error;
     }
 };
@@ -98,7 +99,7 @@ export const uploadToS3 = async (file, folder = 'uploads') => {
         return publicUrl;
 
     } catch (error) {
-        console.error("❌ S3 Upload Error:", error);
+        toast.error("File upload failed");
         
         if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
             console.error("🚧 CORS ERROR DETECTED 🚧");

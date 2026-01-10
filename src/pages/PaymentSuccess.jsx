@@ -5,6 +5,7 @@ import { db } from '../config/firebase';
 import { QRCodeSVG } from 'qrcode.react';
 import { toPng } from 'html-to-image';
 import download from 'downloadjs';
+import toast from 'react-hot-toast';
 
 const PaymentSuccess = () => {
     const location = useLocation();
@@ -36,8 +37,7 @@ const PaymentSuccess = () => {
             const dataUrl = await toPng(ticketRef.current, options);
             download(dataUrl, `Tickify-Ticket-${booking?.bookingReference || 'Order'}.png`);
         } catch (err) {
-            console.error('Failed to download ticket', err);
-            alert("Failed to download ticket. Please try again.");
+            toast.error("Failed to download ticket. Please try again.");
         }
     };
 
@@ -89,7 +89,7 @@ const PaymentSuccess = () => {
                     }
                 }
             } catch (error) {
-                console.error("Error fetching booking details:", error);
+                toast.error("Error fetching booking details");
             } finally {
                 setLoading(false);
             }
@@ -155,7 +155,7 @@ const PaymentSuccess = () => {
                                         </div>
                                         <div className="absolute top-4 left-6">
                                             <span className="bg-white text-black text-[9px] font-black px-2 py-1 uppercase border-2 border-black shadow-[2px_2px_0_black]">
-                                                Official Entry Pass
+                                                {booking.items?.[0]?.ticketNumber || booking.bookingReference || "Official Pass"}
                                             </span>
                                         </div>
                                     </div>
@@ -167,8 +167,8 @@ const PaymentSuccess = () => {
                                                 <p className="font-black text-sm uppercase truncate text-black">{booking.userName}</p>
                                             </div>
                                             <div>
-                                                <span className="text-[9px] font-black uppercase text-gray-400 block mb-0.5">Booking Ref</span>
-                                                <p className="font-mono text-xs font-bold text-gray-800">#{booking.bookingReference || booking.id.slice(0, 8).toUpperCase()}</p>
+                                                <span className="text-[9px] font-black uppercase text-gray-400 block mb-0.5">Ticket id</span>
+                                                <p className="font-mono text-xs font-bold text-gray-800 uppercase">{booking.items?.[0]?.ticketNumber || booking.bookingReference}</p>
                                             </div>
                                             <div>
                                                 <span className="text-[9px] font-black uppercase text-gray-400 block mb-0.5">Date & Time</span>
@@ -217,7 +217,7 @@ const PaymentSuccess = () => {
                                     <div className="text-center">
                                         <p className="text-[9px] font-black uppercase tracking-widest text-black mb-1">Scan for Verified Entry</p>
                                         <div className="bg-black text-white px-4 py-0.5 text-[8px] font-mono tracking-tighter rounded">
-                                            ID_{booking.id.slice(-10).toUpperCase()}
+                                            {(booking.items?.[0]?.ticketNumber || booking.id).toUpperCase()}
                                         </div>
                                     </div>
 

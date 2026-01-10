@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import toast from 'react-hot-toast';
 
 const AdminLogin = () => {
     const [email, setEmail] = useState('');
@@ -44,7 +45,7 @@ const AdminLogin = () => {
             }
             return { success: true, message: 'Admin already exists in collection.' };
         } catch (error) {
-            console.error('Setup error:', error);
+            toast.error('Setup error');
             return { success: false, error: error.message };
         }
     };
@@ -59,7 +60,7 @@ const AdminLogin = () => {
             await adminLogin(email, password);
             navigate('/admin/dashboard');
         } catch (err) {
-            console.error('Admin login error:', err);
+            toast.error('Admin login error');
 
             // If access denied, try to setup admin in collection first
             if (err.message === 'Access denied. Admin privileges required.') {

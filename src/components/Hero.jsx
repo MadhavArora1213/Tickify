@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import SplitText from './react-bits/SplitText';
 import ShinyText from './react-bits/ShinyText';
 import BlurText from './react-bits/BlurText';
@@ -9,8 +10,9 @@ import TrueFocus from './react-bits/TrueFocus';
 
 
 
-const Hero = () => {
-    const [theme, setTheme] = React.useState('dark');
+const Hero = ({ searchQuery, setSearchQuery, location, setLocation }) => {
+    const navigate = useNavigate();
+    const [theme, setTheme] = useState('dark');
 
     React.useEffect(() => {
         // Initial check
@@ -75,8 +77,13 @@ const Hero = () => {
                     Book tickets in seconds and create memories that last.
                 </p>
 
-                {/* Search Bar */}
-                <div className="max-w-4xl w-full mx-auto relative group z-20">
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        navigate(`/events?q=${encodeURIComponent(searchQuery)}&l=${encodeURIComponent(location)}`);
+                    }}
+                    className="max-w-4xl w-full mx-auto relative group z-20"
+                >
                     <div className="neo-card bg-[var(--color-bg-surface)] p-4 flex flex-col md:flex-row items-center gap-4 border-4 border-black shadow-[12px_12px_0_black]">
                         <div className="flex-1 w-full md:w-auto flex items-center px-4 bg-[var(--color-bg-secondary)] border-2 border-black rounded-lg h-16 shadow-[4px_4px_0_rgba(0,0,0,0.2)]">
                             <svg className="w-8 h-8 text-[var(--color-text-primary)] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,6 +92,8 @@ const Hero = () => {
                             <input
                                 type="text"
                                 placeholder="SEARCH EVENTS..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full bg-transparent border-none focus:ring-0 text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] h-full outline-none font-bold uppercase text-lg"
                             />
                         </div>
@@ -96,18 +105,23 @@ const Hero = () => {
                             <input
                                 type="text"
                                 placeholder="LOCATION"
+                                value={location}
+                                onChange={(e) => setLocation(e.target.value)}
                                 className="w-full bg-transparent border-none focus:ring-0 text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] h-full outline-none font-bold uppercase text-lg"
                             />
                         </div>
 
                         <Magnet padding={50} magnetStrength={3}>
-                            <button className="w-full md:w-auto px-8 py-4 bg-[var(--color-accent-primary)] text-white font-black text-xl rounded-lg border-2 border-black shadow-[6px_6px_0_black] hover:shadow-[8px_8px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all uppercase">
+                            <button
+                                type="submit"
+                                className="w-full md:w-auto px-8 py-4 bg-[var(--color-accent-primary)] text-white font-black text-xl rounded-lg border-2 border-black shadow-[6px_6px_0_black] hover:shadow-[8px_8px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all uppercase"
+                            >
                                 Search
                             </button>
                         </Magnet>
 
                     </div>
-                </div>
+                </form>
 
                 {/* Floating elements visualization */}
                 <div className="mt-20 flex flex-wrap justify-center gap-8 md:gap-12">

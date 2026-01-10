@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { QRCodeSVG } from 'qrcode.react';
 import { toPng } from 'html-to-image';
 import download from 'downloadjs';
+import toast from 'react-hot-toast';
 
 const MyTickets = () => {
     const { currentUser } = useAuth();
@@ -31,8 +32,7 @@ const MyTickets = () => {
             const dataUrl = await toPng(refRef, options);
             download(dataUrl, `Tickify-Ticket-${ticketId}.png`);
         } catch (err) {
-            console.error('Download failed', err);
-            alert("Download failed. Please try again.");
+            toast.error("Download failed. Please try again.");
         }
     };
 
@@ -57,7 +57,7 @@ const MyTickets = () => {
                                 eventTitle = eventSnap.data().eventTitle || eventSnap.data().title || "Event Ticket";
                             }
                         } catch (e) {
-                            console.error("Error fetching event for ticket:", e);
+                            // Fail silently for event fetch
                         }
                     }
 
@@ -66,10 +66,12 @@ const MyTickets = () => {
                             allTickets.push({
                                 ...item,
                                 bookingId: docSnap.id,
+                                bookingReference: booking.bookingReference || docSnap.id.slice(0, 8).toUpperCase(),
                                 eventId: booking.eventId,
                                 eventTitle: eventTitle,
                                 bookingDate: booking.bookingDate,
                                 status: booking.status,
+                                ticketNumber: item.ticketNumber || item.ticketNumbers?.[0] || booking.bookingReference || `${docSnap.id.slice(0, 8)}-${index}`,
                                 ticketId: `${docSnap.id}-${index}`,
                                 originalPrice: Number(item.price)
                             });
@@ -78,7 +80,7 @@ const MyTickets = () => {
                 }
                 setTickets(allTickets);
             } catch (error) {
-                console.error("Error fetching tickets:", error);
+                toast.error("Error fetching tickets");
             } finally {
                 setLoading(false);
             }
@@ -90,11 +92,11 @@ const MyTickets = () => {
     const handleResell = async (ticket) => {
         const price = parseFloat(resellPrice[ticket.ticketId]);
         if (!price || price <= 0) {
-            alert("Please enter a valid price.");
+            toast.error("Please enter a valid price.");
             return;
         }
         if (price > ticket.originalPrice) {
-            alert(`You cannot resell for more than the original price (₹${ticket.originalPrice}).`);
+            toast.error(`You cannot resell for more than the original price (₹${ticket.originalPrice}).`);
             return;
         }
 
@@ -112,11 +114,10 @@ const MyTickets = () => {
                 createdAt: serverTimestamp()
             });
 
-            alert("Ticket listed for resale successfully!");
+            toast.success("Ticket listed for resale successfully!");
             setShowResellInput(null);
         } catch (error) {
-            console.error("Error listing ticket:", error);
-            alert("Failed to list ticket.");
+            toast.error("Failed to list ticket.");
         }
     };
 
@@ -156,8 +157,11 @@ const MyTickets = () => {
                                                             <h3 className="font-black text-xs uppercase tracking-widest text-[var(--color-accent-primary)] mb-1">Official Event Pass</h3>
                                                             <h4 className="text-2xl font-black uppercase leading-tight text-black truncate max-w-[300px]">{ticket.eventTitle}</h4>
                                                         </div>
-                                                        <div className="bg-black text-white px-2 py-1 text-[8px] font-mono">
-                                                            REF_{ticket.bookingReference || ticket.bookingId.slice(0, 8).toUpperCase()}
+                                                        <div className="text-right">
+                                                            <span className="text-[9px] font-black uppercase text-gray-400 block mb-0.5 tracking-tighter">Ticket ID</span>
+                                                            <div className="bg-black text-white px-2 py-1 text-[9px] font-mono leading-none">
+                                                                {ticket.ticketNumber || ticket.bookingReference}
+                                                            </div>
                                                         </div>
                                                     </div>
 
@@ -181,7 +185,7 @@ const MyTickets = () => {
                                                     </div>
 
                                                     <div className="mt-4 text-[7px] font-mono text-gray-300 uppercase tracking-[0.3em]">
-                                                        Verified_Digital_Asset_Security_ID: {ticket.ticketId.toUpperCase()}
+                                                        AUTH_ID: {(ticket.ticketNumber || ticket.ticketId).toUpperCase()}
                                                     </div>
                                                 </div>
 
@@ -201,7 +205,7 @@ const MyTickets = () => {
                                                     <div className="text-center">
                                                         <p className="text-[8px] font-black uppercase tracking-widest text-black mb-1">Verify Entry</p>
                                                         <div className="bg-black text-white px-3 py-0.5 text-[7px] font-mono rounded">
-                                                            TID_{ticket.ticketId.slice(-8).toUpperCase()}
+                                                            {ticket.ticketNumber || ticket.ticketId.slice(-8).toUpperCase()}
                                                         </div>
                                                     </div>
                                                 </div>

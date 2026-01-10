@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import toast from 'react-hot-toast';
 
 const OrganizerPublicProfile = () => {
     const { id } = useParams();
+    const navigate = useNavigate();
     const [organizer, setOrganizer] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -20,7 +22,7 @@ const OrganizerPublicProfile = () => {
                     console.log("No such organizer!");
                 }
             } catch (error) {
-                console.error("Error fetching organizer:", error);
+                toast.error("Error fetching organizer profile");
             } finally {
                 setLoading(false);
             }
@@ -48,6 +50,15 @@ const OrganizerPublicProfile = () => {
     return (
         <div className="min-h-screen bg-[var(--color-bg-primary)] pt-36 pb-20">
             <div className="container mx-auto px-4 max-w-4xl">
+                {/* Back Button */}
+                <button
+                    onClick={() => navigate(-1)}
+                    className="neo-btn mb-8 bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] px-6 py-2 flex items-center gap-2 font-black uppercase text-sm border-2 border-black shadow-[4px_4px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_black] transition-all"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Back
+                </button>
+
                 {/* Header Card */}
                 <div className="neo-card bg-[var(--color-bg-surface)] p-8 border-4 border-[var(--color-text-primary)] shadow-[8px_8px_0_var(--color-text-primary)] mb-8 flex flex-col md:flex-row items-center gap-8">
                     <div className="w-32 h-32 flex-shrink-0 bg-gray-200 rounded-full border-4 border-black overflow-hidden relative">

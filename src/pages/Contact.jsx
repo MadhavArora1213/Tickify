@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { db } from '../config/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { sendContactConfirmationEmail } from '../services/brevoService';
+import toast from 'react-hot-toast';
 
 const Contact = () => {
     const [formData, setFormData] = useState({
@@ -14,7 +15,6 @@ const Contact = () => {
         message: ''
     });
     const [loading, setLoading] = useState(false);
-    const [toast, setToast] = useState({ show: false, type: '', message: '' });
 
     // Common support topics
     const topics = [
@@ -31,10 +31,6 @@ const Contact = () => {
         'Other'
     ];
 
-    const showToast = (type, message) => {
-        setToast({ show: true, type, message });
-        setTimeout(() => setToast({ show: false, type: '', message: '' }), 5000);
-    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -46,23 +42,23 @@ const Contact = () => {
 
         // Validation
         if (!formData.firstName.trim()) {
-            showToast('error', 'Please enter your first name');
+            toast.error('Please enter your first name');
             return;
         }
         if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            showToast('error', 'Please enter a valid email address');
+            toast.error('Please enter a valid email address');
             return;
         }
         if (!formData.topic) {
-            showToast('error', 'Please select a topic');
+            toast.error('Please select a topic');
             return;
         }
         if (formData.topic === 'Other' && !formData.customTopic.trim()) {
-            showToast('error', 'Please specify your topic');
+            toast.error('Please specify your topic');
             return;
         }
         if (!formData.message.trim()) {
-            showToast('error', 'Please enter your message');
+            toast.error('Please enter your message');
             return;
         }
 
@@ -90,7 +86,7 @@ const Contact = () => {
             await sendContactConfirmationEmail(formData.email, userName, topicName);
 
             // Success
-            showToast('success', 'Message sent successfully! Check your email for confirmation.');
+            toast.success('Message sent successfully! Check your email for confirmation.');
 
             // Reset form
             setFormData({
@@ -103,8 +99,7 @@ const Contact = () => {
                 message: ''
             });
         } catch (error) {
-            console.error('Error submitting contact form:', error);
-            showToast('error', 'Failed to send message. Please try again.');
+            toast.error('Failed to send message. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -112,22 +107,6 @@ const Contact = () => {
 
     return (
         <div className="min-h-screen bg-[var(--color-bg-primary)] pt-32 md:pt-40 pb-12 px-4">
-            {/* Toast Notification */}
-            {toast.show && (
-                <div className={`fixed top-24 right-4 z-50 p-4 border-4 border-black shadow-[6px_6px_0_black] font-bold max-w-md animate-fade-in-up ${toast.type === 'success' ? 'bg-green-400 text-black' : 'bg-red-400 text-white'
-                    }`}>
-                    <div className="flex items-center gap-3">
-                        <span className="text-2xl">{toast.type === 'success' ? '✅' : '❌'}</span>
-                        <span>{toast.message}</span>
-                        <button
-                            onClick={() => setToast({ show: false, type: '', message: '' })}
-                            className="ml-auto font-black text-xl hover:scale-110"
-                        >
-                            ×
-                        </button>
-                    </div>
-                </div>
-            )}
 
             <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
 

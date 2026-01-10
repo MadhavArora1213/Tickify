@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import toast from 'react-hot-toast';
 
 const OrganizerLogin = () => {
     const [formData, setFormData] = useState({
@@ -65,7 +66,7 @@ const OrganizerLogin = () => {
                 }
             }
         } catch (err) {
-            console.error(err);
+            toast.error('Login failed');
             if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
                 setError('Invalid email or password.');
             } else {

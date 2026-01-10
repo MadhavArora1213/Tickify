@@ -1,5 +1,6 @@
 // Message Central Service for OTP Verification
 // API Documentation: https://cpaas.messagecentral.com/
+import toast from 'react-hot-toast';
 
 const CUSTOMER_ID = import.meta.env.VITE_MSG_CENTRAL_CUSTOMER_ID;
 const AUTH_TOKEN = import.meta.env.VITE_MSG_CENTRAL_AUTH_TOKEN;
@@ -57,11 +58,10 @@ export const sendOTPSMS = async (phoneNumber) => {
             verificationStore.set(phoneNumber, data.data.verificationId);
             return { success: true, message: 'OTP sent successfully' };
         } else {
-            console.error('Message Central API Error:', data);
             return { success: false, message: data.message || data.errorMessage || 'Failed to send OTP' };
         }
     } catch (error) {
-        console.error('Error sending OTP:', error);
+        toast.error('Error sending OTP');
         return { success: false, message: 'Network error. Please try again.' };
     }
 };

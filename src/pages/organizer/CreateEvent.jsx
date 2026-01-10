@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { db } from '../../config/firebase';
 import { collection, addDoc, doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { uploadToS3 } from '../../services/s3Service';
+import toast from 'react-hot-toast';
 
 const CreateEvent = () => {
     const { currentUser } = useAuth();
@@ -117,7 +118,7 @@ const CreateEvent = () => {
                     setError('Event not found.');
                 }
             } catch (err) {
-                console.error('Error fetching event:', err);
+                toast.error('Failed to load event data.');
                 setError('Failed to load event data.');
             } finally {
                 setFetchingEvent(false);
@@ -427,12 +428,23 @@ const CreateEvent = () => {
                 eventData.createdAt = serverTimestamp();
                 eventData.approvalStatus = 'pending';
                 eventData.settlementEnabled = false;
-                await addDoc(collection(db, 'events'), eventData);
+                const docRef = await addDoc(collection(db, 'events'), eventData);
+
+                // Create Notification for Admin
+                await addDoc(collection(db, 'notifications'), {
+                    recipient: 'admin',
+                    type: 'event_pending',
+                    message: `New event pending approval: ${eventData.eventTitle}`,
+                    eventId: docRef.id,
+                    organizerId: currentUser.uid,
+                    read: false,
+                    createdAt: serverTimestamp()
+                });
             }
 
             navigate('/organizer/dashboard'); // Success redirect
         } catch (err) {
-            console.error(err);
+            toast.error(`Failed to ${isEditMode ? 'update' : 'create'} event`);
             setError(`Failed to ${isEditMode ? 'update' : 'create'} event: ` + err.message);
         } finally {
             setLoading(false);
