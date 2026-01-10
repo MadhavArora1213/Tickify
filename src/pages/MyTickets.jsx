@@ -41,8 +41,22 @@ const MyTickets = () => {
             if (!currentUser) return;
             setLoading(true);
             try {
+                // 1. Fetch user's bookings
                 const q = query(collection(db, 'bookings'), where('userId', '==', currentUser.uid));
                 const querySnapshot = await getDocs(q);
+
+                // 2. Fetch user's active resale listings
+                const resellQ = query(
+                    collection(db, 'resell_tickets'),
+                    where('sellerId', '==', currentUser.uid),
+                    where('status', '==', 'available')
+                );
+                const resellSnapshot = await getDocs(resellQ);
+
+                // Cleanup logic: If event has passed, these should be returned to user implicitly
+                // For now, we just filter them out if they are truly 'available' on market
+                const listedTicketIds = resellSnapshot.docs.map(doc => doc.data().ticketId);
+
                 let allTickets = [];
 
                 for (const docSnap of querySnapshot.docs) {
@@ -65,27 +79,31 @@ const MyTickets = () => {
                         booking.items.forEach((item, itemIdx) => {
                             const quantity = item.quantity || 1;
 
-                            // If it's a seated event or has multiple ticket numbers, create individual cards
                             for (let i = 0; i < quantity; i++) {
-                                allTickets.push({
-                                    ...item,
-                                    bookingId: docSnap.id,
-                                    bookingReference: booking.bookingReference || docSnap.id.slice(0, 8).toUpperCase(),
-                                    eventId: booking.eventId,
-                                    eventTitle: eventTitle,
-                                    bookingDate: booking.bookingDate,
-                                    status: booking.status,
-                                    // Use the specific ticket number for this instance if it exists
-                                    ticketNumber: item.ticketNumbers?.[i] || item.ticketNumber || booking.bookingReference || `${docSnap.id.slice(0, 8)}-${itemIdx}-${i}`,
-                                    ticketId: `${docSnap.id}-${itemIdx}-${i}`,
-                                    originalPrice: Number(item.price)
-                                });
+                                const ticketId = `${docSnap.id}-${itemIdx}-${i}`;
+
+                                // Only add if not currently listed for resale
+                                if (!listedTicketIds.includes(ticketId)) {
+                                    allTickets.push({
+                                        ...item,
+                                        bookingId: docSnap.id,
+                                        bookingReference: booking.bookingReference || docSnap.id.slice(0, 8).toUpperCase(),
+                                        eventId: booking.eventId,
+                                        eventTitle: eventTitle,
+                                        bookingDate: booking.bookingDate,
+                                        status: booking.status,
+                                        ticketNumber: item.ticketNumbers?.[i] || item.ticketNumber || booking.bookingReference || `${docSnap.id.slice(0, 8)}-${itemIdx}-${i}`,
+                                        ticketId: ticketId,
+                                        originalPrice: Number(item.price)
+                                    });
+                                }
                             }
                         });
                     }
                 }
                 setTickets(allTickets);
             } catch (error) {
+                console.error("Error fetching tickets:", error);
                 toast.error("Error fetching tickets");
             } finally {
                 setLoading(false);
@@ -108,13 +126,20 @@ const MyTickets = () => {
             return;
         }
 
+        if (!window.confirm("ARE YOU SURE? Once listed, this ticket will be LOCKED and INVALID for entry until it is either sold or the event expires. You will not be able to use it.")) {
+            return;
+        }
+
         try {
             await addDoc(collection(db, 'resell_tickets'), {
                 originalBookingId: ticket.bookingId,
                 ticketId: ticket.ticketId,
+                ticketNumber: ticket.ticketNumber,
                 eventId: ticket.eventId,
+                eventTitle: ticket.eventTitle,
                 sellerId: currentUser.uid,
                 seatId: ticket.id || null,
+                seatLabel: ticket.label || null,
                 ticketName: ticket.name || ticket.ticketName,
                 originalPrice: ticket.originalPrice,
                 resalePrice: price,
@@ -123,6 +148,7 @@ const MyTickets = () => {
             });
 
             toast.success("Ticket listed for resale successfully!");
+            setTickets(prev => prev.filter(t => t.ticketId !== ticket.ticketId)); // Remove from local view
             setShowResellInput(null);
         } catch (error) {
             toast.error("Failed to list ticket.");

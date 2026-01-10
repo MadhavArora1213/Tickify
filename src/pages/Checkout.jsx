@@ -61,46 +61,77 @@ const Checkout = () => {
                 // 1. RESALE HANDLING
                 // ---------------------------
                 if (state.isResale && state.resaleTicketId) {
-                    console.log("🎟️ Processing Resale Transaction for:", state.resaleTicketId);
                     const resaleRef = doc(db, 'resell_tickets', state.resaleTicketId);
                     const resaleDoc = await transaction.get(resaleRef);
 
-                    if (!resaleDoc.exists()) {
-                        console.error("❌ Resale Doc Not Found:", state.resaleTicketId);
-                        throw new Error("This ticket record was not found.");
+                    if (!resaleDoc.exists()) throw new Error("Resale record not found.");
+                    const resaleData = resaleDoc.data();
+
+                    if (resaleData.status !== 'available') throw new Error("Ticket already sold.");
+
+                    // 1. Update Original Seller's Booking (Remove the item)
+                    if (resaleData.originalBookingId) {
+                        const originalBookingRef = doc(db, 'bookings', resaleData.originalBookingId);
+                        const originalSnap = await transaction.get(originalBookingRef);
+
+                        if (originalSnap.exists()) {
+                            const originalData = originalSnap.data();
+                            // Filter out the specific ticket using ticketId (e.g., "docId-0-0")
+                            const updatedItems = originalData.items.map(item => {
+                                // If this item has multiple quantities, we might need to decrement
+                                // But since we split tickets into individual cards in MyTickets, 
+                                // we treat them as individual units here.
+                                // For simplicity: if it's a direct match by ticketId reference
+                                return item;
+                            }).filter((_, idx) => {
+                                // Try to find which index matches the resale ticketId suffix
+                                const suffix = resaleData.ticketId.split('-').slice(1).join('-');
+                                return `${originalSnap.id}-${idx}` !== resaleData.ticketId;
+                            });
+
+                            transaction.update(originalBookingRef, { items: updatedItems });
+                        }
                     }
 
-                    if (resaleDoc.data().status !== 'available') {
-                        toast.error("This ticket is no longer available.");
-                        throw new Error("This ticket is no longer available.");
-                    }
+                    // 2. Log the Resale Event (Audit Trail)
+                    const logRef = doc(collection(db, 'resale_logs'));
+                    transaction.set(logRef, {
+                        resaleId: state.resaleTicketId,
+                        sellerId: resaleData.sellerId,
+                        buyerId: currentUser?.uid || 'guest',
+                        amount: totalAmount,
+                        ticketNumber: resaleData.ticketNumber,
+                        timestamp: serverTimestamp(),
+                        eventId: resaleData.eventId
+                    });
 
-                    // Mark resale ticket as sold
+                    // 3. Mark resale record as sold
                     transaction.update(resaleRef, {
                         status: 'sold',
                         buyerId: currentUser?.uid || 'guest',
                         soldAt: serverTimestamp()
                     });
 
-                    // Create Booking for Buyer
+                    // 4. Create New Booking for Buyer
                     const bookingRef = doc(collection(db, 'bookings'));
                     transaction.set(bookingRef, {
-                        // Use eventId from resale doc or passed state
-                        eventId: event.id || resaleDoc.data().eventId || 'unknown_event',
+                        eventId: resaleData.eventId || 'generic_event',
                         userId: currentUser?.uid || 'guest',
                         userEmail: formData.email,
                         userName: `${formData.firstName} ${formData.lastName}`,
-                        items: items, // The resale ticket item
+                        items: items.map(it => ({ ...it, ticketNumber: resaleData.ticketNumber, label: resaleData.seatLabel })),
                         totalAmount: totalAmount,
                         paymentId: paymentId,
                         paymentStatus: 'paid',
                         bookingDate: serverTimestamp(),
                         status: 'confirmed',
-                        type: 'resale_purchase'
+                        type: 'resale_purchase',
+                        bookingReference: resaleData.ticketNumber || `RS-${Date.now()}`
                     });
 
                     return bookingRef.id;
-                } else {
+                }
+                else {
                     // ---------------------------
                     // 2. STANDARD EVENT HANDLING
                     // ---------------------------

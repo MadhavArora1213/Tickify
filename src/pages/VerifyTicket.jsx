@@ -84,8 +84,7 @@ const VerifyTicket = () => {
     const isSuccess = !error && booking && (
         booking.status === 'confirmed' ||
         booking.status === 'scanned' ||
-        booking.status === 'paid' ||
-        booking.status === 'available'
+        booking.status === 'paid'
     );
 
     return (

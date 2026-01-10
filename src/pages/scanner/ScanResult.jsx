@@ -99,7 +99,6 @@ const ScanResult = () => {
         booking.status === 'confirmed' ||
         booking.status === 'scanned' ||
         booking.status === 'paid' ||
-        booking.status === 'available' ||
         booking.scannedAt
     );
 
