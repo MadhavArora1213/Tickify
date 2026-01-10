@@ -108,7 +108,7 @@ const Pricing = () => {
                             </li>
                         </ul>
 
-                        <Link to="/contact" className="block text-center bg-transparent hover:bg-gray-100 text-[var(--color-text-primary)] font-black uppercase py-4 border-2 border-[var(--color-text-primary)] shadow-[4px_4px_0_var(--color-text-primary)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--color-text-primary)] transition-all">
+                        <Link to="/contact" className="block text-center bg-transparent hover:bg-[var(--color-bg-hover)] text-[var(--color-text-primary)] font-black uppercase py-4 border-2 border-[var(--color-text-primary)] shadow-[4px_4px_0_var(--color-text-primary)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--color-text-primary)] transition-all">
                             Contact Sales
                         </Link>
                     </div>

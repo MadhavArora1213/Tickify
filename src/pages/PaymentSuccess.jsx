@@ -139,7 +139,7 @@ const PaymentSuccess = () => {
                     {/* Horizontal Scroll Wrapper for Mobile View */}
                     <div className="overflow-x-auto pb-6 -mx-4 px-4 scrollbar-hide">
                         {/* Premium Horizontal ID Card Ticket */}
-                        <div ref={ticketRef} className="min-w-[600px] md:min-w-0 max-w-3xl mx-auto bg-white border-4 border-black rounded-3xl shadow-[12px_12px_0_black] mb-10 overflow-hidden transition-transform duration-300">
+                        <div ref={ticketRef} className="min-w-[600px] md:min-w-0 max-w-3xl mx-auto ticket-print bg-white border-4 border-black rounded-3xl shadow-[12px_12px_0_black] mb-10 overflow-hidden transition-transform duration-300">
                             <div className="flex flex-col md:flex-row h-full min-h-[320px]">
                                 {/* Left Side: Event Image & Details */}
                                 <div className="flex-[1.5] relative p-0 flex flex-col">

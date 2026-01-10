@@ -314,3 +314,31 @@ body {
     @apply hidden!;
   }
 }
+/* Extended Theme Fixes for Dark Mode */
+[data-theme="dark"] .border-black {
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.neo-modal-content {
+    background-color: white !important;
+    color: #1F2937 !important;
+}
+
+.ticket-print, .verification-card {
+    background-color: white !important;
+    color: #1F2937 !important;
+}
+
+[data-theme="dark"] .text-gray-500,
+[data-theme="dark"] .text-gray-400,
+[data-theme="dark"] .text-gray-600 {
+    color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .bg-white:not(.ticket-print):not(.neo-modal-content):not(.verification-card) {
+    background-color: var(--color-bg-surface);
+}
+
+[data-theme="dark"] .text-black:not(.badge-accent):not(.ticket-print *):not(.neo-modal-content *) {
+    color: var(--color-text-primary);
+}

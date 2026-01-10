@@ -175,7 +175,7 @@ const MyTickets = () => {
                     {tickets.length > 0 ? (
                         tickets.map((ticket) => (
                             <div key={ticket.ticketId} className="flex flex-col gap-4">
-                                <div className="neo-card bg-white border-4 border-black shadow-[12px_12px_0_black] overflow-hidden">
+                                <div className="neo-card ticket-print bg-white border-4 border-black shadow-[12px_12px_0_black] overflow-hidden">
                                     <div className="overflow-x-auto lg:overflow-visible scrollbar-hide">
                                         {/* Display Container with scaling/sizing */}
                                         <div className="min-w-[580px] md:min-w-0 md:w-full">

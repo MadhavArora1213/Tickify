@@ -158,31 +158,31 @@ const EventDetails = () => {
 
                             {/* Info Bar */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                                <div className="neo-card bg-white p-6 border-2 border-black shadow-[4px_4px_0_black] flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-purple-100 flex items-center justify-center border-2 border-black rounded shadow-[2px_2px_0_black]">
+                                <div className="neo-card bg-[var(--color-bg-surface)] p-6 border-2 border-[var(--color-text-primary)] shadow-[4px_4px_0_var(--color-text-primary)] flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center border-2 border-[var(--color-text-primary)] rounded shadow-[2px_2px_0_var(--color-text-primary)]">
                                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-black uppercase text-gray-400">Date</p>
-                                        <p className="font-black uppercase text-sm">{event.date}</p>
+                                        <p className="text-[10px] font-black uppercase text-[var(--color-text-muted)]">Date</p>
+                                        <p className="font-black uppercase text-sm text-[var(--color-text-primary)]">{event.date}</p>
                                     </div>
                                 </div>
-                                <div className="neo-card bg-white p-6 border-2 border-black shadow-[4px_4px_0_black] flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-blue-100 flex items-center justify-center border-2 border-black rounded shadow-[2px_2px_0_black]">
+                                <div className="neo-card bg-[var(--color-bg-surface)] p-6 border-2 border-[var(--color-text-primary)] shadow-[4px_4px_0_var(--color-text-primary)] flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center border-2 border-[var(--color-text-primary)] rounded shadow-[2px_2px_0_var(--color-text-primary)]">
                                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-black uppercase text-gray-400">Time</p>
-                                        <p className="font-black uppercase text-sm">{event.time || 'TBA'}</p>
+                                        <p className="text-[10px] font-black uppercase text-[var(--color-text-muted)]">Time</p>
+                                        <p className="font-black uppercase text-sm text-[var(--color-text-primary)]">{event.time || 'TBA'}</p>
                                     </div>
                                 </div>
-                                <div className="neo-card bg-white p-6 border-2 border-black shadow-[4px_4px_0_black] flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-yellow-100 flex items-center justify-center border-2 border-black rounded shadow-[2px_2px_0_black]">
+                                <div className="neo-card bg-[var(--color-bg-surface)] p-6 border-2 border-[var(--color-text-primary)] shadow-[4px_4px_0_var(--color-text-primary)] flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center border-2 border-[var(--color-text-primary)] rounded shadow-[2px_2px_0_var(--color-text-primary)]">
                                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-black uppercase text-gray-400">Location</p>
-                                        <p className="font-black uppercase text-sm line-clamp-1">{event.location}</p>
+                                        <p className="text-[10px] font-black uppercase text-[var(--color-text-muted)]">Location</p>
+                                        <p className="font-black uppercase text-sm line-clamp-1 text-[var(--color-text-primary)]">{event.location}</p>
                                     </div>
                                 </div>
                             </div>
@@ -201,13 +201,13 @@ const EventDetails = () => {
                                     <h2 className="text-3xl font-black uppercase italic mb-8 border-b-8 border-blue-200 inline-block">On the stage</h2>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {event.lineup.map((artist, idx) => (
-                                            <div key={idx} className="neo-card bg-white p-6 border-2 border-black shadow-[6px_6px_0_black] flex items-center gap-4 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0_black] transition-all cursor-crosshair">
-                                                <div className="w-14 h-14 bg-black flex items-center justify-center text-white font-black text-2xl rotate-3">
+                                            <div key={idx} className="neo-card bg-[var(--color-bg-surface)] p-6 border-2 border-[var(--color-text-primary)] shadow-[6px_6px_0_var(--color-text-primary)] flex items-center gap-4 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0_var(--color-text-primary)] transition-all cursor-crosshair">
+                                                <div className="w-14 h-14 bg-[var(--color-text-primary)] flex items-center justify-center text-[var(--color-bg-primary)] font-black text-2xl rotate-3">
                                                     {artist.charAt(0)}
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="font-black uppercase text-lg leading-none">{artist}</span>
-                                                    <span className="text-[10px] font-bold text-gray-400 uppercase mt-1 tracking-widest">Special Guest</span>
+                                                    <span className="font-black uppercase text-lg leading-none text-[var(--color-text-primary)]">{artist}</span>
+                                                    <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase mt-1 tracking-widest">Special Guest</span>
                                                 </div>
                                             </div>
                                         ))}
@@ -239,13 +239,13 @@ const EventDetails = () => {
                     {/* Right: Booking Sidebar (Sticky) */}
                     <div className="w-full lg:w-[450px]">
                         <div className="sticky top-28">
-                            <div className="neo-card bg-white p-8 border-4 border-black shadow-[16px_16px_0_black] relative mb-8">
+                            <div className="neo-card bg-[var(--color-bg-surface)] p-8 border-4 border-[var(--color-text-primary)] shadow-[16px_16px_0_var(--color-text-primary)] relative mb-8">
                                 {/* Top Label */}
-                                <div className="absolute top-0 right-10 -translate-y-1/2 bg-[var(--color-accent-secondary)] text-white px-4 py-1.5 border-2 border-black font-black uppercase text-xs shadow-[4px_4px_0_black] rotate-2">
+                                <div className="absolute top-0 right-10 -translate-y-1/2 bg-[var(--color-accent-secondary)] text-white px-4 py-1.5 border-2 border-[var(--color-text-primary)] font-black uppercase text-xs shadow-[4px_4px_0_var(--color-text-primary)] rotate-2">
                                     Official Tickets
                                 </div>
 
-                                <h3 className="text-3xl font-black text-black mb-10 uppercase italic tracking-tighter decoration-8 underline decoration-yellow-300">
+                                <h3 className="text-3xl font-black text-[var(--color-text-primary)] mb-10 uppercase italic tracking-tighter decoration-8 underline decoration-yellow-300">
                                     Grab Your Pass
                                 </h3>
 

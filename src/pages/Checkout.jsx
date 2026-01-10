@@ -34,12 +34,16 @@ const Checkout = () => {
         phone: '',
         address: '',
         city: '',
-        postalCode: ''
+        postalCode: '',
+        agreedToTerms: false
     });
 
     const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
     };
 
     const loadRazorpay = () => {
@@ -268,6 +272,11 @@ const Checkout = () => {
             return;
         }
 
+        if (!formData.agreedToTerms) {
+            toast.error("Please agree to the Terms and Conditions to proceed.");
+            return;
+        }
+
         setIsProcessing(true);
 
         // --- HANDLE FREE BOOKINGS (₹0) ---
@@ -430,9 +439,15 @@ const Checkout = () => {
                             </div>
 
                             <label className="flex items-start gap-3 mb-6 cursor-pointer group">
-                                <input type="checkbox" className="w-5 h-5 border-2 border-black rounded focus:ring-0 mt-1" />
+                                <input
+                                    type="checkbox"
+                                    name="agreedToTerms"
+                                    checked={formData.agreedToTerms}
+                                    onChange={handleInputChange}
+                                    className="w-5 h-5 border-2 border-black rounded focus:ring-0 mt-1 cursor-pointer accent-black"
+                                />
                                 <span className="text-xs font-bold text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)]">
-                                    I agree to the <a href="#" className="underline decoration-2">Terms and Conditions</a> and <a href="#" className="underline decoration-2">Privacy Policy</a>.
+                                    I agree to the <a href="/terms" className="underline decoration-2">Terms and Conditions</a> and <a href="/privacy" className="underline decoration-2">Privacy Policy</a>.
                                 </span>
                             </label>
 

@@ -39,9 +39,9 @@ const About = () => {
                         { label: "Happy Users", value: "2M+", color: "bg-green-400" },
                         { label: "Countries", value: "45", color: "bg-purple-400" }
                     ].map((stat, i) => (
-                        <div key={i} className={`${stat.color} border-4 border-black p-6 text-center transform rotate-1 hover:rotate-0 transition-transform`}>
-                            <h3 className="text-5xl font-black text-black mb-2">{stat.value}</h3>
-                            <p className="font-bold uppercase text-black tracking-widest">{stat.label}</p>
+                        <div key={i} className={`${stat.color} border-4 border-[var(--color-text-primary)] p-6 text-center transform rotate-1 hover:rotate-0 transition-transform`}>
+                            <h3 className="text-5xl font-black badge-accent text-gray-900 mb-2">{stat.value}</h3>
+                            <p className="font-bold uppercase badge-accent text-gray-900 tracking-widest">{stat.label}</p>
                         </div>
                     ))}
                 </div>

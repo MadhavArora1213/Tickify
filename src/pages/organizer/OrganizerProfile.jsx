@@ -113,13 +113,13 @@ const OrganizerProfile = () => {
                         </div>
 
                         {/* Public Bio Section */}
-                        <div className="neo-card bg-white p-6 border-4 border-black shadow-[4px_4px_0_black]">
-                            <label className="block text-xs font-black uppercase text-gray-400 mb-2 tracking-widest">Public Bio</label>
+                        <div className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[4px_4px_0_var(--color-text-primary)]">
+                            <label className="block text-xs font-black uppercase text-[var(--color-text-muted)] mb-2 tracking-widest">Public Bio</label>
                             <textarea
                                 value={profileData.bio}
                                 onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
                                 placeholder="Tell your audience about your events..."
-                                className="w-full bg-transparent font-bold text-sm resize-none focus:outline-none min-h-[100px]"
+                                className="w-full bg-transparent font-bold text-sm resize-none focus:outline-none min-h-[100px] text-[var(--color-text-primary)]"
                             />
                         </div>
                     </div>
@@ -190,16 +190,16 @@ const OrganizerProfile = () => {
                                 <span className="block text-[10px] font-black uppercase text-gray-400 mb-1">Login Email</span>
                                 <span className="font-black text-sm truncate block">{profileData.email}</span>
                             </div>
-                            <div className="neo-card bg-white p-6 border-2 border-black shadow-[4px_4px_0_black]">
-                                <span className="block text-[10px] font-black uppercase text-gray-500 mb-1">Phone Verified</span>
-                                <span className="font-black text-sm block">{profileData.phoneNumber || 'N/A'}</span>
+                            <div className="neo-card bg-[var(--color-bg-surface)] p-6 border-2 border-[var(--color-text-primary)] shadow-[4px_4px_0_var(--color-text-primary)]">
+                                <span className="block text-[10px] font-black uppercase text-[var(--color-text-muted)] mb-1">Phone Verified</span>
+                                <span className="font-black text-sm block text-[var(--color-text-primary)]">{profileData.phoneNumber || 'N/A'}</span>
                             </div>
                         </div>
 
                         <div className="flex justify-end gap-4">
                             <button
                                 onClick={() => window.location.reload()}
-                                className="neo-btn bg-white border-2 border-black text-black px-6 py-3 font-black uppercase shadow-[4px_4px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_black] transition-all"
+                                className="neo-btn bg-[var(--color-bg-surface)] border-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)] px-6 py-3 font-black uppercase shadow-[4px_4px_0_var(--color-text-primary)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_var(--color-text-primary)] transition-all"
                             >
                                 Reset
                             </button>

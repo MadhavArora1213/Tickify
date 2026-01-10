@@ -97,7 +97,7 @@ const VerifyTicket = () => {
                     <p className="text-sm font-bold uppercase text-[var(--color-text-secondary)] tracking-widest">Official Verification Service</p>
                 </div>
 
-                <div className={`w-full bg-white border-4 border-black shadow-[12px_12px_0_black] p-8 relative overflow-hidden ${isSuccess ? 'animate-bounce-in' : 'animate-shake'}`}>
+                <div className={`w-full verification-card bg-white border-4 border-black shadow-[12px_12px_0_black] p-8 relative overflow-hidden ${isSuccess ? 'animate-bounce-in' : 'animate-shake'}`}>
 
                     {/* Status Badge */}
                     <div className={`absolute top-4 right-4 px-4 py-1 border-2 border-black font-black uppercase text-[10px] transform rotate-3 ${isSuccess ? 'bg-green-400' : 'bg-red-400 text-white'}`}>

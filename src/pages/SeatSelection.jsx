@@ -174,7 +174,7 @@ const SeatSelection = () => {
                 {/* Legend */}
                 <div className="flex justify-center gap-4 md:gap-8 mb-12 flex-wrap text-[var(--color-text-primary)]">
                     <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-[var(--color-text-primary)] rounded bg-white"></div>
+                        <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-[var(--color-text-primary)] rounded bg-[var(--color-bg-surface)]"></div>
                         <span className="text-[10px] md:text-xs font-black uppercase">Available</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -229,7 +229,7 @@ const SeatSelection = () => {
                                                 className={`w-6 h-6 md:w-10 md:h-10 rounded-t md:rounded-t-lg border md:border-2 border-[var(--color-text-primary)] transition-all font-black text-[8px] md:text-xs flex items-center justify-center
                                                 ${isSelected
                                                         ? 'bg-[var(--color-accent-primary)] text-white translate-y-[-2px] md:translate-y-[-4px] shadow-[0_2px_0_var(--color-text-primary)] md:shadow-[0_4px_0_var(--color-text-primary)] !bg-[var(--color-accent-primary)] !border-black'
-                                                        : 'bg-white hover:bg-gray-100'
+                                                        : 'bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-hover)]'
                                                     }`}
                                                 title={`${seat.ticketName} - ₹${seat.price} (${seat.label || seat.id})`}
                                             >

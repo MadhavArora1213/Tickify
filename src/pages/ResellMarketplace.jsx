@@ -113,12 +113,51 @@ const ResellMarketplace = () => {
                 extractedPrice = parseInt(explicitPriceMatch[1].replace(/,/g, ''));
             }
 
+            // Extract Seat Label (patterns like A1, F8, F9, B12, ROW-A-12, SEAT: F8, etc.)
+            let extractedSeat = "";
+            const seatPatterns = [
+                /(?:SEAT|SEAT\s*(?:NO|NUMBER|#)?|SECTION)[:\s]*([A-Z]\d{1,3})/i,
+                /(?:ROW[:\s]*)?([A-Z])[:\s-]*(\d{1,3})/i,
+                /\b([A-Z][0-9]{1,2})\b/,
+                /\b(SEAT[:\s]*[A-Z0-9]+)\b/i
+            ];
+            for (const pattern of seatPatterns) {
+                const seatMatch = text.match(pattern);
+                if (seatMatch) {
+                    // Handle patterns that capture row and seat separately
+                    if (seatMatch[2]) {
+                        extractedSeat = `${seatMatch[1]}${seatMatch[2]}`;
+                    } else {
+                        extractedSeat = seatMatch[1].replace(/SEAT[:\s]*/i, '').trim();
+                    }
+                    if (extractedSeat.length <= 4 && /^[A-Z]\d{1,2}$/i.test(extractedSeat)) {
+                        break; // Good seat format found
+                    }
+                }
+            }
+
+            // Extract Ticket ID / Booking Reference
+            let extractedTicketId = "";
+            const ticketIdPatterns = [
+                /(?:TICKET\s*(?:ID|NO|NUMBER|#)?|BOOKING\s*(?:ID|REF|REFERENCE)?|REF(?:ERENCE)?)[:\s#]*([A-Z0-9]{6,12})/i,
+                /(?:ID|REF)[:\s#]*([A-Z0-9]{6,12})/i,
+                /\b([A-Z]{2,4}[0-9]{4,8})\b/,
+                /\b(\d{8,12})\b/
+            ];
+            for (const pattern of ticketIdPatterns) {
+                const idMatch = text.match(pattern);
+                if (idMatch && idMatch[1]) {
+                    extractedTicketId = idMatch[1].toUpperCase();
+                    break;
+                }
+            }
+
             // Extract Type
-            const ticketTypes = ['VIP', 'GENERAL', 'EARLY BIRD', 'VVIP', 'PLATINUM', 'GOLD', 'SILVER', 'STUDENT'];
+            const ticketTypes = ['VIP', 'GENERAL', 'EARLY BIRD', 'VVIP', 'PLATINUM', 'GOLD', 'SILVER', 'STUDENT', 'REGULAR', 'PREMIUM'];
             const foundType = ticketTypes.find(type => text.toUpperCase().includes(type)) || "GENERAL PASS";
 
             // Match Event
-            let eventTitle = qrVerifiedData?.items?.[0]?.eventTitle || "UNKNOWN EVENT";
+            let eventTitle = qrVerifiedData?.items?.[0]?.eventTitle || "";
             let eventId = qrVerifiedData?.eventId || "";
 
             if (!eventId) {
@@ -134,13 +173,32 @@ const ResellMarketplace = () => {
                 }
             }
 
+            // If still no event title, try to extract from OCR
+            if (!eventTitle || eventTitle === "") {
+                // Look for common event patterns
+                const eventPatterns = [
+                    /(?:EVENT|SHOW|CONCERT|FESTIVAL)[:\s]*(.{5,40})/i,
+                    /(?:PRESENTS?|LIVE)[:\s]*(.{5,40})/i
+                ];
+                for (const pattern of eventPatterns) {
+                    const eventMatch = text.match(pattern);
+                    if (eventMatch && eventMatch[1]) {
+                        eventTitle = eventMatch[1].trim().toUpperCase();
+                        break;
+                    }
+                }
+            }
+
+            // Fallback event title
+            if (!eventTitle) eventTitle = "UNKNOWN EVENT";
+
             setListingData(prev => ({
                 ...prev,
                 eventTitle: eventTitle,
                 eventId: eventId,
                 ticketName: qrVerifiedData?.items?.[0]?.name || foundType,
-                ticketNumber: qrVerifiedData?.items?.[0]?.ticketNumber || "",
-                seatLabel: qrVerifiedData?.items?.[0]?.label || "",
+                ticketNumber: qrVerifiedData?.items?.[0]?.ticketNumber || extractedTicketId || "",
+                seatLabel: qrVerifiedData?.items?.[0]?.label || extractedSeat || "",
                 originalPrice: qrVerifiedData?.items?.[0]?.price || extractedPrice || "",
                 resalePrice: (qrVerifiedData?.items?.[0]?.price || extractedPrice) > 0 ? ((qrVerifiedData?.items?.[0]?.price || extractedPrice) * 0.9).toFixed(0) : "",
                 verificationFlag: qrVerifiedData ? "VERIFIED_GENUINE" : (eventId ? "AI_MATCHED" : "UNVERIFIED"),
@@ -247,52 +305,63 @@ const ResellMarketplace = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {tickets.length > 0 ? (
                             tickets.map(ticket => (
-                                <div key={ticket.id} className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-black shadow-[8px_8px_0_black] hover:translate-y-[-4px] hover:shadow-[12px_12px_0_black] transition-all group">
+                                <div key={ticket.id} className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[8px_8px_0_var(--color-text-primary)] hover:translate-y-[-4px] hover:shadow-[12px_12px_0_var(--color-text-primary)] transition-all group">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex flex-col gap-1">
-                                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 border border-black inline-block ${ticket.verificationFlag === 'VERIFIED_GENUINE' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
+                                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 border border-[var(--color-text-primary)] inline-block ${ticket.verificationFlag === 'VERIFIED_GENUINE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'}`}>
                                                 {ticket.verificationFlag === 'VERIFIED_GENUINE' ? '✓ Verified Genuine' : 'Verified Resale'}
                                             </span>
                                         </div>
-                                        <span className="text-[10px] font-bold text-gray-400">
+                                        <span className="text-[10px] font-bold text-[var(--color-text-muted)]">
                                             {ticket.createdAt ? new Date(ticket.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
                                         </span>
                                     </div>
 
                                     {ticket.imageUrl && (
-                                        <div className="w-full h-32 bg-gray-100 border-2 border-black mb-4 overflow-hidden relative">
+                                        <div className="w-full h-32 bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] mb-4 overflow-hidden relative">
                                             <img src={ticket.imageUrl} alt="Ticket" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all opacity-80" />
                                             <div className="absolute inset-0 bg-black/10"></div>
                                         </div>
                                     )}
 
-                                    <h3 className="text-xl font-black text-[var(--color-text-primary)] mb-1 uppercase tracking-tighter truncate">{ticket.ticketName}</h3>
-                                    <p className="text-[10px] font-bold text-gray-500 mb-4 uppercase truncate">{ticket.eventTitle}</p>
+                                    <h3 className="text-xl font-black text-[var(--color-text-primary)] mb-1 uppercase tracking-tighter truncate">{ticket.eventTitle}</h3>
+                                    <p className="text-xs font-bold text-[var(--color-accent-primary)] mb-4 uppercase">{ticket.ticketName}</p>
 
                                     <div className="flex flex-col gap-2 mb-6">
-                                        <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                                            <span className="text-[9px] font-black uppercase text-gray-400">Ticket ID</span>
-                                            <span className="bg-black text-white px-2 py-0.5 text-[10px] font-mono tracking-tighter italic">
-                                                {ticket.ticketNumber || ticket.ticketId?.slice(-10).toUpperCase() || 'NO-ID-DETECTED'}
+                                        {/* Event Info Row */}
+                                        <div className="flex items-center justify-between border-b border-[var(--color-bg-hover)] pb-2">
+                                            <span className="text-[9px] font-black uppercase text-[var(--color-text-muted)]">Event</span>
+                                            <span className="text-[10px] font-bold text-[var(--color-text-primary)] truncate max-w-[150px]">
+                                                {ticket.eventTitle}
                                             </span>
                                         </div>
+
+                                        {/* Seat Row - Always show if available */}
                                         {ticket.seatLabel && (
-                                            <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                                                <span className="text-[9px] font-black uppercase text-gray-400">Reserved Seat</span>
-                                                <span className="bg-yellow-400 text-black px-2 py-0.5 text-[10px] font-black uppercase border-2 border-black shadow-[2px_2px_0_black]">
+                                            <div className="flex items-center justify-between border-b border-[var(--color-bg-hover)] pb-2">
+                                                <span className="text-[9px] font-black uppercase text-[var(--color-text-muted)]">Seat</span>
+                                                <span className="bg-yellow-400 badge-accent text-gray-900 px-2 py-0.5 text-[10px] font-black uppercase border-2 border-[var(--color-text-primary)] shadow-[2px_2px_0_var(--color-text-primary)]">
                                                     {ticket.seatLabel}
                                                 </span>
                                             </div>
                                         )}
+
+                                        {/* Ticket ID Row */}
+                                        <div className="flex items-center justify-between border-b border-[var(--color-bg-hover)] pb-2">
+                                            <span className="text-[9px] font-black uppercase text-[var(--color-text-muted)]">Ticket ID</span>
+                                            <span className="bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] px-2 py-0.5 text-[10px] font-mono tracking-tighter">
+                                                {ticket.ticketNumber || ticket.bookingReference || ticket.ticketId?.slice(-8).toUpperCase() || 'N/A'}
+                                            </span>
+                                        </div>
                                     </div>
 
-                                    <div className="mb-6 p-4 bg-gray-50 border-2 border-dashed border-gray-200">
-                                        <div className="flex justify-between text-[10px] font-bold mb-1 uppercase tracking-widest text-gray-400">
+                                    <div className="mb-6 p-4 bg-[var(--color-bg-secondary)] border-2 border-dashed border-[var(--color-text-muted)]/30">
+                                        <div className="flex justify-between text-[10px] font-bold mb-1 uppercase tracking-widest text-[var(--color-text-muted)]">
                                             <span>Original</span>
-                                            <span className="line-through text-red-300">₹{ticket.originalPrice}</span>
+                                            <span className="line-through text-red-400">₹{ticket.originalPrice}</span>
                                         </div>
                                         <div className="flex justify-between text-2xl font-black text-[var(--color-text-primary)] items-baseline">
-                                            <span className="text-[10px] uppercase text-gray-400">Market Price</span>
+                                            <span className="text-[10px] uppercase text-[var(--color-text-muted)]">Market Price</span>
                                             <span className="text-[var(--color-accent-primary)]">₹{ticket.resalePrice}</span>
                                         </div>
                                     </div>
@@ -319,7 +388,7 @@ const ResellMarketplace = () => {
             {/* List Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-                    <div className="w-full max-w-xl bg-white border-4 border-black shadow-[20px_20px_0_black] relative overflow-hidden flex flex-col max-h-[90vh]">
+                    <div className="w-full max-w-xl neo-modal-content bg-white border-4 border-black shadow-[20px_20px_0_black] relative overflow-hidden flex flex-col max-h-[90vh]">
                         <div className="bg-black text-white p-6 flex justify-between items-center border-b-4 border-black">
                             <h2 className="text-2xl font-black uppercase tracking-tighter">AI Verification Engine</h2>
                             <button onClick={() => setShowModal(false)} className="text-3xl font-black hover:text-red-500">&times;</button>

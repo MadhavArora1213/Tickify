@@ -105,7 +105,7 @@ const ScanResult = () => {
     return (
         <div className={`min-h-screen flex flex-col items-center justify-between p-6 py-12 text-center transition-colors duration-300 ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`}>
 
-            <div className="w-full max-w-sm bg-white border-4 border-black shadow-[12px_12px_0_rgba(0,0,0,0.5)] p-8 relative overflow-hidden animate-bounce-in">
+            <div className="w-full max-w-sm verification-card bg-white border-4 border-black shadow-[12px_12px_0_rgba(0,0,0,0.5)] p-8 relative overflow-hidden animate-bounce-in">
 
                 {/* Status Icon */}
                 <div className={`w-24 h-24 mx-auto rounded-full border-4 border-black flex items-center justify-center text-5xl mb-6 ${isSuccess ? 'bg-green-400 text-black' : 'bg-red-400 text-white'}`}>

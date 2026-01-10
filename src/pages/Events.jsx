@@ -292,7 +292,7 @@ const Events = () => {
                                     filteredEvents.map(event => (
                                         <Link key={event.id} to={isRegistrationClosed(event) ? '#' : `/events/${event.id}`} className={isRegistrationClosed(event) ? 'cursor-not-allowed' : ''}>
                                             <div className={`neo-card bg-[var(--color-bg-surface)] overflow-hidden group h-full flex flex-col ${isRegistrationClosed(event) ? 'opacity-70 grayscale' : ''}`}>
-                                                <div className="h-48 overflow-hidden relative border-b-2 border-black">
+                                                <div className="h-48 overflow-hidden relative border-b-2 border-[var(--color-text-primary)]">
                                                     <img src={event.image || "https://via.placeholder.com/400x200?text=No+Image"} alt={event.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                                                     <div className="absolute top-2 right-2 neo-btn bg-[var(--color-accent-primary)] text-white text-xs px-2 py-1 rotate-3">
                                                         {event.price ? (typeof event.price === 'number' ? `₹${event.price}` : event.price) : 'Free'}
@@ -310,7 +310,7 @@ const Events = () => {
                                                     <h3 className="text-xl font-black text-[var(--color-text-primary)] mb-2 leading-tight">{event.title}</h3>
                                                     <div className="mt-auto flex items-center justify-between">
                                                         <span className="text-sm font-bold text-[var(--color-text-muted)]">{event.date}</span>
-                                                        <span className={`neo-btn ${isRegistrationClosed(event) ? 'bg-gray-300 text-gray-500' : 'bg-white text-black'} px-3 py-1 text-xs`}>
+                                                        <span className={`neo-btn ${isRegistrationClosed(event) ? 'bg-gray-300 text-gray-500' : 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)]'} px-3 py-1 text-xs`}>
                                                             {isRegistrationClosed(event) ? 'CLOSED' : 'DETAILS'}
                                                         </span>
                                                     </div>
@@ -335,7 +335,7 @@ const Events = () => {
                             )}
                         </>
                     ) : (
-                        <div className="neo-card w-full h-[600px] bg-[var(--color-bg-surface)] overflow-hidden relative border-4 border-black shadow-[8px_8px_0_black]">
+                        <div className="neo-card w-full h-[600px] bg-[var(--color-bg-surface)] overflow-hidden relative border-4 border-[var(--color-text-primary)] shadow-[8px_8px_0_var(--color-text-primary)]">
                             <MapContainer
                                 center={[20.5937, 78.9629]}
                                 zoom={5}
@@ -363,15 +363,15 @@ const Events = () => {
                                             </Tooltip>
                                             <Popup className="neo-popup">
                                                 <div className="p-2 min-w-[200px]">
-                                                    <div className="h-24 bg-gray-200 mb-2 border-2 border-black overflow-hidden relative">
+                                                    <div className="h-24 bg-[var(--color-bg-secondary)] mb-2 border-2 border-[var(--color-text-primary)] overflow-hidden relative">
                                                         <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
-                                                        <div className="absolute top-1 right-1 bg-black text-white text-[8px] font-black uppercase px-1 py-0.5">₹{event.price || 'FREE'}</div>
+                                                        <div className="absolute top-1 right-1 bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] text-[8px] font-black uppercase px-1 py-0.5">₹{event.price || 'FREE'}</div>
                                                     </div>
-                                                    <h3 className="font-black uppercase text-sm mb-1 leading-tight tracking-tighter">{event.title}</h3>
-                                                    <p className="text-[10px] font-bold text-gray-500 uppercase mb-2 border-l-2 border-black pl-1">{event.location}</p>
+                                                    <h3 className="font-black uppercase text-sm mb-1 leading-tight tracking-tighter text-[var(--color-text-primary)]">{event.title}</h3>
+                                                    <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase mb-2 border-l-2 border-[var(--color-text-primary)] pl-1">{event.location}</p>
                                                     <Link
                                                         to={`/events/${event.id}`}
-                                                        className="block w-full text-center bg-[var(--color-accent-primary)] text-white py-1.5 border-2 border-black font-black text-[10px] uppercase shadow-[2px_2px_0_black] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0_black] transition-all"
+                                                        className="block w-full text-center bg-[var(--color-accent-primary)] text-white py-1.5 border-2 border-[var(--color-text-primary)] font-black text-[10px] uppercase shadow-[2px_2px_0_var(--color-text-primary)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0_var(--color-text-primary)] transition-all"
                                                     >
                                                         Details
                                                     </Link>

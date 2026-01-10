@@ -388,6 +388,90 @@ export const clearOTP = (email) => {
     otpStore.delete(email);
 };
 
+/**
+ * Send Job Application Email via Brevo
+ * @param {Object} applicationData - Application details
+ */
+export const sendJobApplicationEmail = async (applicationData) => {
+    const { name, email, phone, jobTitle, linkedIn, resumeUrl, coverLetter } = applicationData;
+    
+    const emailData = {
+        sender: {
+            name: 'Tickify Careers',
+            email: 'aroramadhav1312@gmail.com'
+        },
+        to: [
+            { email: 'aroramadhav1312@gmail.com', name: 'Tickify HR' }
+        ],
+        subject: `🎯 New Job Application: ${jobTitle} - ${name}`,
+        htmlContent: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+            </head>
+            <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+                <div style="max-width: 600px; margin: 0 auto; background: white; border: 3px solid #000; padding: 0;">
+                    <div style="background: #000; color: white; padding: 20px; text-align: center;">
+                        <h1 style="margin: 0; font-size: 24px;">NEW JOB APPLICATION</h1>
+                        <p style="margin: 5px 0 0; opacity: 0.8;">${jobTitle}</p>
+                    </div>
+                    
+                    <div style="padding: 30px;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 12px 0; border-bottom: 1px solid #eee; font-weight: bold; color: #666; width: 120px;">Name</td>
+                                <td style="padding: 12px 0; border-bottom: 1px solid #eee; font-weight: bold;">${name}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px 0; border-bottom: 1px solid #eee; font-weight: bold; color: #666;">Email</td>
+                                <td style="padding: 12px 0; border-bottom: 1px solid #eee;"><a href="mailto:${email}" style="color: #2563eb;">${email}</a></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px 0; border-bottom: 1px solid #eee; font-weight: bold; color: #666;">Phone</td>
+                                <td style="padding: 12px 0; border-bottom: 1px solid #eee;"><a href="tel:${phone}" style="color: #2563eb;">${phone}</a></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px 0; border-bottom: 1px solid #eee; font-weight: bold; color: #666;">LinkedIn</td>
+                                <td style="padding: 12px 0; border-bottom: 1px solid #eee;">
+                                    ${linkedIn ? `<a href="${linkedIn}" style="color: #2563eb;">${linkedIn}</a>` : '<span style="color: #999;">Not provided</span>'}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px 0; border-bottom: 1px solid #eee; font-weight: bold; color: #666;">Resume</td>
+                                <td style="padding: 12px 0; border-bottom: 1px solid #eee;">
+                                    ${resumeUrl ? `<a href="${resumeUrl}" style="color: #2563eb; background: #000; color: white; padding: 5px 15px; text-decoration: none; display: inline-block;">View Resume</a>` : '<span style="color: #999;">Not provided</span>'}
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        ${coverLetter ? `
+                        <div style="margin-top: 24px; padding: 20px; background: #f9f9f9; border-left: 4px solid #000;">
+                            <p style="margin: 0 0 8px; font-weight: bold; color: #666; font-size: 12px; text-transform: uppercase;">Cover Letter / Message</p>
+                            <p style="margin: 0; line-height: 1.6;">${coverLetter.replace(/\n/g, '<br>')}</p>
+                        </div>
+                        ` : ''}
+                        
+                        <div style="margin-top: 24px; text-align: center;">
+                            <a href="mailto:${email}?subject=Re: Your Application for ${jobTitle}" 
+                               style="display: inline-block; background: #000; color: white; padding: 12px 30px; text-decoration: none; font-weight: bold; border: 2px solid #000;">
+                                REPLY TO APPLICANT
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 11px; color: #666;">
+                        Received via Tickify Careers Portal • ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+                    </div>
+                </div>
+            </body>
+            </html>
+        `
+    };
+    
+    return sendEmail(emailData);
+};
+
 export default {
     sendOTPEmail,
     verifyOTP,
@@ -395,5 +479,6 @@ export default {
     clearOTP,
     sendEventApprovalEmail,
     sendEventRejectionEmail,
-    sendOrganizerApprovalEmail
+    sendOrganizerApprovalEmail,
+    sendJobApplicationEmail
 };

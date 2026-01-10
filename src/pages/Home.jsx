@@ -11,6 +11,7 @@ import Testimonials from '../components/Testimonials';
 import FAQSection from '../components/FAQSection';
 import RollingGallery from '../components/react-bits/RollingGallery';
 import Newsletter from '../components/Newsletter';
+import OrganizerCTA from '../components/OrganizerCTA';
 
 const logos = [
     'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/2560px-Google_2015_logo.svg.png',
@@ -87,7 +88,7 @@ const Home = () => {
                         </h2>
                         <button
                             onClick={() => { setSearchQuery(''); setLocationQuery(''); }}
-                            className="neo-btn bg-white px-4 py-2 text-xs font-black uppercase border-2 border-black"
+                            className="neo-btn bg-[var(--color-bg-surface)] px-4 py-2 text-xs font-black uppercase border-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)]"
                         >
                             Clear X
                         </button>
@@ -99,16 +100,16 @@ const Home = () => {
                                 <Link
                                     key={event.id}
                                     to={`/events/${event.id}`}
-                                    className="neo-card bg-white p-4 border-2 border-black shadow-[4px_4px_0_black] hover:translate-y-[-2px] transition-all"
+                                    className="neo-card bg-[var(--color-bg-surface)] p-4 border-2 border-[var(--color-text-primary)] shadow-[4px_4px_0_var(--color-text-primary)] hover:translate-y-[-2px] transition-all"
                                 >
-                                    <div className="h-32 bg-gray-100 mb-4 border-2 border-black overflow-hidden">
+                                    <div className="h-32 bg-[var(--color-bg-secondary)] mb-4 border-2 border-[var(--color-text-primary)] overflow-hidden">
                                         <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
                                     </div>
-                                    <h3 className="font-black uppercase text-sm truncate">{event.title}</h3>
-                                    <p className="text-[10px] font-bold text-gray-500 uppercase">{event.location}</p>
+                                    <h3 className="font-black uppercase text-sm truncate text-[var(--color-text-primary)]">{event.title}</h3>
+                                    <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase">{event.location}</p>
                                     <div className="mt-2 flex justify-between items-center">
-                                        <span className="text-xs font-black text-blue-600">₹{event.price || 'FREE'}</span>
-                                        <span className="text-[10px] uppercase font-bold">{event.date}</span>
+                                        <span className="text-xs font-black text-[var(--color-accent-primary)]">₹{event.price || 'FREE'}</span>
+                                        <span className="text-[10px] uppercase font-bold text-[var(--color-text-secondary)]">{event.date}</span>
                                     </div>
                                 </Link>
                             ))}
@@ -124,6 +125,7 @@ const Home = () => {
             <RollingGallery images={logos} />
             <CategoryFilters />
             <FeaturedEvents />
+            <OrganizerCTA />
             <HowItWorks />
             <Testimonials />
             <FAQSection />
