@@ -44,9 +44,9 @@ const Events = () => {
             try {
                 setLoading(true);
                 const eventsRef = collection(db, 'events');
-                // You can add more specific queries here if needed, e.g., only active events
-                // const q = query(eventsRef, where("status", "==", "active")); 
-                const querySnapshot = await getDocs(eventsRef);
+                // Only fetch published (verified) events
+                const q = query(eventsRef, where('status', '==', 'published'));
+                const querySnapshot = await getDocs(q);
 
                 const fetchedEvents = querySnapshot.docs.map(doc => {
                     const data = doc.data();
@@ -98,7 +98,10 @@ const Events = () => {
         // Simple location match (can be improved)
         const matchesLocation = locationFilter === 'All' || event.location?.includes(locationFilter);
 
-        return matchesCategory && matchesPrice && matchesSearch && matchesLocation;
+        // Check if registration is still open
+        const registrationOpen = !isRegistrationClosed(event);
+
+        return matchesCategory && matchesPrice && matchesSearch && matchesLocation && registrationOpen;
     });
 
     if (loading) {

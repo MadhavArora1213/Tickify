@@ -355,82 +355,151 @@ const OrganizerDashboard = () => {
         return date.toLocaleDateString();
     };
 
-    const renderOverview = () => (
-        <div className="space-y-8 animate-fade-in-up">
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                {stats.map((stat, idx) => (
-                    <div key={idx} className={`p-6 border-4 border-black shadow-[8px_8px_0_black] transition-transform hover:-translate-y-1 ${stat.color} relative overflow-hidden group`}>
-                        <h3 className={`text-4xl font-black mb-1 ${stat.textColor}`}>{stat.value}</h3>
-                        <p className={`font-black uppercase text-xs ${stat.textColor} opacity-90`}>{stat.label}</p>
-                        <div className={`mt-4 pt-2 border-t-2 border-black/10 font-bold text-[10px] uppercase ${stat.textColor} opacity-70`}>
-                            {stat.change}
-                        </div>
-                    </div>
-                ))}
-            </div>
+    const renderOverview = () => {
+        const pendingEvents = events.filter(e => e.status === 'pending' || e.approvalStatus === 'pending');
+        const liveEvents = events.filter(e => e.status === 'published' || e.status === 'active' || e.approvalStatus === 'approved');
 
-            <div className="bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[8px_8px_0_var(--color-text-primary)]">
-                <h3 className="text-xl font-black uppercase mb-6 text-[var(--color-text-primary)]">Recent Activity</h3>
-                <div className="space-y-4">
-                    {loading ? (
-                        <p className="text-center text-gray-500 py-4">Loading activity...</p>
-                    ) : recentActivities.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
-                            <p className="text-4xl mb-2">📭</p>
-                            <p className="font-bold">No recent activity</p>
-                            <p className="text-sm">Create your first event to get started!</p>
-                        </div>
-                    ) : (
-                        recentActivities.map(activity => (
-                            <div key={activity.id} className="flex justify-between items-center p-3 border-2 border-[var(--color-text-secondary)]/20 hover:bg-[var(--color-bg-secondary)]/30 transition-colors">
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-10 h-10 ${activity.iconBg} border-2 border-black rounded-full flex items-center justify-center text-lg`}>
-                                        {activity.icon}
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-sm text-[var(--color-text-primary)]">{activity.title}</p>
-                                        <p className="text-xs text-[var(--color-text-secondary)]">{activity.description}</p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    {activity.badge}
-                                    <p className="text-[10px] text-gray-500 mt-1">{formatTimeAgo(activity.timestamp)}</p>
-                                </div>
+        return (
+            <div className="space-y-8 animate-fade-in-up">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                    {stats.map((stat, idx) => (
+                        <div key={idx} className={`p-6 border-4 border-black shadow-[8px_8px_0_black] transition-transform hover:-translate-y-1 ${stat.color} relative overflow-hidden group`}>
+                            <h3 className={`text-4xl font-black mb-1 ${stat.textColor}`}>{stat.value}</h3>
+                            <p className={`font-black uppercase text-xs ${stat.textColor} opacity-90`}>{stat.label}</p>
+                            <div className={`mt-4 pt-2 border-t-2 border-black/10 font-bold text-[10px] uppercase ${stat.textColor} opacity-70`}>
+                                {stat.change}
                             </div>
-                        ))
-                    )}
+                        </div>
+                    ))}
                 </div>
 
-                {/* Pagination Controls */}
-                {!loading && allActivities.length > ITEMS_PER_PAGE && (
-                    <div className="flex justify-between items-center mt-6 pt-4 border-t-2 border-dashed border-[var(--color-text-secondary)]/20">
-                        <p className="text-[10px] font-black uppercase text-[var(--color-text-secondary)]">
-                            Page {activityPage + 1} of {totalPages} ({allActivities.length} items)
-                        </p>
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => setActivityPage(prev => Math.max(0, prev - 1))}
-                                disabled={activityPage === 0}
-                                className={`px-3 py-1 text-xs font-black uppercase border-2 border-black shadow-[2px_2px_0_black] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0_black] transition-all disabled:opacity-50 disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0_black]
-                                ${activityPage === 0 ? 'bg-gray-200 text-gray-400' : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]'}`}
-                            >
-                                &larr; Previous
-                            </button>
-                            <button
-                                onClick={() => setActivityPage(prev => Math.min(totalPages - 1, prev + 1))}
-                                disabled={activityPage >= totalPages - 1}
-                                className={`px-3 py-1 text-xs font-black uppercase border-2 border-black shadow-[2px_2px_0_black] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0_black] transition-all disabled:opacity-50 disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[2px_2px_0_black]
-                                ${activityPage >= totalPages - 1 ? 'bg-gray-200 text-gray-400' : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]'}`}
-                            >
-                                Next &rarr;
-                            </button>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Live & Pending Snapshot */}
+                    <div className="space-y-6">
+                        {/* Pending Approvals */}
+                        <div className="bg-white p-6 border-4 border-black shadow-[8px_8px_0_#FACC15]">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-black uppercase">Moderation Queue</h3>
+                                <span className="px-2 py-0.5 bg-yellow-400 text-black text-[10px] font-black border-2 border-black">PENDING</span>
+                            </div>
+                            <div className="space-y-3">
+                                {pendingEvents.length === 0 ? (
+                                    <p className="text-xs text-gray-500 font-bold italic py-4">No events awaiting approval.</p>
+                                ) : (
+                                    pendingEvents.map(e => (
+                                        <div key={e.id} className="flex items-center justify-between p-3 border-2 border-black bg-yellow-50/50">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-gray-200 border-2 border-black overflow-hidden flex-shrink-0">
+                                                    <img src={e.bannerUrl} alt="" className="w-full h-full object-cover" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-black uppercase text-xs truncate max-w-[150px]">{e.eventTitle}</p>
+                                                    <p className="text-[10px] text-gray-500 font-bold">{e.startDate}</p>
+                                                </div>
+                                            </div>
+                                            <button onClick={() => setActiveTab('events')} className="text-[10px] font-black underline hover:text-yellow-600">VIEW</button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Live Events */}
+                        <div className="bg-white p-6 border-4 border-black shadow-[8px_8px_0_#3B82F6]">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-black uppercase">Published Content</h3>
+                                <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-black border-2 border-black">LIVE</span>
+                            </div>
+                            <div className="space-y-3">
+                                {liveEvents.length === 0 ? (
+                                    <p className="text-xs text-gray-500 font-bold italic py-4">No live events found.</p>
+                                ) : (
+                                    liveEvents.slice(0, 3).map(e => (
+                                        <div key={e.id} className="flex items-center justify-between p-3 border-2 border-black bg-blue-50/50">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-gray-200 border-2 border-black overflow-hidden flex-shrink-0">
+                                                    <img src={e.bannerUrl} alt="" className="w-full h-full object-cover" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-black uppercase text-xs truncate max-w-[150px]">{e.eventTitle}</p>
+                                                    <p className="text-[10px] text-blue-600 font-bold">{e.city}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col items-end">
+                                                {(() => {
+                                                    const now = new Date();
+                                                    const endDate = new Date(`${e.registrationEndDate}T${e.registrationEndTime || '23:59'}`);
+                                                    if (e.registrationEndDate && now > endDate) {
+                                                        return <span className="text-[8px] font-black uppercase px-2 py-0.5 border border-black bg-red-100 text-red-800 mb-1">Closed</span>;
+                                                    }
+                                                    return <span className="text-[10px] font-black text-green-600">ACTIVE</span>;
+                                                })()}
+                                                <button onClick={() => setActiveTab('events')} className="text-[10px] font-black underline hover:text-blue-600 uppercase">Manage</button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
                         </div>
                     </div>
-                )}
+
+                    {/* Recent Activity Feed */}
+                    <div className="bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[8px_8px_0_var(--color-text-primary)]">
+                        <h3 className="text-xl font-black uppercase mb-6 text-[var(--color-text-primary)]">Global Activity</h3>
+                        <div className="space-y-4">
+                            {loading ? (
+                                <p className="text-center text-gray-500 py-4">Loading activity...</p>
+                            ) : recentActivities.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500">
+                                    <p className="text-4xl mb-2">📭</p>
+                                    <p className="font-bold">No recent activity</p>
+                                </div>
+                            ) : (
+                                recentActivities.map(activity => (
+                                    <div key={activity.id} className="flex justify-between items-center p-3 border-2 border-[var(--color-text-secondary)]/20 hover:bg-[var(--color-bg-secondary)]/30 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-10 h-10 ${activity.iconBg} border-2 border-black rounded-full flex items-center justify-center text-lg`}>
+                                                {activity.icon}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-sm text-[var(--color-text-primary)]">{activity.title}</p>
+                                                <p className="text-xs text-[var(--color-text-secondary)]">{activity.description}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            {activity.badge}
+                                            <p className="text-[10px] text-gray-500 mt-1">{formatTimeAgo(activity.timestamp)}</p>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Activity Pagination */}
+                        {!loading && allActivities.length > ITEMS_PER_PAGE && (
+                            <div className="flex justify-end gap-2 mt-6">
+                                <button
+                                    onClick={() => setActivityPage(prev => Math.max(0, prev - 1))}
+                                    disabled={activityPage === 0}
+                                    className="px-3 py-1 text-xs font-black uppercase border-2 border-black shadow-[2px_2px_0_black] disabled:opacity-50"
+                                >
+                                    &larr;
+                                </button>
+                                <button
+                                    onClick={() => setActivityPage(prev => Math.min(totalPages - 1, prev + 1))}
+                                    disabled={activityPage >= totalPages - 1}
+                                    className="px-3 py-1 text-xs font-black uppercase border-2 border-black shadow-[2px_2px_0_black] disabled:opacity-50"
+                                >
+                                    &rarr;
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     const renderEvents = () => (
         <div className="space-y-6 animate-fade-in-up">

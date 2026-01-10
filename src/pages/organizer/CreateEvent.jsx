@@ -278,11 +278,30 @@ const CreateEvent = () => {
                 return false;
             }
         }
-        if (step === 2) {
-            if (!formData.isOnline && (!formData.venueName || !formData.city)) {
-                setError('Venue details are required for offline events.');
+        if (step === 2) { // Step 2 is Tickets (renderStep3)
+            if (!formData.tickets || formData.tickets.length === 0) {
+                setError('At least one ticket type is required.');
                 return false;
             }
+            const hasInvalidTicket = formData.tickets.some(t => !t.name || t.quantity <= 0);
+            if (hasInvalidTicket) {
+                setError('Please provide a name and quantity for all ticket types.');
+                return false;
+            }
+        }
+        if (step === 3) { // Step 3 is Venue & Seating (renderStep2)
+            if (formData.eventType !== 'Online') {
+                if (!formData.venueName || !formData.city) {
+                    setError('Venue name and City are required for offline/hybrid events.');
+                    return false;
+                }
+            } else {
+                if (!formData.onlinePlatform) {
+                    setError('Please select an online platform.');
+                    return false;
+                }
+            }
+
             if (formData.seatingType === 'Reserved' && formData.totalCapacity === 0) {
                 setError('Please configure the seating grid.');
                 return false;
@@ -365,7 +384,7 @@ const CreateEvent = () => {
             // Generate/Update Ticket numbering settings
             let ticketPrefix = formData.ticketPrefix;
             const capacity = formData.totalCapacity || formData.tickets.reduce((sum, t) => sum + parseInt(t.quantity || 0), 0);
-            const padLength = formData.ticketPadding || String(capacity).length || 2;
+            const padLength = formData.ticketPadding || 3;
 
             if (!ticketPrefix) {
                 const dateStr = (formData.startDate || '').replace(/-/g, '');
@@ -374,8 +393,11 @@ const CreateEvent = () => {
                 ticketPrefix = `${dateStr}${typeCode}`;
             }
 
-            const eventCodeFirst = `${ticketPrefix}${String(1).padStart(padLength, '0')}`;
-            const eventCodeLast = `${ticketPrefix}${String(capacity).padStart(padLength, '0')}`;
+            const firstCategory = formData.tickets[0]?.name?.substring(0, 3).toUpperCase() || 'GEN';
+            const lastCategory = formData.tickets[formData.tickets.length - 1]?.name?.substring(0, 3).toUpperCase() || 'GEN';
+
+            const eventCodeFirst = `${ticketPrefix}${String(1).padStart(padLength, '0')}${firstCategory}`;
+            const eventCodeLast = `${ticketPrefix}${String(capacity).padStart(padLength, '0')}${lastCategory}`;
 
             // Preparing data
             const eventData = {
@@ -774,7 +796,7 @@ const CreateEvent = () => {
         // Calculate preview event code range
         const totalTickets = formData.tickets.reduce((sum, t) => sum + parseInt(t.quantity || 0), 0);
         const capacity = formData.totalCapacity || totalTickets || 1;
-        const padLength = formData.ticketPadding || String(capacity).length || 2;
+        const padLength = formData.ticketPadding || 3;
 
         let prefix = formData.ticketPrefix;
         if (!prefix) {
@@ -784,8 +806,11 @@ const CreateEvent = () => {
             prefix = `${dateStr}${typeCode}`;
         }
 
-        const firstCode = `${prefix}${String(1).padStart(padLength, '0')}`;
-        const lastCode = `${prefix}${String(capacity).padStart(padLength, '0')}`;
+        const firstCategory = formData.tickets[0]?.name?.substring(0, 3).toUpperCase() || 'GEN';
+        const lastCategory = formData.tickets[formData.tickets.length - 1]?.name?.substring(0, 3).toUpperCase() || 'GEN';
+
+        const firstCode = `${prefix}${String(1).padStart(padLength, '0')}${firstCategory}`;
+        const lastCode = `${prefix}${String(capacity).padStart(padLength, '0')}${lastCategory}`;
 
         return (
             <div className="space-y-6 animate-fade-in-up">

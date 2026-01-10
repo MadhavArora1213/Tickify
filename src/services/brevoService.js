@@ -223,6 +223,72 @@ export const sendOrganizerApprovalEmail = async (email, name) => {
 };
 
 /**
+ * Send 'Event Approved' Email
+ * @param {string} email
+ * @param {string} name
+ * @param {string} eventTitle
+ */
+export const sendEventApprovalEmail = async (email, name, eventTitle) => {
+    const emailData = {
+        sender: { name: 'Tickify', email: 'aroramadhav1312@gmail.com' },
+        to: [{ email, name }],
+        subject: `Event Published: ${eventTitle} - Tickify`,
+        htmlContent: `
+             <!DOCTYPE html>
+            <html>
+            <body style="margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background-color: #111827;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+                    <div style="background-color: #1F2937; border: 4px solid #10B981; padding: 40px; box-shadow: 8px 8px 0 #059669;">
+                        <h1 style="color: #10B981; text-align: center; text-transform: uppercase;">Event Published!</h1>
+                        <p style="color: #D1D5DB; text-align: center;">Hello ${name},</p>
+                        <p style="color: #D1D5DB; text-align: center;">Congratulations! Your event <strong>"${eventTitle}"</strong> has been approved and is now live on Tickify.</p>
+                         <p style="color: #D1D5DB; text-align: center;">
+                            <a href="http://localhost:5173/events" style="color: #10B981; font-weight: bold;">View Live Events</a>
+                        </p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `
+    };
+    return sendEmail(emailData);
+};
+
+/**
+ * Send 'Event Rejected' Email
+ * @param {string} email
+ * @param {string} name
+ * @param {string} eventTitle
+ * @param {string} reason
+ */
+export const sendEventRejectionEmail = async (email, name, eventTitle, reason) => {
+    const emailData = {
+        sender: { name: 'Tickify', email: 'aroramadhav1312@gmail.com' },
+        to: [{ email, name }],
+        subject: `Update on your event submission: ${eventTitle}`,
+        htmlContent: `
+             <!DOCTYPE html>
+            <html>
+            <body style="margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background-color: #111827;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+                    <div style="background-color: #1F2937; border: 4px solid #EF4444; padding: 40px; box-shadow: 8px 8px 0 #991B1B;">
+                        <h1 style="color: #EF4444; text-align: center; text-transform: uppercase;">Action Required</h1>
+                        <p style="color: #D1D5DB; text-align: center;">Hello ${name},</p>
+                        <p style="color: #D1D5DB; text-align: center;">Your event submission <strong>"${eventTitle}"</strong> was not approved at this time.</p>
+                        <div style="background-color: #111827; border-left: 4px solid #EF4444; padding: 15px; margin: 20px 0;">
+                            <p style="color: #F87171; margin: 0; font-size: 14px;"><strong>Reason:</strong> ${reason}</p>
+                        </div>
+                         <p style="color: #D1D5DB; text-align: center;">You can edit your event and resubmit for approval from your dashboard.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `
+    };
+    return sendEmail(emailData);
+};
+
+/**
  * Send 'Contact Form Confirmation' Email
  * @param {string} email - User's email
  * @param {string} name - User's name
@@ -326,5 +392,8 @@ export default {
     sendOTPEmail,
     verifyOTP,
     generateOTP,
-    clearOTP
+    clearOTP,
+    sendEventApprovalEmail,
+    sendEventRejectionEmail,
+    sendOrganizerApprovalEmail
 };

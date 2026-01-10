@@ -51,7 +51,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import BubbleMenu from './components/react-bits/BubbleMenu';
 import ThemeToggle from './components/ThemeToggle';
-import { UserRoute, AdminRoute, PublicRoute, AdminPublicRoute, OrganizerRoute, OrganizerGuestRoute } from './components/ProtectedRoutes';
+import { UserRoute, AdminRoute, PublicRoute, AdminPublicRoute, OrganizerRoute, OrganizerGuestRoute, ScannerRoute, GuestRoute } from './components/ProtectedRoutes';
 
 
 function App() {
@@ -69,26 +69,34 @@ function App() {
                     <Route path="/events/:id" element={<EventDetails />} />
                     <Route path="/organizer-public/:id" element={<OrganizerPublicProfile />} />
                     <Route path="/events/:id/seats" element={<SeatSelection />} />
-                    <Route path="/cart" element={<Cart />} />
-                    <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/cart" element={
+                        <UserRoute>
+                            <Cart />
+                        </UserRoute>
+                    } />
+                    <Route path="/checkout" element={
+                        <UserRoute>
+                            <Checkout />
+                        </UserRoute>
+                    } />
                     <Route path="/payment/success" element={<PaymentSuccess />} />
                     <Route path="/resell" element={<ResellMarketplace />} />
 
                     {/* User Auth Routes - Redirect if already logged in */}
                     <Route path="/login" element={
-                        <PublicRoute>
+                        <GuestRoute>
                             <Login />
-                        </PublicRoute>
+                        </GuestRoute>
                     } />
                     <Route path="/register" element={
-                        <PublicRoute>
+                        <GuestRoute>
                             <Register />
-                        </PublicRoute>
+                        </GuestRoute>
                     } />
                     <Route path="/forgot-password" element={
-                        <PublicRoute>
+                        <GuestRoute>
                             <ForgotPassword />
-                        </PublicRoute>
+                        </GuestRoute>
                     } />
 
                     {/* Protected User Routes */}
@@ -158,9 +166,21 @@ function App() {
 
                     {/* Scanner Routes */}
                     <Route path="/scanner/login" element={<ScannerLogin />} />
-                    <Route path="/scanner/events" element={<ScannerEvents />} />
-                    <Route path="/scanner/scan" element={<ScannerInterface />} />
-                    <Route path="/scanner/results" element={<ScanResult />} />
+                    <Route path="/scanner/events" element={
+                        <ScannerRoute>
+                            <ScannerEvents />
+                        </ScannerRoute>
+                    } />
+                    <Route path="/scanner/scan" element={
+                        <ScannerRoute>
+                            <ScannerInterface />
+                        </ScannerRoute>
+                    } />
+                    <Route path="/scanner/results" element={
+                        <ScannerRoute>
+                            <ScanResult />
+                        </ScannerRoute>
+                    } />
 
                     {/* Admin Auth Route - Redirect if already admin */}
                     <Route path="/admin/login" element={

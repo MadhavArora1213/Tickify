@@ -25,8 +25,8 @@ const AdminSettings = () => {
                             <input type="number" defaultValue="5.0" className="w-full border-2 border-black p-2 font-bold focus:bg-yellow-100 outline-none" />
                         </div>
                         <div>
-                            <label className="block text-xs font-black uppercase mb-1">Fixed Fee Per Ticket ($)</label>
-                            <input type="number" defaultValue="0.99" className="w-full border-2 border-black p-2 font-bold focus:bg-yellow-100 outline-none" />
+                            <label className="block text-xs font-black uppercase mb-1">Fixed Fee Per Ticket (₹)</label>
+                            <input type="number" defaultValue="50" className="w-full border-2 border-black p-2 font-bold focus:bg-yellow-100 outline-none" />
                         </div>
                         <div>
                             <label className="block text-xs font-black uppercase mb-1">Tax Rate (%)</label>

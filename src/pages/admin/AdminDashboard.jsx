@@ -16,26 +16,22 @@ const AdminDashboard = () => {
         ticketsSold: 0,
         pendingSettlements: 0
     });
+    const [pendingEventsList, setPendingEventsList] = useState([]);
+    const [activeEventsList, setActiveEventsList] = useState([]);
     const [adminProfile, setAdminProfile] = useState(null);
 
-    const { currentUser, logout, userRole } = useAuth();
+    const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
 
-    // Fetch admin profile from 'admins' collection
+    // Fetch admin profile
     useEffect(() => {
         const fetchAdminProfile = async () => {
             if (currentUser) {
-                console.log('Fetching admin profile for:', currentUser.uid);
                 try {
                     const adminDocRef = doc(db, 'admins', currentUser.uid);
                     const adminDoc = await getDoc(adminDocRef);
-                    console.log('Admin doc exists:', adminDoc.exists());
                     if (adminDoc.exists()) {
-                        const data = adminDoc.data();
-                        console.log('Admin profile data:', data);
-                        setAdminProfile(data);
-                    } else {
-                        console.log('No admin document found for UID:', currentUser.uid);
+                        setAdminProfile(adminDoc.data());
                     }
                 } catch (error) {
                     console.error('Error fetching admin profile:', error);
@@ -45,75 +41,78 @@ const AdminDashboard = () => {
         fetchAdminProfile();
     }, [currentUser]);
 
-    // Fetch real data from Firebase
+    // Fetch stats and lists from Firebase
     useEffect(() => {
-        const fetchStats = async () => {
+        const fetchData = async () => {
             setLoading(true);
             try {
-                // Fetch users from 'users' collection (only regular users)
+                // 1. Fetch Users
                 const usersRef = collection(db, 'users');
                 const usersSnapshot = await getDocs(usersRef);
-                const usersData = usersSnapshot.docs.map(doc => doc.data());
-
-                // Filter only regular users (not admin, organizer, scanner)
-                const regularUsers = usersData.filter(user => !user.role || user.role === 'user');
+                const regularUsers = usersSnapshot.docs.map(doc => doc.data());
                 const activeUserCount = regularUsers.filter(user => user.status === 'active').length;
 
-                // Fetch events (if collection exists)
-                let activeEventsCount = 0;
-                let pendingApprovalsCount = 0;
+                // 2. Fetch Events
+                let activeCount = 0;
+                let pendingCount = 0;
+                let activeList = [];
+                let pendingList = [];
                 try {
                     const eventsRef = collection(db, 'events');
                     const eventsSnapshot = await getDocs(eventsRef);
-                    const eventsData = eventsSnapshot.docs.map(doc => doc.data());
-                    activeEventsCount = eventsData.filter(event => event.status === 'active' || event.status === 'published').length;
-                    pendingApprovalsCount = eventsData.filter(event => event.status === 'pending').length;
-                } catch (e) {
-                    // Events collection may not exist yet
-                    console.log('Events collection not found');
-                }
+                    const allEvents = eventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                // Fetch orders/tickets (if collection exists)
+                    const activeEvents = allEvents.filter(e => e.status === 'active' || e.status === 'published');
+                    const pendingEvents = allEvents.filter(e => e.status === 'pending');
+
+                    activeCount = activeEvents.length;
+                    pendingCount = pendingEvents.length;
+
+                    activeList = activeEvents.slice(0, 5); // Show top 5
+                    pendingList = pendingEvents.slice(0, 5); // Show top 5
+                } catch (e) { console.log('Events collection not found'); }
+
+                // 3. Fetch Bookings (Financials)
                 let ticketCount = 0;
                 let totalRevenue = 0;
                 try {
-                    const ordersRef = collection(db, 'orders');
-                    const ordersSnapshot = await getDocs(ordersRef);
-                    const ordersData = ordersSnapshot.docs.map(doc => doc.data());
-                    ticketCount = ordersData.reduce((sum, order) => sum + (order.ticketCount || 1), 0);
-                    totalRevenue = ordersData.reduce((sum, order) => sum + (order.total || 0), 0);
-                } catch (e) {
-                    console.log('Orders collection not found');
-                }
+                    const bookingsRef = collection(db, 'bookings');
+                    const bookingsSnapshot = await getDocs(bookingsRef);
+                    const bookingsData = bookingsSnapshot.docs.map(doc => doc.data());
 
-                // Fetch settlements (if collection exists)
+                    ticketCount = bookingsData.reduce((sum, b) => {
+                        return sum + (b.items?.reduce((total, item) => total + (item.quantity || 1), 0) || 0);
+                    }, 0);
+                    totalRevenue = bookingsData.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+                } catch (e) { console.log('Bookings collection not found'); }
+
+                // 4. Fetch Settlements
                 let pendingSettlementsCount = 0;
                 try {
                     const settlementsRef = collection(db, 'settlements');
                     const settlementsSnapshot = await getDocs(settlementsRef);
-                    const settlementsData = settlementsSnapshot.docs.map(doc => doc.data());
-                    pendingSettlementsCount = settlementsData.filter(s => s.status === 'pending').length;
-                } catch (e) {
-                    console.log('Settlements collection not found');
-                }
+                    pendingSettlementsCount = settlementsSnapshot.docs.filter(s => s.data().status === 'pending').length;
+                } catch (e) { console.log('Settlements collection not found'); }
 
                 setStats({
                     totalUsers: regularUsers.length,
                     activeUsers: activeUserCount,
-                    activeEvents: activeEventsCount,
-                    pendingApprovals: pendingApprovalsCount,
+                    activeEvents: activeCount,
+                    pendingApprovals: pendingCount,
                     totalRevenue: totalRevenue,
                     ticketsSold: ticketCount,
                     pendingSettlements: pendingSettlementsCount
                 });
+                setActiveEventsList(activeList);
+                setPendingEventsList(pendingList);
             } catch (error) {
-                console.error('Error fetching stats:', error);
+                console.error('Error fetching admin data:', error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchStats();
+        fetchData();
     }, []);
 
     useEffect(() => {
@@ -136,16 +135,8 @@ const AdminDashboard = () => {
         { icon: '👥', label: 'Manage Users', path: '/admin/users', color: 'bg-blue-500', count: stats.totalUsers },
         { icon: '📅', label: 'Event Approvals', path: '/admin/events', color: 'bg-yellow-500', count: stats.pendingApprovals },
         { icon: '💰', label: 'Settlements', path: '/admin/settlements', color: 'bg-green-500', count: stats.pendingSettlements },
-        { icon: '📊', label: 'Analytics', path: '/admin/analytics', color: 'bg-purple-500', count: null },
+        { icon: '📊', label: 'Analytics', path: '/admin/analytics', color: 'bg-purple-500' },
         { icon: '⚙️', label: 'Settings', path: '/admin/settings', color: 'bg-gray-600', count: null },
-    ];
-
-    const recentActivity = [
-        { id: 1, type: 'user', message: `Total registered users: ${stats.totalUsers}`, time: 'Live', icon: '👤' },
-        { id: 2, type: 'event', message: `Active events: ${stats.activeEvents}`, time: 'Live', icon: '📅' },
-        { id: 3, type: 'payment', message: `Total revenue: $${stats.totalRevenue.toLocaleString()}`, time: 'Live', icon: '💳' },
-        { id: 4, type: 'ticket', message: `Tickets sold: ${stats.ticketsSold}`, time: 'Live', icon: '🎫' },
-        { id: 5, type: 'alert', message: `Pending approvals: ${stats.pendingApprovals}`, time: 'Live', icon: '⏳' },
     ];
 
     return (
@@ -208,7 +199,7 @@ const AdminDashboard = () => {
                         { label: 'Total Users', value: loading ? '...' : stats.totalUsers.toLocaleString(), icon: '👥', color: 'bg-blue-500' },
                         { label: 'Active Events', value: loading ? '...' : stats.activeEvents, icon: '📅', color: 'bg-purple-500' },
                         { label: 'Pending Approvals', value: loading ? '...' : stats.pendingApprovals, icon: '⏳', color: 'bg-yellow-500' },
-                        { label: 'Total Revenue', value: loading ? '...' : `$${stats.totalRevenue.toLocaleString()}`, icon: '💰', color: 'bg-green-500' },
+                        { label: 'Total Revenue', value: loading ? '...' : `₹${stats.totalRevenue.toLocaleString()}`, icon: '💰', color: 'bg-green-500' },
                         { label: 'Tickets Sold', value: loading ? '...' : stats.ticketsSold.toLocaleString(), icon: '🎫', color: 'bg-pink-500' },
                         { label: 'Settlements', value: loading ? '...' : stats.pendingSettlements, icon: '💳', color: 'bg-orange-500' },
                     ].map((stat, i) => (
@@ -244,71 +235,89 @@ const AdminDashboard = () => {
                     </div>
                 </div>
 
-                {/* Two Column Layout */}
+                {/* Two Column Layout: Real Event Lists */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Recent Activity */}
+                    {/* Pending Approvals List */}
                     <div className="bg-white border-4 border-black shadow-[8px_8px_0_gray]">
-                        <div className="bg-black text-white p-4 flex justify-between items-center">
-                            <span className="font-black uppercase tracking-wider">Recent Activity</span>
-                            <span className="text-xs text-gray-400">Live Feed</span>
+                        <div className="bg-yellow-500 text-black p-4 flex justify-between items-center border-b-4 border-black">
+                            <span className="font-black uppercase tracking-wider">Moderation Queue (Pending)</span>
+                            <span className="bg-black text-white px-2 py-0.5 text-xs font-black">{pendingEventsList.length}</span>
                         </div>
-                        <div className="divide-y-2 divide-gray-200">
-                            {recentActivity.map((activity) => (
-                                <div key={activity.id} className="p-4 hover:bg-gray-50 transition-colors flex items-start gap-4">
-                                    <div className="w-10 h-10 bg-gray-100 border-2 border-black flex items-center justify-center text-xl flex-shrink-0">
-                                        {activity.icon}
+                        <div className="divide-y-2 divide-gray-200 min-h-[300px]">
+                            {loading ? (
+                                <div className="p-10 text-center animate-pulse uppercase font-black">Loading queue...</div>
+                            ) : pendingEventsList.length === 0 ? (
+                                <div className="p-10 text-center text-gray-400 uppercase font-black">Queue is clear! 🎯</div>
+                            ) : (
+                                pendingEventsList.map((event) => (
+                                    <div key={event.id} className="p-4 hover:bg-yellow-50 transition-colors flex items-center justify-between gap-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-gray-100 border-2 border-black overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                                {event.bannerUrl ? (
+                                                    <img src={event.bannerUrl} alt="" className="w-full h-full object-cover" />
+                                                ) : <span className="text-xl">📅</span>}
+                                            </div>
+                                            <div>
+                                                <p className="font-black uppercase text-xs truncate max-w-[200px]">{event.eventTitle || event.title}</p>
+                                                <p className="text-[10px] text-gray-500 font-bold">{event.organizerName || 'New Submission'}</p>
+                                            </div>
+                                        </div>
+                                        <Link to="/admin/events" className="px-3 py-1 bg-black text-white text-[10px] font-black uppercase border-2 border-black hover:bg-yellow-500 hover:text-black transition-colors">
+                                            Review
+                                        </Link>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-bold text-sm truncate">{activity.message}</p>
-                                        <p className="text-xs text-gray-500 font-medium">{activity.time}</p>
-                                    </div>
-                                </div>
-                            ))}
+                                ))
+                            )}
                         </div>
                         <div className="p-4 bg-gray-50 border-t-2 border-black">
-                            <Link to="/admin/analytics" className="text-xs font-black uppercase text-blue-600 hover:underline">
-                                View All Activity →
+                            <Link to="/admin/events" className="text-xs font-black uppercase text-black hover:underline">
+                                Full Moderation Panel →
                             </Link>
                         </div>
                     </div>
 
-                    {/* Performance Overview */}
+                    {/* Active Events List */}
                     <div className="bg-white border-4 border-black shadow-[8px_8px_0_gray]">
-                        <div className="bg-black text-white p-4 flex justify-between items-center">
-                            <span className="font-black uppercase tracking-wider">Performance</span>
-                            <span className="text-xs text-green-400">↑ +12% this week</span>
+                        <div className="bg-blue-600 text-white p-4 flex justify-between items-center border-b-4 border-black">
+                            <span className="font-black uppercase tracking-wider">Live Platform Content</span>
+                            <span className="bg-white text-black px-2 py-0.5 text-xs font-black">{stats.activeEvents}</span>
                         </div>
-                        <div className="p-6 space-y-6">
-                            {/* Chart Placeholder */}
-                            <div className="h-40 flex items-end gap-2 border-b-2 border-black pb-2 px-2">
-                                {[40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88].map((h, i) => (
-                                    <div key={i} className="flex-1 bg-blue-500 hover:bg-blue-400 transition-colors border border-black relative group" style={{ height: `${h}%` }}>
-                                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white px-2 py-1 text-[10px] hidden group-hover:block z-10 whitespace-nowrap">
-                                            {h}%
+                        <div className="divide-y-2 divide-gray-200 min-h-[300px]">
+                            {loading ? (
+                                <div className="p-10 text-center animate-pulse uppercase font-black">Loading live data...</div>
+                            ) : activeEventsList.length === 0 ? (
+                                <div className="p-10 text-center text-gray-400 uppercase font-black">No active events found</div>
+                            ) : (
+                                activeEventsList.map((event) => (
+                                    <div key={event.id} className="p-4 hover:bg-blue-50 transition-colors flex items-center justify-between gap-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-gray-100 border-2 border-black overflow-hidden flex-shrink-0 text-2xl flex items-center justify-center">
+                                                {event.bannerUrl ? <img src={event.bannerUrl} alt="" className="w-full h-full object-cover" /> : '🎫'}
+                                            </div>
+                                            <div>
+                                                <p className="font-black uppercase text-xs truncate max-w-[200px]">{event.eventTitle || event.title}</p>
+                                                <p className="text-[10px] text-blue-600 font-bold">{event.startDate || 'Upcoming'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            {(() => {
+                                                const now = new Date();
+                                                const endDate = new Date(`${event.registrationEndDate}T${event.registrationEndTime || '23:59'}`);
+                                                if (event.registrationEndDate && now > endDate) {
+                                                    return <span className="text-[8px] font-black uppercase px-2 py-0.5 border border-black bg-red-100 text-red-800 mb-1">Closed</span>;
+                                                }
+                                                return <span className="text-[10px] font-black text-green-600 uppercase">Live</span>;
+                                            })()}
+                                            <span className="text-[10px] text-gray-400">{event.city || 'Tickify'}</span>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-
-                            {/* KPIs */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="p-4 bg-blue-50 border-2 border-blue-300">
-                                    <span className="text-2xl font-black text-blue-600">98.5%</span>
-                                    <p className="text-xs font-bold uppercase text-blue-400">Uptime</p>
-                                </div>
-                                <div className="p-4 bg-green-50 border-2 border-green-300">
-                                    <span className="text-2xl font-black text-green-600">2.4s</span>
-                                    <p className="text-xs font-bold uppercase text-green-400">Avg Load Time</p>
-                                </div>
-                                <div className="p-4 bg-purple-50 border-2 border-purple-300">
-                                    <span className="text-2xl font-black text-purple-600">4.8/5</span>
-                                    <p className="text-xs font-bold uppercase text-purple-400">User Rating</p>
-                                </div>
-                                <div className="p-4 bg-orange-50 border-2 border-orange-300">
-                                    <span className="text-2xl font-black text-orange-600">12.3%</span>
-                                    <p className="text-xs font-bold uppercase text-orange-400">Conversion Rate</p>
-                                </div>
-                            </div>
+                                ))
+                            )}
+                        </div>
+                        <div className="p-4 bg-gray-50 border-t-2 border-black">
+                            <Link to="/events" className="text-xs font-black uppercase text-blue-600 hover:underline">
+                                View Public Listing →
+                            </Link>
                         </div>
                     </div>
                 </div>

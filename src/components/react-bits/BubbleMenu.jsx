@@ -3,50 +3,126 @@ import { gsap } from 'gsap';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-const DEFAULT_ITEMS = [
-    {
-        label: 'Home',
-        href: '/',
-        ariaLabel: 'Home',
-        rotation: -8,
-        hoverStyles: { bgColor: '#3b82f6', textColor: '#ffffff' }
-    },
-    {
-        label: 'Events',
-        href: '/events',
-        ariaLabel: 'Events',
-        rotation: 8,
-        hoverStyles: { bgColor: '#10b981', textColor: '#ffffff' }
-    },
-    {
-        label: 'Create',
-        href: '/organizer/events/create',
-        ariaLabel: 'Create',
-        rotation: 8,
-        hoverStyles: { bgColor: '#f59e0b', textColor: '#ffffff' }
-    },
-    {
-        label: 'About',
-        href: '/about',
-        ariaLabel: 'About',
-        rotation: 8,
-        hoverStyles: { bgColor: '#ef4444', textColor: '#ffffff' }
-    },
-    {
-        label: 'Resale',
-        href: '/resell',
-        ariaLabel: 'Resale Market',
-        rotation: 8,
-        hoverStyles: { bgColor: '#ec4899', textColor: '#ffffff' }
-    },
-    {
-        label: 'Profile',
-        href: '/profile',
-        ariaLabel: 'Profile',
-        rotation: -8,
-        hoverStyles: { bgColor: '#8b5cf6', textColor: '#ffffff' }
+// Role-specific navigation items
+const getMenuItems = (role) => {
+    const baseItems = [
+        {
+            label: 'Home',
+            href: '/',
+            ariaLabel: 'Home',
+            rotation: -8,
+            hoverStyles: { bgColor: '#3b82f6', textColor: '#ffffff' }
+        },
+        {
+            label: 'Events',
+            href: '/events',
+            ariaLabel: 'Events',
+            rotation: 8,
+            hoverStyles: { bgColor: '#10b981', textColor: '#ffffff' }
+        },
+    ];
+
+    if (role === 'admin') {
+        return [
+            ...baseItems,
+            {
+                label: 'Admin',
+                href: '/admin/dashboard',
+                ariaLabel: 'Admin Dashboard',
+                rotation: -5,
+                hoverStyles: { bgColor: '#dc2626', textColor: '#ffffff' }
+            },
+            {
+                label: 'Users',
+                href: '/admin/users',
+                ariaLabel: 'Manage Users',
+                rotation: 5,
+                hoverStyles: { bgColor: '#9333ea', textColor: '#ffffff' }
+            },
+            {
+                label: 'Analytics',
+                href: '/admin/analytics',
+                ariaLabel: 'Admin Analytics',
+                rotation: -3,
+                hoverStyles: { bgColor: '#2563eb', textColor: '#ffffff' }
+            }
+        ];
     }
-];
+
+    if (role === 'organizer') {
+        return [
+            ...baseItems,
+            {
+                label: 'Dashboard',
+                href: '/organizer/dashboard',
+                ariaLabel: 'Organizer Dashboard',
+                rotation: -5,
+                hoverStyles: { bgColor: '#f59e0b', textColor: '#ffffff' }
+            },
+            {
+                label: 'Create',
+                href: '/organizer/events/create',
+                ariaLabel: 'Create Event',
+                rotation: 5,
+                hoverStyles: { bgColor: '#10b981', textColor: '#ffffff' }
+            },
+            {
+                label: 'Events',
+                href: '/organizer/events',
+                ariaLabel: 'Manage Events',
+                rotation: -3,
+                hoverStyles: { bgColor: '#8b5cf6', textColor: '#ffffff' }
+            },
+            {
+                label: 'Profile',
+                href: '/organizer/profile',
+                ariaLabel: 'Organizer Profile',
+                rotation: 3,
+                hoverStyles: { bgColor: '#ec4899', textColor: '#ffffff' }
+            }
+        ];
+    }
+
+    // Default items for normal users and guests
+    const userItems = [
+        ...baseItems,
+        {
+            label: 'Resale',
+            href: '/resell',
+            ariaLabel: 'Resale Market',
+            rotation: 8,
+            hoverStyles: { bgColor: '#ec4899', textColor: '#ffffff' }
+        },
+        {
+            label: 'About',
+            href: '/about',
+            ariaLabel: 'About Us',
+            rotation: 4,
+            hoverStyles: { bgColor: '#ef4444', textColor: '#ffffff' }
+        }
+    ];
+
+    if (role === 'user') {
+        userItems.push({
+            label: 'Profile',
+            href: '/profile',
+            ariaLabel: 'User Profile',
+            rotation: -8,
+            hoverStyles: { bgColor: '#8b5cf6', textColor: '#ffffff' }
+        });
+    } else {
+        // Guest items
+        userItems.push({
+            label: 'Login',
+            href: '/login',
+            ariaLabel: 'Login',
+            rotation: -8,
+            hoverStyles: { bgColor: '#3b82f6', textColor: '#ffffff' }
+        });
+    }
+
+    return userItems;
+};
 
 
 
@@ -66,13 +142,13 @@ export default function BubbleMenu({
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showOverlay, setShowOverlay] = useState(false);
 
-    const { currentUser } = useAuth();
+    const { currentUser, userRole } = useAuth();
 
     const overlayRef = useRef(null);
     const bubblesRef = useRef([]);
     const labelRefs = useRef([]);
 
-    const menuItems = items?.length ? items : DEFAULT_ITEMS;
+    const menuItems = items?.length ? items : getMenuItems(userRole);
 
     const containerClassName = [
         'bubble-menu',
@@ -274,7 +350,7 @@ export default function BubbleMenu({
                     {/* User Avatar - Shows when logged in (left of menu icon) */}
                     {currentUser && (
                         <Link
-                            to="/profile"
+                            to={userRole === 'admin' ? '/admin/dashboard' : userRole === 'organizer' ? '/organizer/profile' : '/profile'}
                             className={[
                                 'bubble user-avatar-bubble',
                                 'inline-flex items-center justify-center relative',

@@ -12,9 +12,9 @@ const LoadingSpinner = () => (
     </div>
 );
 
-// Protected Route - Requires authentication
-export const ProtectedRoute = ({ children }) => {
-    const { currentUser, userStatus, loading } = useAuth();
+// User Protected Route - Requires user role
+export const UserRoute = ({ children }) => {
+    const { currentUser, userRole, userStatus, loading } = useAuth();
     const location = useLocation();
 
     if (loading) {
@@ -43,6 +43,28 @@ export const ProtectedRoute = ({ children }) => {
                     >
                         Contact Support
                     </a>
+                </div>
+            </div>
+        );
+    }
+
+    if (userRole !== 'user') {
+        return (
+            <div className="min-h-screen bg-[var(--color-bg-primary)] flex items-center justify-center p-6 text-center">
+                <div className="neo-card bg-[var(--color-bg-surface)] p-12 border-4 border-orange-500 shadow-[12px_12px_0_orange] max-w-lg">
+                    <div className="text-7xl mb-6">👤</div>
+                    <h1 className="text-4xl font-black text-orange-600 uppercase tracking-tighter mb-4">User Access Required</h1>
+                    <p className="text-[var(--color-text-secondary)] font-bold mb-8 text-lg">
+                        This area is reserved for customer accounts. Please log in as a regular user to continue.
+                    </p>
+                    <div className="flex flex-col gap-4">
+                        <a href="/login" className="neo-btn bg-orange-600 text-white font-black py-4 border-2 border-black shadow-[4px_4px_0_black] uppercase">
+                            Go to User Login
+                        </a>
+                        <a href="/" className="text-[var(--color-text-secondary)] font-bold hover:underline">
+                            Back to Home
+                        </a>
+                    </div>
                 </div>
             </div>
         );
@@ -107,7 +129,7 @@ export const OrganizerRoute = ({ children }) => {
         return <Navigate to="/organizer/login" state={{ from: location }} replace />;
     }
 
-    if (userRole !== 'organizer' && userRole !== 'admin') {
+    if (userRole !== 'organizer') {
         return (
             <div className="min-h-screen bg-[var(--color-bg-primary)] flex items-center justify-center p-6">
                 <div className="bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] p-8 max-w-md text-center shadow-[8px_8px_0_var(--color-text-primary)]">
@@ -186,7 +208,7 @@ export const OrganizerGuestRoute = ({ children }) => {
         return <LoadingSpinner />;
     }
 
-    if (currentUser && (userRole === 'organizer' || userRole === 'admin')) {
+    if (currentUser && userRole === 'organizer') {
         return <Navigate to="/organizer/dashboard" replace />;
     }
 
@@ -220,7 +242,7 @@ export const ScannerRoute = ({ children }) => {
         );
     }
 
-    if (userRole !== 'scanner' && userRole !== 'organizer' && userRole !== 'admin') {
+    if (userRole !== 'scanner') {
         return (
             <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
                 <div className="bg-gray-800 border-4 border-orange-500 p-8 max-w-md text-center">
@@ -286,8 +308,8 @@ export const AdminPublicRoute = ({ children }) => {
     return children;
 };
 
-// Alias for ProtectedRoute
-export const UserRoute = ProtectedRoute;
+// Export UserRoute (already defined above)
+export const ProtectedRoute = UserRoute;
 
 export default ProtectedRoute;
 

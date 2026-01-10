@@ -20,7 +20,7 @@ const EventDetails = () => {
                 const docRef = doc(db, 'events', id);
                 const docSnap = await getDoc(docRef);
 
-                if (docSnap.exists()) {
+                if (docSnap.exists() && docSnap.data().status === 'published') {
                     const data = docSnap.data();
 
                     let organizerName = 'Tickify Organizer';
