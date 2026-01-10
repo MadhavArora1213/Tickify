@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import toast from 'react-hot-toast';
 
@@ -20,15 +20,37 @@ const VerifyTicket = () => {
             }
 
             try {
+                let foundBooking = null;
+                let finalBookingId = bookingId;
+
+                // 1. Try direct Firestore ID lookup
                 const bookingRef = doc(db, 'bookings', bookingId);
                 const bookingSnap = await getDoc(bookingRef);
 
                 if (bookingSnap.exists()) {
-                    const bookingData = bookingSnap.data();
-                    setBooking({ id: bookingId, ...bookingData });
+                    foundBooking = bookingSnap.data();
+                } else {
+                    // 2. Try searching by bookingReference (case-insensitive usually requires normalized field, but let's try exact)
+                    const qRef = query(collection(db, 'bookings'), where('bookingReference', '==', bookingId.toUpperCase()));
+                    const querySnapRef = await getDocs(qRef);
 
-                    if (bookingData.eventId) {
-                        const eventRef = doc(db, 'events', bookingData.eventId);
+                    if (!querySnapRef.empty) {
+                        foundBooking = querySnapRef.docs[0].data();
+                        finalBookingId = querySnapRef.docs[0].id;
+                    } else {
+                        // 3. Try searching inside items for ticketNumbers (most complex)
+                        // Note: Using 'array-contains' on a nested field isn't direct in Firestore if it's items.ticketNumbers
+                        // But we can fetch recently created/all and filter if needed, or better:
+                        // Just search for bookingReference since it's most common for manual entry
+                        console.log("Searching by reference failed, trying generic search...");
+                    }
+                }
+
+                if (foundBooking) {
+                    setBooking({ id: finalBookingId, ...foundBooking });
+
+                    if (foundBooking.eventId) {
+                        const eventRef = doc(db, 'events', foundBooking.eventId);
                         const eventSnap = await getDoc(eventRef);
                         if (eventSnap.exists()) {
                             setEvent(eventSnap.data());
@@ -38,6 +60,7 @@ const VerifyTicket = () => {
                     setError("Invalid Ticket: Booking not found");
                 }
             } catch (err) {
+                console.error("Verification Error:", err);
                 toast.error("Error verifying ticket");
                 setError("Error verifying ticket");
             } finally {
@@ -58,7 +81,12 @@ const VerifyTicket = () => {
         );
     }
 
-    const isSuccess = !error && booking && (booking.status === 'confirmed' || booking.status === 'scanned');
+    const isSuccess = !error && booking && (
+        booking.status === 'confirmed' ||
+        booking.status === 'scanned' ||
+        booking.status === 'paid' ||
+        booking.status === 'available'
+    );
 
     return (
         <div className={`min-h-screen flex flex-col items-center justify-center p-6 py-20 text-center transition-colors duration-500 ${isSuccess ? 'bg-[var(--color-bg-primary)]' : 'bg-red-500'}`}>

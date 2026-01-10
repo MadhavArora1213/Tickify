@@ -62,19 +62,25 @@ const MyTickets = () => {
                     }
 
                     if (booking.items && Array.isArray(booking.items)) {
-                        booking.items.forEach((item, index) => {
-                            allTickets.push({
-                                ...item,
-                                bookingId: docSnap.id,
-                                bookingReference: booking.bookingReference || docSnap.id.slice(0, 8).toUpperCase(),
-                                eventId: booking.eventId,
-                                eventTitle: eventTitle,
-                                bookingDate: booking.bookingDate,
-                                status: booking.status,
-                                ticketNumber: item.ticketNumber || item.ticketNumbers?.[0] || booking.bookingReference || `${docSnap.id.slice(0, 8)}-${index}`,
-                                ticketId: `${docSnap.id}-${index}`,
-                                originalPrice: Number(item.price)
-                            });
+                        booking.items.forEach((item, itemIdx) => {
+                            const quantity = item.quantity || 1;
+
+                            // If it's a seated event or has multiple ticket numbers, create individual cards
+                            for (let i = 0; i < quantity; i++) {
+                                allTickets.push({
+                                    ...item,
+                                    bookingId: docSnap.id,
+                                    bookingReference: booking.bookingReference || docSnap.id.slice(0, 8).toUpperCase(),
+                                    eventId: booking.eventId,
+                                    eventTitle: eventTitle,
+                                    bookingDate: booking.bookingDate,
+                                    status: booking.status,
+                                    // Use the specific ticket number for this instance if it exists
+                                    ticketNumber: item.ticketNumbers?.[i] || item.ticketNumber || booking.bookingReference || `${docSnap.id.slice(0, 8)}-${itemIdx}-${i}`,
+                                    ticketId: `${docSnap.id}-${itemIdx}-${i}`,
+                                    originalPrice: Number(item.price)
+                                });
+                            }
                         });
                     }
                 }
@@ -90,8 +96,10 @@ const MyTickets = () => {
     }, [currentUser]);
 
     const handleResell = async (ticket) => {
-        const price = parseFloat(resellPrice[ticket.ticketId]);
-        if (!price || price <= 0) {
+        const priceString = resellPrice[ticket.ticketId];
+        const price = parseFloat(priceString);
+
+        if (priceString === '' || isNaN(price) || price < 0) {
             toast.error("Please enter a valid price.");
             return;
         }
@@ -137,75 +145,85 @@ const MyTickets = () => {
                     <span className="hidden dark:block drop-shadow-[4px_4px_0_var(--color-accent-primary)]">My Tickets</span>
                 </h1>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-12 max-w-7xl mx-auto">
                     {tickets.length > 0 ? (
                         tickets.map((ticket) => (
-                            <div key={ticket.ticketId} className="group relative">
-                                <div className="neo-card bg-white border-4 border-black shadow-[8px_8px_0_black]">
-                                    <div className="overflow-x-auto scrollbar-hide">
-                                        {/* Printable Area - Horizontal ID Card */}
-                                        <div
-                                            ref={el => ticketRefs.current[ticket.ticketId] = el}
-                                            className="bg-white overflow-hidden rounded-3xl border-4 border-black"
-                                            style={{ width: '650px' }} // Landscape width for capture
-                                        >
-                                            <div className="flex h-[320px]">
-                                                {/* Info Section */}
-                                                <div className="flex-[1.5] p-8 flex flex-col justify-between relative bg-white">
-                                                    <div className="flex justify-between items-start mb-4">
-                                                        <div>
-                                                            <h3 className="font-black text-xs uppercase tracking-widest text-[var(--color-accent-primary)] mb-1">Official Event Pass</h3>
-                                                            <h4 className="text-2xl font-black uppercase leading-tight text-black truncate max-w-[300px]">{ticket.eventTitle}</h4>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <span className="text-[9px] font-black uppercase text-gray-400 block mb-0.5 tracking-tighter">Ticket ID</span>
-                                                            <div className="bg-black text-white px-2 py-1 text-[9px] font-mono leading-none">
-                                                                {ticket.ticketNumber || ticket.bookingReference}
+                            <div key={ticket.ticketId} className="flex flex-col gap-4">
+                                <div className="neo-card bg-white border-4 border-black shadow-[12px_12px_0_black] overflow-hidden">
+                                    <div className="overflow-x-auto lg:overflow-visible scrollbar-hide">
+                                        {/* Display Container with scaling/sizing */}
+                                        <div className="min-w-[580px] md:min-w-0 md:w-full">
+                                            {/* Printable Area - Horizontal ID Card */}
+                                            <div
+                                                ref={el => ticketRefs.current[ticket.ticketId] = el}
+                                                className="bg-white rounded-[2rem] p-1" // Inner rounded for capture
+                                            >
+                                                <div className="flex h-[340px] border-4 border-black rounded-[1.8rem] overflow-hidden">
+                                                    {/* Info Section */}
+                                                    <div className="flex-[1.8] p-8 flex flex-col justify-between relative bg-white">
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <div>
+                                                                <h3 className="font-black text-[10px] uppercase tracking-widest text-[var(--color-accent-primary)] mb-1">Official Event Pass</h3>
+                                                                <h4 className="text-3xl font-black uppercase leading-tight text-black break-words max-w-[280px]">{ticket.eventTitle}</h4>
+                                                            </div>
+                                                            <div className="text-right flex-shrink-0 ml-4">
+                                                                <span className="text-[10px] font-black uppercase text-gray-400 block mb-1 tracking-tighter">Ticket ID</span>
+                                                                <div className="bg-black text-white px-3 py-1.5 text-[10px] font-mono leading-none border-2 border-black">
+                                                                    {ticket.ticketNumber || ticket.bookingReference}
+                                                                </div>
                                                             </div>
                                                         </div>
+
+                                                        <div className="grid grid-cols-2 gap-x-6 gap-y-8 pt-6 border-t-2 border-dashed border-gray-100">
+                                                            <div>
+                                                                <span className="text-[10px] font-black uppercase text-gray-400 block mb-1">Attendee</span>
+                                                                <p className="font-black text-base uppercase text-black truncate">{currentUser.displayName || 'Guest User'}</p>
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-[10px] font-black uppercase text-gray-400 block mb-1">Pass Type</span>
+                                                                <p className="font-black text-base uppercase text-black truncate">{ticket.name || ticket.ticketName}</p>
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-[10px] font-black uppercase text-gray-400 block mb-1">Seat Assignment</span>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-black text-2xl uppercase text-[var(--color-accent-primary)]">{ticket.label || 'GA'}</span>
+                                                                    <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 text-[10px] font-black border border-yellow-300">CONFIRMED</span>
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-[10px] font-black uppercase text-gray-400 block mb-1">Entry Price</span>
+                                                                <p className="font-black text-base uppercase text-black">₹{ticket.originalPrice}</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="mt-6 flex justify-between items-end border-t border-gray-100 pt-4">
+                                                            <div className="text-[8px] font-mono text-gray-400 uppercase tracking-[0.2em]">
+                                                                SECURE_AUTH_HASH: {(ticket.ticketNumber || ticket.ticketId).toUpperCase()}
+                                                            </div>
+                                                            <div className="text-[8px] font-black text-gray-200">© 2026 TICKIFY.COM</div>
+                                                        </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-2 gap-y-6 pt-4 border-t-2 border-dashed border-gray-100">
-                                                        <div>
-                                                            <span className="text-[9px] font-black uppercase text-gray-400 block mb-0.5">Attendee</span>
-                                                            <p className="font-black text-sm uppercase text-black truncate">{currentUser.displayName || 'Guest User'}</p>
-                                                        </div>
-                                                        <div>
-                                                            <span className="text-[9px] font-black uppercase text-gray-400 block mb-0.5">Pass Type</span>
-                                                            <p className="font-black text-sm uppercase text-black">{ticket.name || ticket.ticketName}</p>
-                                                        </div>
-                                                        <div>
-                                                            <span className="text-[9px] font-black uppercase text-gray-400 block mb-0.5">Seat No.</span>
-                                                            <p className="font-black text-lg uppercase text-[var(--color-accent-primary)]">{ticket.label || 'GA'}</p>
-                                                        </div>
-                                                        <div>
-                                                            <span className="text-[9px] font-black uppercase text-gray-400 block mb-0.5">Entry Price</span>
-                                                            <p className="font-black text-sm uppercase text-black">₹{ticket.originalPrice}</p>
-                                                        </div>
-                                                    </div>
+                                                    {/* QR Stub */}
+                                                    <div className="flex-1 bg-gray-50 border-l-4 border-dashed border-black p-8 flex flex-col items-center justify-center relative shadow-inner">
+                                                        {/* Stub Tear Notches */}
+                                                        <div className="absolute top-[-16px] left-[-16px] w-8 h-8 bg-white border-2 border-black rounded-full z-10"></div>
+                                                        <div className="absolute bottom-[-16px] left-[-16px] w-8 h-8 bg-white border-2 border-black rounded-full z-10"></div>
 
-                                                    <div className="mt-4 text-[7px] font-mono text-gray-300 uppercase tracking-[0.3em]">
-                                                        AUTH_ID: {(ticket.ticketNumber || ticket.ticketId).toUpperCase()}
-                                                    </div>
-                                                </div>
-
-                                                {/* QR Stub */}
-                                                <div className="flex-1 bg-gray-50 border-l-4 border-dashed border-black p-8 flex flex-col items-center justify-center relative">
-                                                    <div className="absolute top-[-10px] left-[-10px] w-5 h-5 bg-white border-2 border-black rounded-full"></div>
-                                                    <div className="absolute bottom-[-10px] left-[-10px] w-5 h-5 bg-white border-2 border-black rounded-full"></div>
-
-                                                    <div className="bg-white p-2 border-2 border-black shadow-[4px_4px_0_black] mb-3">
-                                                        <QRCodeSVG
-                                                            value={`${window.location.origin}/verify/${ticket.bookingId}`}
-                                                            size={110}
-                                                            level="H"
-                                                            includeMargin={false}
-                                                        />
-                                                    </div>
-                                                    <div className="text-center">
-                                                        <p className="text-[8px] font-black uppercase tracking-widest text-black mb-1">Verify Entry</p>
-                                                        <div className="bg-black text-white px-3 py-0.5 text-[7px] font-mono rounded">
-                                                            {ticket.ticketNumber || ticket.ticketId.slice(-8).toUpperCase()}
+                                                        <div className="bg-white p-3 border-4 border-black shadow-[8px_8px_0_black] mb-4 transform rotate-1 group-hover:rotate-0 transition-all duration-300">
+                                                            <QRCodeSVG
+                                                                value={`${window.location.origin}/verify/${ticket.bookingId}`}
+                                                                size={160}
+                                                                level="H"
+                                                                includeMargin={false}
+                                                                className="w-full h-full"
+                                                            />
+                                                        </div>
+                                                        <div className="text-center relative z-20">
+                                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black mb-2 italic underline decoration-yellow-400">Scan to Verify</p>
+                                                            <div className="bg-black text-white px-3 py-1.5 text-[10px] font-mono border-2 border-white shadow-[2px_2px_0_black]">
+                                                                {ticket.ticketNumber || ticket.ticketId.slice(-8).toUpperCase()}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -213,28 +231,28 @@ const MyTickets = () => {
                                         </div>
                                     </div>
 
-                                    {/* Action Buttons - Not Captured */}
-                                    <div className="p-4 bg-gray-100 border-t-4 border-black flex flex-col md:flex-row gap-3">
+                                    {/* Action Buttons */}
+                                    <div className="p-6 bg-white border-t-4 border-black grid grid-cols-2 gap-4">
                                         {showResellInput === ticket.ticketId ? (
-                                            <div className="w-full">
-                                                <label className="text-[10px] font-black uppercase text-gray-500 block mb-1">Resale Price (Max ₹{ticket.originalPrice})</label>
+                                            <div className="col-span-2">
+                                                <label className="text-[10px] font-black uppercase text-gray-500 block mb-2">Resale Price (Max ₹{ticket.originalPrice})</label>
                                                 <div className="flex gap-2">
                                                     <input
                                                         type="number"
                                                         value={resellPrice[ticket.ticketId] || ''}
                                                         onChange={(e) => setResellPrice(prev => ({ ...prev, [ticket.ticketId]: e.target.value }))}
-                                                        className="w-24 p-1 border border-black font-bold text-sm"
-                                                        placeholder="Amount"
+                                                        className="flex-1 px-4 py-2 border-2 border-black font-black text-base focus:bg-yellow-50 outline-none"
+                                                        placeholder="₹ Amount"
                                                     />
                                                     <button
                                                         onClick={() => handleResell(ticket)}
-                                                        className="bg-[var(--color-accent-primary)] text-white text-xs font-black px-3 py-1 border border-black shadow-[2px_2px_0_black]"
+                                                        className="bg-[var(--color-success)] text-white text-xs font-black px-6 py-2 border-2 border-black shadow-[4px_4px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_black]"
                                                     >
                                                         CONFIRM
                                                     </button>
                                                     <button
                                                         onClick={() => setShowResellInput(null)}
-                                                        className="text-red-500 text-xs font-black px-2"
+                                                        className="text-red-600 font-black px-4 hover:underline"
                                                     >
                                                         CANCEL
                                                     </button>
@@ -244,15 +262,17 @@ const MyTickets = () => {
                                             <>
                                                 <button
                                                     onClick={() => handleDownload(ticket.ticketId, ticketRefs.current[ticket.ticketId])}
-                                                    className="flex-1 neo-btn bg-black text-white px-4 py-2 text-xs uppercase shadow-[2px_2px_0_black] hover:shadow-[4px_4px_0_black]"
+                                                    className="neo-btn bg-black text-white px-6 py-3 font-black text-xs uppercase shadow-[4px_4px_0_black] hover:shadow-[6px_6px_0_black] flex items-center justify-center gap-2"
                                                 >
-                                                    Download Ticket
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                                    Save PNG
                                                 </button>
                                                 <button
                                                     onClick={() => setShowResellInput(ticket.ticketId)}
-                                                    className="flex-1 neo-btn bg-white text-black px-4 py-2 text-xs uppercase shadow-[2px_2px_0_black] hover:shadow-[4px_4px_0_black]"
+                                                    className="neo-btn bg-white text-black px-6 py-3 font-black text-xs uppercase shadow-[4px_4px_0_black] hover:shadow-[6px_6px_0_black] flex items-center justify-center gap-2"
                                                 >
-                                                    Resell on Marketplace
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                    Resell
                                                 </button>
                                             </>
                                         )}
@@ -267,9 +287,9 @@ const MyTickets = () => {
                             <a href="/events" className="neo-btn inline-block bg-[var(--color-accent-primary)] text-white px-8 py-3">BROWSE EVENTS</a>
                         </div>
                     )}
-                </div >
-            </div >
-        </div >
+                </div>
+            </div>
+        </div>
     );
 };
 

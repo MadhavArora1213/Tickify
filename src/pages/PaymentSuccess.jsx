@@ -206,17 +206,17 @@ const PaymentSuccess = () => {
                                     <div className="absolute top-[-10px] left-[-10px] w-5 h-5 bg-white border-2 border-black rounded-full hidden md:block"></div>
                                     <div className="absolute bottom-[-10px] left-[-10px] w-5 h-5 bg-white border-2 border-black rounded-full hidden md:block"></div>
 
-                                    <div className="bg-white p-3 border-2 border-black shadow-[6px_6px_0_black] mb-4">
+                                    <div className="bg-white p-4 border-4 border-black shadow-[8px_8px_0_black] mb-4">
                                         <QRCodeSVG
                                             value={`${window.location.origin}/verify/${booking.id}`}
-                                            size={120}
+                                            size={160}
                                             level="H"
                                             includeMargin={false}
                                         />
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-black mb-1">Scan for Verified Entry</p>
-                                        <div className="bg-black text-white px-4 py-0.5 text-[8px] font-mono tracking-tighter rounded">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-black mb-1">Scan for Verified Entry</p>
+                                        <div className="bg-black text-white px-4 py-1.5 text-[10px] font-mono tracking-tighter border-2 border-white shadow-[2px_2px_0_black]">
                                             {(booking.items?.[0]?.ticketNumber || booking.id).toUpperCase()}
                                         </div>
                                     </div>

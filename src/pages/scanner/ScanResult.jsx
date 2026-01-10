@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import toast from 'react-hot-toast';
 
@@ -23,17 +23,32 @@ const ScanResult = () => {
             }
 
             try {
+                let foundBooking = null;
+                let finalBookingId = bookingId;
+
+                // 1. Try direct Firestore ID lookup
                 const bookingRef = doc(db, 'bookings', bookingId);
                 const bookingSnap = await getDoc(bookingRef);
 
                 if (bookingSnap.exists()) {
-                    const bookingData = bookingSnap.data();
+                    foundBooking = bookingSnap.data();
+                } else {
+                    // 2. Try searching by bookingReference (case-insensitive usually requires normalized field, but let's try exact)
+                    const qRef = query(collection(db, 'bookings'), where('bookingReference', '==', bookingId.toUpperCase()));
+                    const querySnapRef = await getDocs(qRef);
 
-                    setBooking({ id: bookingId, ...bookingData });
+                    if (!querySnapRef.empty) {
+                        foundBooking = querySnapRef.docs[0].data();
+                        finalBookingId = querySnapRef.docs[0].id;
+                    }
+                }
 
-                    if (bookingData.eventId) {
+                if (foundBooking) {
+                    setBooking({ id: finalBookingId, ...foundBooking });
+
+                    if (foundBooking.eventId) {
                         try {
-                            const eventRef = doc(db, 'events', bookingData.eventId);
+                            const eventRef = doc(db, 'events', foundBooking.eventId);
                             const eventSnap = await getDoc(eventRef);
                             if (eventSnap.exists()) {
                                 setEvent(eventSnap.data());
@@ -44,8 +59,10 @@ const ScanResult = () => {
                     }
 
                     // Mark as scanned in DB if it's the first time
-                    if (bookingData.status !== 'scanned') {
-                        await updateDoc(bookingRef, {
+                    // We must use the REAL document ID (finalBookingId)
+                    if (foundBooking.status !== 'scanned') {
+                        const realBookingRef = doc(db, 'bookings', finalBookingId);
+                        await updateDoc(realBookingRef, {
                             status: 'scanned',
                             scannedAt: serverTimestamp()
                         });
@@ -55,6 +72,7 @@ const ScanResult = () => {
                     setError("Invalid Ticket: Booking not found");
                 }
             } catch (err) {
+                console.error("Verification Error:", err);
                 toast.error("Verification error");
                 setError("Error verifying ticket");
             } finally {
@@ -77,7 +95,13 @@ const ScanResult = () => {
         );
     }
 
-    const isSuccess = !error && booking && (booking.status === 'confirmed' || booking.status === 'scanned' || booking.scannedAt);
+    const isSuccess = !error && booking && (
+        booking.status === 'confirmed' ||
+        booking.status === 'scanned' ||
+        booking.status === 'paid' ||
+        booking.status === 'available' ||
+        booking.scannedAt
+    );
 
     return (
         <div className={`min-h-screen flex flex-col items-center justify-between p-6 py-12 text-center transition-colors duration-300 ${isSuccess ? 'bg-green-500' : 'bg-red-500'}`}>

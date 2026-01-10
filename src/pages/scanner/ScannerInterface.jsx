@@ -28,7 +28,8 @@ const ScannerInterface = () => {
                 // Handle new URL format: http://base/verify/bookingId
                 const parts = decodedText.split('/verify/');
                 if (parts.length > 1) {
-                    bookingId = parts[1].split('?')[0]; // Remove query params if any
+                    // Extract ID and clean it (remove trailing slashes, query params, hash)
+                    bookingId = parts[1].split(/[?#/]/)[0];
                 }
             }
 
