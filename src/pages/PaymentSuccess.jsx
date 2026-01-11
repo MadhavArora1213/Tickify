@@ -155,7 +155,7 @@ const PaymentSuccess = () => {
                                         </div>
                                         <div className="absolute top-4 left-6">
                                             <span className="bg-white text-black text-[9px] font-black px-2 py-1 uppercase border-2 border-black shadow-[2px_2px_0_black]">
-                                                {booking.items?.[0]?.ticketNumber || booking.bookingReference || "Official Pass"}
+                                                OFFICIAL ENTRY PASS
                                             </span>
                                         </div>
                                     </div>
@@ -167,8 +167,8 @@ const PaymentSuccess = () => {
                                                 <p className="font-black text-sm uppercase truncate text-black">{booking.userName}</p>
                                             </div>
                                             <div>
-                                                <span className="text-[9px] font-black uppercase text-gray-400 block mb-0.5">Ticket id</span>
-                                                <p className="font-mono text-xs font-bold text-gray-800 uppercase">{booking.items?.[0]?.ticketNumber || booking.bookingReference}</p>
+                                                <span className="text-[9px] font-black uppercase text-gray-400 block mb-0.5">Ticket ID</span>
+                                                <p className="font-mono text-xs font-bold text-gray-800 uppercase">#{booking.items?.[0]?.ticketNumber || booking.bookingReference}</p>
                                             </div>
                                             <div>
                                                 <span className="text-[9px] font-black uppercase text-gray-400 block mb-0.5">Date & Time</span>
@@ -186,13 +186,22 @@ const PaymentSuccess = () => {
                                             </div>
                                         </div>
 
-                                        {/* Seat/Ticket List */}
+                                        {/* Seat/Ticket List with Price */}
                                         <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-100">
-                                            <div className="flex flex-wrap gap-2">
+                                            <div className="flex flex-wrap gap-2 items-center">
                                                 {booking.items?.map((item, idx) => (
-                                                    <div key={idx} className="bg-black text-white px-3 py-1 text-[10px] font-black uppercase flex items-center gap-2">
-                                                        <span>{item.name || item.ticketName}</span>
-                                                        {item.label && <span className="bg-yellow-400 text-black px-1.5 rounded-sm">SEAT: {item.label}</span>}
+                                                    <div key={idx} className="flex items-center gap-2">
+                                                        <div className="bg-black text-white px-3 py-1 text-[10px] font-black uppercase">
+                                                            {item.name || item.ticketName}
+                                                        </div>
+                                                        {item.label && (
+                                                            <span className="bg-yellow-400 text-black px-2 py-1 text-[10px] font-black">
+                                                                SEAT: {item.label}
+                                                            </span>
+                                                        )}
+                                                        <span className="bg-green-500 text-white px-2 py-1 text-[10px] font-black">
+                                                            ₹{item.price || booking.totalAmount}
+                                                        </span>
                                                     </div>
                                                 ))}
                                             </div>

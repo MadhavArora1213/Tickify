@@ -106,12 +106,24 @@ const ResellMarketplace = () => {
             const { data: { text } } = await Tesseract.recognize(file, 'eng');
             const lines = text.split('\n').map(l => l.trim().toUpperCase());
 
-            // Extract Price via OCR
+            // Extract Price via OCR - Enhanced patterns
             let extractedPrice = 0;
-            const priceRegex = /(?:[₹7\?]|RS\.?|INR|PRICE|TOTAL|AMT|PAID)[:\s]*(\d{1,5}(?:,\d+)*(?:\.\d+)?)/i;
-            const explicitPriceMatch = text.match(priceRegex);
-            if (explicitPriceMatch) {
-                extractedPrice = parseInt(explicitPriceMatch[1].replace(/,/g, ''));
+            const pricePatterns = [
+                // Look for "Entry Price: ₹XXX" pattern
+                /(?:ENTRY\s+PRICE|ORIGINAL\s+PRICE|TICKET\s+PRICE)[:\s]*[₹Rs\.INR\s]*(\d{1,5}(?:,\d+)*(?:\.\d+)?)/i,
+                // Look for "Price: ₹XXX" or "₹XXX"
+                /(?:[₹]|RS\.?|INR|PRICE|TOTAL|AMT|PAID)[:\s]*(\d{1,5}(?:,\d+)*(?:\.\d+)?)/i,
+                // Look for standalone price with rupee symbol
+                /₹\s*(\d{1,5}(?:,\d+)*)/i,
+                // Look for price in green badge/box (common on tickets)
+                /[₹Rs\.]\s*(\d{3,5})/i
+            ];
+            for (const pattern of pricePatterns) {
+                const priceMatch = text.match(pattern);
+                if (priceMatch && priceMatch[1]) {
+                    extractedPrice = parseInt(priceMatch[1].replace(/,/g, ''));
+                    if (extractedPrice > 0) break;
+                }
             }
 
             // Extract Seat Label (patterns like A1, F8, F9, B12, ROW-A-12, SEAT: F8, etc.)
@@ -137,13 +149,20 @@ const ResellMarketplace = () => {
                 }
             }
 
-            // Extract Ticket ID / Booking Reference
+            // Extract Ticket ID / Booking Reference (Enhanced for 2026 format - YYYYMMDD + EventCode + Sequence + Category)
             let extractedTicketId = "";
             const ticketIdPatterns = [
-                /(?:TICKET\s*(?:ID|NO|NUMBER|#)?|BOOKING\s*(?:ID|REF|REFERENCE)?|REF(?:ERENCE)?)[:\s#]*([A-Z0-9]{6,12})/i,
+                // Tickify format: 20260115EVE001GEN (YYYYMMDD + 3-letter event code + sequence + category)
+                /\b(202[4-9]\d{4}[A-Z]{3}\d{3}[A-Z]{3})\b/i,
+                // Shorter Tickify format: 20260115001GEN
+                /\b(202[4-9]\d{7,9}[A-Z]{2,4})\b/i,
+                // General date-based format
+                /\b(202[4-9]\d{4}[A-Z0-9]{4,10})\b/i,
+                // Standard patterns
+                /(?:TICKET\s*(?:ID|NO|NUMBER|#)?|BOOKING\s*(?:ID|REF|REFERENCE)?|REF(?:ERENCE)?)[:\s#]*([A-Z0-9]{6,20})/i,
                 /(?:ID|REF)[:\s#]*([A-Z0-9]{6,12})/i,
                 /\b([A-Z]{2,4}[0-9]{4,8})\b/,
-                /\b(\d{8,12})\b/
+                /\b(\d{8,15})\b/
             ];
             for (const pattern of ticketIdPatterns) {
                 const idMatch = text.match(pattern);
@@ -157,34 +176,136 @@ const ResellMarketplace = () => {
             const ticketTypes = ['VIP', 'GENERAL', 'EARLY BIRD', 'VVIP', 'PLATINUM', 'GOLD', 'SILVER', 'STUDENT', 'REGULAR', 'PREMIUM'];
             const foundType = ticketTypes.find(type => text.toUpperCase().includes(type)) || "GENERAL PASS";
 
-            // Match Event
+            // Match Event - Enhanced logic
             let eventTitle = qrVerifiedData?.items?.[0]?.eventTitle || "";
             let eventId = qrVerifiedData?.eventId || "";
 
-            if (!eventId) {
-                const eventsSnap = await getDocs(collection(db, 'events'));
-                const allEvents = eventsSnap.docs.map(d => ({
-                    id: d.id,
-                    title: (d.data().eventTitle || d.data().title || '').toUpperCase()
-                }));
-                const match = allEvents.find(ev => ev.title && (text.toUpperCase().includes(ev.title) || ev.title.split(' ').some(word => word.length > 3 && text.toUpperCase().includes(word))));
-                if (match) {
-                    eventTitle = match.title;
-                    eventId = match.id;
+            // Get all events from Firebase for matching
+            const eventsSnap = await getDocs(collection(db, 'events'));
+            const allEvents = eventsSnap.docs.map(d => ({
+                id: d.id,
+                title: (d.data().eventTitle || d.data().title || '').toUpperCase(),
+                rawTitle: d.data().eventTitle || d.data().title || '',
+                date: d.data().startDate || d.data().date,
+                ticketPrefix: d.data().ticketPrefix
+            }));
+
+            // Try to match event from ticket ID (2026 format: YYYYMMDD + EventCode)
+            if (!eventId && extractedTicketId) {
+                // Extract date from ticket ID (first 8 chars should be YYYYMMDD)
+                const ticketDateMatch = extractedTicketId.match(/^(202[4-9])(\d{2})(\d{2})/);
+                if (ticketDateMatch) {
+                    const ticketYear = ticketDateMatch[1];
+                    const ticketMonth = ticketDateMatch[2];
+                    const ticketDay = ticketDateMatch[3];
+                    const ticketDateStr = `${ticketYear}-${ticketMonth}-${ticketDay}`;
+
+                    // Extract event code from ticket ID (3 letters after date)
+                    const eventCodeMatch = extractedTicketId.match(/^\d{8}([A-Z]{3})/);
+                    const eventCode = eventCodeMatch ? eventCodeMatch[1] : null;
+
+                    // First try: Match by event code prefix
+                    if (eventCode) {
+                        const codeMatch = allEvents.find(ev => {
+                            const evTitleCode = ev.title.substring(0, 3);
+                            return evTitleCode === eventCode ||
+                                (ev.ticketPrefix && ev.ticketPrefix.includes(eventCode));
+                        });
+                        if (codeMatch) {
+                            eventTitle = codeMatch.rawTitle;
+                            eventId = codeMatch.id;
+                        }
+                    }
+
+                    // Second try: Match by date
+                    if (!eventId) {
+                        const dateMatch = allEvents.find(ev => {
+                            if (!ev.date) return false;
+                            const evDate = new Date(ev.date).toISOString().slice(0, 10);
+                            return evDate === ticketDateStr;
+                        });
+                        if (dateMatch) {
+                            eventTitle = dateMatch.rawTitle;
+                            eventId = dateMatch.id;
+                        }
+                    }
                 }
             }
 
-            // If still no event title, try to extract from OCR
+            // Third try: Match by OCR text containing event title (including short names)
+            if (!eventId) {
+                // Sort events by title length descending to match longer titles first
+                const sortedEvents = [...allEvents].sort((a, b) => b.title.length - a.title.length);
+
+                for (const ev of sortedEvents) {
+                    if (!ev.title) continue;
+
+                    // For short titles (3-5 chars), require exact word match
+                    if (ev.title.length <= 5) {
+                        const regex = new RegExp(`\\b${ev.title}\\b`, 'i');
+                        if (regex.test(text)) {
+                            eventTitle = ev.rawTitle;
+                            eventId = ev.id;
+                            break;
+                        }
+                    } else {
+                        // For longer titles, check if title or significant words appear
+                        if (text.toUpperCase().includes(ev.title) ||
+                            ev.title.split(' ').filter(word => word.length > 3).some(word => text.toUpperCase().includes(word))) {
+                            eventTitle = ev.rawTitle;
+                            eventId = ev.id;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // If still no event title, try to extract from OCR patterns
             if (!eventTitle || eventTitle === "") {
-                // Look for common event patterns
+                // Look for common event patterns in OCR text
                 const eventPatterns = [
-                    /(?:EVENT|SHOW|CONCERT|FESTIVAL)[:\s]*(.{5,40})/i,
-                    /(?:PRESENTS?|LIVE)[:\s]*(.{5,40})/i
+                    // Look for large text near top (usually event name)
+                    /^([A-Z]{2,30})$/m,
+                    /(?:EVENT|SHOW|CONCERT|FESTIVAL)[:\s]*(.{3,40})/i,
+                    /(?:PRESENTS?|LIVE)[:\s]*(.{3,40})/i,
+                    /(?:ADMISSION\s+TO|ENTRY\s+TO|TICKET\s+FOR)[:\s]*(.{3,40})/i,
+                    // Look for text after "Official Event Pass" or similar
+                    /(?:OFFICIAL\s+(?:EVENT\s+)?PASS|ENTRY\s+PASS)[:\s]*\n?(.{3,30})/i
                 ];
                 for (const pattern of eventPatterns) {
                     const eventMatch = text.match(pattern);
                     if (eventMatch && eventMatch[1]) {
-                        eventTitle = eventMatch[1].trim().toUpperCase();
+                        const extracted = eventMatch[1].trim().toUpperCase();
+                        // Filter out common non-event texts
+                        if (!['ATTENDEE', 'BOOKING', 'DATE', 'VENUE', 'SEAT', 'TICKET', 'GENERAL', 'VIP', 'SCAN'].includes(extracted)) {
+                            eventTitle = extracted;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Try to find event name from lines (usually the largest/most prominent text)
+            if (!eventTitle || eventTitle === "") {
+                // Look through OCR lines for potential event names
+                for (const line of lines) {
+                    // Skip common labels and very long lines
+                    if (line.length >= 3 && line.length <= 30 &&
+                        !line.includes('ATTENDEE') &&
+                        !line.includes('BOOKING') &&
+                        !line.includes('DATE') &&
+                        !line.includes('VENUE') &&
+                        !line.includes('TICKET') &&
+                        !line.includes('SEAT') &&
+                        !line.includes('SCAN') &&
+                        !line.includes('ENTRY') &&
+                        !line.includes('OFFICIAL') &&
+                        !line.includes('PASS') &&
+                        !line.includes('PRICE') &&
+                        !line.match(/^\d+$/) &&  // Skip pure numbers
+                        !line.match(/^[A-Z]\d+$/)  // Skip seat codes
+                    ) {
+                        eventTitle = line.trim();
                         break;
                     }
                 }
@@ -215,6 +336,7 @@ const ResellMarketplace = () => {
         }
     };
 
+
     const handleListingSubmit = async (e) => {
         e.preventDefault();
         if (!currentUser) { navigate('/login'); return; }
@@ -224,8 +346,56 @@ const ResellMarketplace = () => {
             return;
         }
 
+        // Validate ticket number
+        if (!listingData.ticketNumber || listingData.ticketNumber.trim() === '') {
+            toast.error("Ticket ID is required for listing");
+            return;
+        }
+
         setIsSubmitting(true);
         try {
+            // ============================================
+            // DUPLICATE CHECK - Ensure ticket uniqueness
+            // ============================================
+            const ticketId = listingData.ticketNumber.trim().toUpperCase();
+
+            // Check if this exact ticket ID is already listed (available or sold)
+            const duplicateQ = query(
+                collection(db, 'resell_tickets'),
+                where('ticketNumber', '==', ticketId)
+            );
+            const duplicateSnap = await getDocs(duplicateQ);
+
+            if (!duplicateSnap.empty) {
+                const existingTicket = duplicateSnap.docs[0].data();
+                if (existingTicket.status === 'available') {
+                    toast.error(`This ticket (${ticketId}) is already listed for sale!`);
+                    setIsSubmitting(false);
+                    return;
+                } else if (existingTicket.status === 'sold') {
+                    toast.error(`This ticket (${ticketId}) has already been sold through Tickify!`);
+                    setIsSubmitting(false);
+                    return;
+                }
+            }
+
+            // Also check if this seller already has this ticket listed
+            const sellerDuplicateQ = query(
+                collection(db, 'resell_tickets'),
+                where('sellerId', '==', currentUser.uid),
+                where('ticketNumber', '==', ticketId)
+            );
+            const sellerDuplicateSnap = await getDocs(sellerDuplicateQ);
+
+            if (!sellerDuplicateSnap.empty) {
+                toast.error(`You have already listed this ticket (${ticketId})!`);
+                setIsSubmitting(false);
+                return;
+            }
+
+            // ============================================
+            // UPLOAD IMAGE & CREATE LISTING
+            // ============================================
             let finalImageUrl = 'https://via.placeholder.com/400x200?text=Ticket+Preview';
             if (listingData.ticketImage) {
                 try {
@@ -239,7 +409,7 @@ const ResellMarketplace = () => {
                 sellerId: currentUser.uid,
                 sellerName: currentUser.displayName || 'Fan Seller',
                 ticketName: listingData.ticketName,
-                ticketNumber: listingData.ticketNumber,
+                ticketNumber: ticketId, // Use normalized ticket ID
                 seatLabel: listingData.seatLabel,
                 eventTitle: listingData.eventTitle,
                 eventId: listingData.eventId || 'generic_event',
