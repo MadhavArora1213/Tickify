@@ -1,0 +1,66 @@
+# Robots.txt for Tickify
+# https://tickify.com
+
+User-agent: *
+Allow: /
+Allow: /events
+Allow: /events/*
+Allow: /about
+Allow: /contact
+Allow: /terms
+Allow: /privacy
+Allow: /faq
+Allow: /help
+Allow: /pricing
+Allow: /careers
+Allow: /resell
+Allow: /organizer-public/*
+
+# Disallow admin and private areas
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /organizer
+Disallow: /organizer/*
+Disallow: /scanner
+Disallow: /scanner/*
+Disallow: /cart
+Disallow: /checkout
+Disallow: /my-tickets
+Disallow: /profile
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /payment/*
+Disallow: /404
+Disallow: /500
+Disallow: /maintenance
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://tickify.com/sitemap.xml
+
+# Google specific
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Bing specific
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Google Images
+User-agent: Googlebot-Image
+Allow: /
+
+# Disable bad bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /

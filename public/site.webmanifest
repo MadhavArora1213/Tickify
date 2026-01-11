@@ -1,0 +1,74 @@
+{
+    "name": "Tickify - Event Ticketing Platform",
+    "short_name": "Tickify",
+    "description": "India's premier event ticketing platform. Discover concerts, festivals, conferences & more.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0F0F0F",
+    "theme_color": "#8B5CF6",
+    "orientation": "portrait-primary",
+    "scope": "/",
+    "lang": "en-IN",
+    "categories": [
+        "entertainment",
+        "events",
+        "tickets",
+        "lifestyle"
+    ],
+    "icons": [
+        {
+            "src": "/android-chrome-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/android-chrome-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Browse Events",
+            "short_name": "Events",
+            "description": "Explore all available events",
+            "url": "/events",
+            "icons": [
+                {
+                    "src": "/shortcuts/events-icon.png",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "My Tickets",
+            "short_name": "Tickets",
+            "description": "View your booked tickets",
+            "url": "/my-tickets",
+            "icons": [
+                {
+                    "src": "/shortcuts/tickets-icon.png",
+                    "sizes": "96x96"
+                }
+            ]
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/screenshots/home.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "Tickify Homepage"
+        },
+        {
+            "src": "/screenshots/events.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "Event Listing"
+        }
+    ]
+}

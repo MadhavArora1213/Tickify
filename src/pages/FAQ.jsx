@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import SEOHead from '../components/SEOHead';
 
 const FAQ = () => {
     const [activeIndex, setActiveIndex] = useState(null);
@@ -145,73 +146,101 @@ const FAQ = () => {
         ? questions
         : questions.filter(q => q.category === activeCategory);
 
+    // Format FAQ items for schema
+    const faqSchemaItems = questions.map(item => ({
+        question: item.q,
+        answer: item.a
+    }));
+
     return (
-        <div className="min-h-screen bg-[var(--color-bg-primary)] pt-32 md:pt-40 pb-12 px-4">
-            <div className="max-w-4xl mx-auto">
-                {/* Header */}
-                <div className="text-center mb-12">
-                    <h1 className="text-4xl md:text-6xl font-black uppercase text-[var(--color-text-primary)] mb-4">
-                        Frequently Asked Questions
-                    </h1>
-                    <p className="text-xl font-bold text-[var(--color-text-secondary)]">
-                        Can't find what you're looking for? <Link to="/contact" className="text-[var(--color-accent-primary)] underline">Contact us</Link>
-                    </p>
-                </div>
+        <>
+            <SEOHead
+                title="Frequently Asked Questions - Help & Support"
+                description="Find answers to common questions about Tickify. Learn about ticket booking, payments, refunds, account management, and more. Get instant help with our comprehensive FAQ section."
+                keywords={[
+                    'tickify faq',
+                    'event booking help',
+                    'ticket refund policy',
+                    'how to book tickets',
+                    'payment methods tickify',
+                    'tickify support',
+                    'event organizer help',
+                    'ticket transfer'
+                ]}
+                canonical="https://tickify.com/faq"
+                faqItems={faqSchemaItems}
+                breadcrumbs={[
+                    { name: 'Home', url: '/' },
+                    { name: 'FAQ' }
+                ]}
+            />
+            <div className="min-h-screen bg-[var(--color-bg-primary)] pt-32 md:pt-40 pb-12 px-4">
+                <div className="max-w-4xl mx-auto">
+                    {/* Header */}
+                    <div className="text-center mb-12">
+                        <h1 className="text-4xl md:text-6xl font-black uppercase text-[var(--color-text-primary)] mb-4">
+                            Frequently Asked Questions
+                        </h1>
+                        <p className="text-xl font-bold text-[var(--color-text-secondary)]">
+                            Can't find what you're looking for? <Link to="/contact" className="text-[var(--color-accent-primary)] underline">Contact us</Link>
+                        </p>
+                    </div>
 
-                {/* Category Filters */}
-                <div className="flex flex-wrap gap-3 mb-10 justify-center">
-                    {categories.map(cat => (
-                        <button
-                            key={cat.id}
-                            onClick={() => { setActiveCategory(cat.id); setActiveIndex(null); }}
-                            className={`px-4 py-2 font-black uppercase text-sm border-2 border-[var(--color-text-primary)] transition-all ${activeCategory === cat.id
-                                ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] shadow-none'
-                                : 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-[4px_4px_0_var(--color-text-primary)] hover:shadow-[2px_2px_0_var(--color-text-primary)] hover:translate-x-[2px] hover:translate-y-[2px]'
-                                }`}
-                        >
-                            <span className="mr-2">{cat.icon}</span>
-                            {cat.label}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Accordion */}
-                <div className="space-y-4">
-                    {filteredQuestions.map((item, i) => (
-                        <div key={i} className="neo-card bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] shadow-[8px_8px_0_var(--color-text-primary)] overflow-hidden">
+                    {/* Category Filters */}
+                    <div className="flex flex-wrap gap-3 mb-10 justify-center">
+                        {categories.map(cat => (
                             <button
-                                onClick={() => setActiveIndex(activeIndex === i ? null : i)}
-                                className="w-full text-left p-6 font-black uppercase text-lg flex justify-between items-center bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-secondary)] transition-colors"
+                                key={cat.id}
+                                onClick={() => { setActiveCategory(cat.id); setActiveIndex(null); }}
+                                className={`px-4 py-2 font-black uppercase text-sm border-2 border-[var(--color-text-primary)] transition-all ${activeCategory === cat.id
+                                    ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] shadow-none'
+                                    : 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-[4px_4px_0_var(--color-text-primary)] hover:shadow-[2px_2px_0_var(--color-text-primary)] hover:translate-x-[2px] hover:translate-y-[2px]'
+                                    }`}
                             >
-                                <span className="pr-4">{item.q}</span>
-                                <span className="text-2xl transform transition-transform duration-300 flex-shrink-0" style={{ transform: activeIndex === i ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                                    ▼
-                                </span>
+                                <span className="mr-2">{cat.icon}</span>
+                                {cat.label}
                             </button>
-                            <div
-                                className={`px-6 bg-[var(--color-bg-secondary)] border-t-2 border-[var(--color-text-primary)] transition-all duration-300 overflow-hidden ${activeIndex === i ? 'max-h-48 py-6' : 'max-h-0 py-0'}`}
-                            >
-                                <p className="font-bold text-[var(--color-text-secondary)] leading-relaxed">{item.a}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
 
-                {/* Still Need Help */}
-                <div className="mt-16 text-center neo-card bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] p-8 shadow-[12px_12px_0_var(--color-text-primary)]">
-                    <h2 className="text-2xl font-black uppercase mb-4">Still have questions?</h2>
-                    <p className="text-[var(--color-text-secondary)] font-bold mb-6">
-                        Our support team is here to help you 24/7
-                    </p>
-                    <Link
-                        to="/contact"
-                        className="inline-block neo-btn bg-[var(--color-accent-primary)] text-white px-8 py-4 font-black uppercase text-lg border-2 border-[var(--color-text-primary)] shadow-[6px_6px_0_var(--color-text-primary)] hover:shadow-[8px_8px_0_var(--color-text-primary)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all"
-                    >
-                        Contact Support →
-                    </Link>
+                    {/* Accordion */}
+                    <div className="space-y-4">
+                        {filteredQuestions.map((item, i) => (
+                            <div key={i} className="neo-card bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] shadow-[8px_8px_0_var(--color-text-primary)] overflow-hidden">
+                                <button
+                                    onClick={() => setActiveIndex(activeIndex === i ? null : i)}
+                                    className="w-full text-left p-6 font-black uppercase text-lg flex justify-between items-center bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-secondary)] transition-colors"
+                                >
+                                    <span className="pr-4">{item.q}</span>
+                                    <span className="text-2xl transform transition-transform duration-300 flex-shrink-0" style={{ transform: activeIndex === i ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                                        ▼
+                                    </span>
+                                </button>
+                                <div
+                                    className={`px-6 bg-[var(--color-bg-secondary)] border-t-2 border-[var(--color-text-primary)] transition-all duration-300 overflow-hidden ${activeIndex === i ? 'max-h-48 py-6' : 'max-h-0 py-0'}`}
+                                >
+                                    <p className="font-bold text-[var(--color-text-secondary)] leading-relaxed">{item.a}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Still Need Help */}
+                    <div className="mt-16 text-center neo-card bg-[var(--color-bg-surface)] border-4 border-[var(--color-text-primary)] p-8 shadow-[12px_12px_0_var(--color-text-primary)]">
+                        <h2 className="text-2xl font-black uppercase mb-4">Still have questions?</h2>
+                        <p className="text-[var(--color-text-secondary)] font-bold mb-6">
+                            Our support team is here to help you 24/7
+                        </p>
+                        <Link
+                            to="/contact"
+                            className="inline-block neo-btn bg-[var(--color-accent-primary)] text-white px-8 py-4 font-black uppercase text-lg border-2 border-[var(--color-text-primary)] shadow-[6px_6px_0_var(--color-text-primary)] hover:shadow-[8px_8px_0_var(--color-text-primary)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all"
+                        >
+                            Contact Support →
+                        </Link>
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

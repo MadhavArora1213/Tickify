@@ -7,6 +7,7 @@ import { uploadToS3 } from '../services/s3Service';
 import Tesseract from 'tesseract.js';
 import { Html5Qrcode } from 'html5-qrcode';
 import toast from 'react-hot-toast';
+import SEOHead from '../components/SEOHead';
 
 const ResellMarketplace = () => {
     const navigate = useNavigate();
@@ -279,206 +280,228 @@ const ResellMarketplace = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[var(--color-bg-primary)] pt-36 pb-24">
-            {/* Hidden reader for scanning library */}
-            <div id="qr-reader-hidden" style={{ display: 'none' }}></div>
+        <>
+            <SEOHead
+                title="Resell Marketplace - Buy & Sell Tickets Safely"
+                description="Tickify's secure secondary ticket marketplace. Buy and sell event tickets with AI-powered verification. Safe fan-to-fan transactions with price protection. No scalping - fair prices only."
+                keywords={[
+                    'resell tickets',
+                    'buy resale tickets',
+                    'sell my tickets',
+                    'secondary ticket market',
+                    'verified ticket resale',
+                    'ticket marketplace india',
+                    'safe ticket resale',
+                    'fan to fan tickets'
+                ]}
+                canonical="https://tickify.com/resell"
+                breadcrumbs={[
+                    { name: 'Home', url: '/' },
+                    { name: 'Resell Marketplace' }
+                ]}
+            />
+            <div className="min-h-screen bg-[var(--color-bg-primary)] pt-36 pb-24">
+                {/* Hidden reader for scanning library */}
+                <div id="qr-reader-hidden" style={{ display: 'none' }}></div>
 
-            <div className="container mx-auto px-4">
-                <div className="text-center mb-16">
-                    <h1 className="text-4xl md:text-6xl font-black mb-4 uppercase text-[var(--color-text-primary)]">
-                        <span className="block dark:hidden" style={{ WebkitTextStroke: '2px black', color: 'white', textShadow: '4px 4px 0px #000' }}>Fans Marketplace</span>
-                        <span className="hidden dark:block drop-shadow-[4px_4px_0_var(--color-accent-primary)]">Fans Marketplace</span>
-                    </h1>
-                    <p className="text-xl font-bold text-[var(--color-text-secondary)] mb-8">Secure secondary market with Tickify AI verification.</p>
+                <div className="container mx-auto px-4">
+                    <div className="text-center mb-16">
+                        <h1 className="text-4xl md:text-6xl font-black mb-4 uppercase text-[var(--color-text-primary)]">
+                            <span className="block dark:hidden" style={{ WebkitTextStroke: '2px black', color: 'white', textShadow: '4px 4px 0px #000' }}>Fans Marketplace</span>
+                            <span className="hidden dark:block drop-shadow-[4px_4px_0_var(--color-accent-primary)]">Fans Marketplace</span>
+                        </h1>
+                        <p className="text-xl font-bold text-[var(--color-text-secondary)] mb-8">Secure secondary market with Tickify AI verification.</p>
 
-                    <button
-                        onClick={() => setShowModal(true)}
-                        className="neo-btn bg-[var(--color-accent-primary)] text-white px-10 py-4 font-black uppercase text-xl shadow-[8px_8px_0_black] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[12px_12px_0_black] transition-all"
-                    >
-                        List for Resale
-                    </button>
-                </div>
+                        <button
+                            onClick={() => setShowModal(true)}
+                            className="neo-btn bg-[var(--color-accent-primary)] text-white px-10 py-4 font-black uppercase text-xl shadow-[8px_8px_0_black] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[12px_12px_0_black] transition-all"
+                        >
+                            List for Resale
+                        </button>
+                    </div>
 
-                {loading ? (
-                    <div className="flex justify-center"><div className="text-xl font-bold animate-pulse">Loading Live Market...</div></div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {tickets.length > 0 ? (
-                            tickets.map(ticket => (
-                                <div key={ticket.id} className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[8px_8px_0_var(--color-text-primary)] hover:translate-y-[-4px] hover:shadow-[12px_12px_0_var(--color-text-primary)] transition-all group">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className="flex flex-col gap-1">
-                                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 border border-[var(--color-text-primary)] inline-block ${ticket.verificationFlag === 'VERIFIED_GENUINE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'}`}>
-                                                {ticket.verificationFlag === 'VERIFIED_GENUINE' ? '✓ Verified Genuine' : 'Verified Resale'}
-                                            </span>
-                                        </div>
-                                        <span className="text-[10px] font-bold text-[var(--color-text-muted)]">
-                                            {ticket.createdAt ? new Date(ticket.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
-                                        </span>
-                                    </div>
-
-                                    {ticket.imageUrl && (
-                                        <div className="w-full h-32 bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] mb-4 overflow-hidden relative">
-                                            <img src={ticket.imageUrl} alt="Ticket" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all opacity-80" />
-                                            <div className="absolute inset-0 bg-black/10"></div>
-                                        </div>
-                                    )}
-
-                                    <h3 className="text-xl font-black text-[var(--color-text-primary)] mb-1 uppercase tracking-tighter truncate">{ticket.eventTitle}</h3>
-                                    <p className="text-xs font-bold text-[var(--color-accent-primary)] mb-4 uppercase">{ticket.ticketName}</p>
-
-                                    <div className="flex flex-col gap-2 mb-6">
-                                        {/* Event Info Row */}
-                                        <div className="flex items-center justify-between border-b border-[var(--color-bg-hover)] pb-2">
-                                            <span className="text-[9px] font-black uppercase text-[var(--color-text-muted)]">Event</span>
-                                            <span className="text-[10px] font-bold text-[var(--color-text-primary)] truncate max-w-[150px]">
-                                                {ticket.eventTitle}
-                                            </span>
-                                        </div>
-
-                                        {/* Seat Row - Always show if available */}
-                                        {ticket.seatLabel && (
-                                            <div className="flex items-center justify-between border-b border-[var(--color-bg-hover)] pb-2">
-                                                <span className="text-[9px] font-black uppercase text-[var(--color-text-muted)]">Seat</span>
-                                                <span className="bg-yellow-400 badge-accent text-gray-900 px-2 py-0.5 text-[10px] font-black uppercase border-2 border-[var(--color-text-primary)] shadow-[2px_2px_0_var(--color-text-primary)]">
-                                                    {ticket.seatLabel}
+                    {loading ? (
+                        <div className="flex justify-center"><div className="text-xl font-bold animate-pulse">Loading Live Market...</div></div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {tickets.length > 0 ? (
+                                tickets.map(ticket => (
+                                    <div key={ticket.id} className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-[var(--color-text-primary)] shadow-[8px_8px_0_var(--color-text-primary)] hover:translate-y-[-4px] hover:shadow-[12px_12px_0_var(--color-text-primary)] transition-all group">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="flex flex-col gap-1">
+                                                <span className={`text-[10px] font-black uppercase px-2 py-0.5 border border-[var(--color-text-primary)] inline-block ${ticket.verificationFlag === 'VERIFIED_GENUINE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'}`}>
+                                                    {ticket.verificationFlag === 'VERIFIED_GENUINE' ? '✓ Verified Genuine' : 'Verified Resale'}
                                                 </span>
+                                            </div>
+                                            <span className="text-[10px] font-bold text-[var(--color-text-muted)]">
+                                                {ticket.createdAt ? new Date(ticket.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
+                                            </span>
+                                        </div>
+
+                                        {ticket.imageUrl && (
+                                            <div className="w-full h-32 bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] mb-4 overflow-hidden relative">
+                                                <img src={ticket.imageUrl} alt="Ticket" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all opacity-80" />
+                                                <div className="absolute inset-0 bg-black/10"></div>
                                             </div>
                                         )}
 
-                                        {/* Ticket ID Row */}
-                                        <div className="flex items-center justify-between border-b border-[var(--color-bg-hover)] pb-2">
-                                            <span className="text-[9px] font-black uppercase text-[var(--color-text-muted)]">Ticket ID</span>
-                                            <span className="bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] px-2 py-0.5 text-[10px] font-mono tracking-tighter">
-                                                {ticket.ticketNumber || ticket.bookingReference || ticket.ticketId?.slice(-8).toUpperCase() || 'N/A'}
-                                            </span>
-                                        </div>
-                                    </div>
+                                        <h3 className="text-xl font-black text-[var(--color-text-primary)] mb-1 uppercase tracking-tighter truncate">{ticket.eventTitle}</h3>
+                                        <p className="text-xs font-bold text-[var(--color-accent-primary)] mb-4 uppercase">{ticket.ticketName}</p>
 
-                                    <div className="mb-6 p-4 bg-[var(--color-bg-secondary)] border-2 border-dashed border-[var(--color-text-muted)]/30">
-                                        <div className="flex justify-between text-[10px] font-bold mb-1 uppercase tracking-widest text-[var(--color-text-muted)]">
-                                            <span>Original</span>
-                                            <span className="line-through text-red-400">₹{ticket.originalPrice}</span>
-                                        </div>
-                                        <div className="flex justify-between text-2xl font-black text-[var(--color-text-primary)] items-baseline">
-                                            <span className="text-[10px] uppercase text-[var(--color-text-muted)]">Market Price</span>
-                                            <span className="text-[var(--color-accent-primary)]">₹{ticket.resalePrice}</span>
-                                        </div>
-                                    </div>
+                                        <div className="flex flex-col gap-2 mb-6">
+                                            {/* Event Info Row */}
+                                            <div className="flex items-center justify-between border-b border-[var(--color-bg-hover)] pb-2">
+                                                <span className="text-[9px] font-black uppercase text-[var(--color-text-muted)]">Event</span>
+                                                <span className="text-[10px] font-bold text-[var(--color-text-primary)] truncate max-w-[150px]">
+                                                    {ticket.eventTitle}
+                                                </span>
+                                            </div>
 
-                                    <button
-                                        onClick={() => handleBuy(ticket)}
-                                        className="w-full neo-btn bg-black text-white py-3 uppercase text-sm font-black shadow-[4px_4px_0_#666] hover:bg-[var(--color-accent-primary)] active:shadow-none transition-all"
-                                    >
-                                        Secure Purchase
-                                    </button>
+                                            {/* Seat Row - Always show if available */}
+                                            {ticket.seatLabel && (
+                                                <div className="flex items-center justify-between border-b border-[var(--color-bg-hover)] pb-2">
+                                                    <span className="text-[9px] font-black uppercase text-[var(--color-text-muted)]">Seat</span>
+                                                    <span className="bg-yellow-400 badge-accent text-gray-900 px-2 py-0.5 text-[10px] font-black uppercase border-2 border-[var(--color-text-primary)] shadow-[2px_2px_0_var(--color-text-primary)]">
+                                                        {ticket.seatLabel}
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {/* Ticket ID Row */}
+                                            <div className="flex items-center justify-between border-b border-[var(--color-bg-hover)] pb-2">
+                                                <span className="text-[9px] font-black uppercase text-[var(--color-text-muted)]">Ticket ID</span>
+                                                <span className="bg-[var(--color-text-primary)] text-[var(--color-bg-primary)] px-2 py-0.5 text-[10px] font-mono tracking-tighter">
+                                                    {ticket.ticketNumber || ticket.bookingReference || ticket.ticketId?.slice(-8).toUpperCase() || 'N/A'}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="mb-6 p-4 bg-[var(--color-bg-secondary)] border-2 border-dashed border-[var(--color-text-muted)]/30">
+                                            <div className="flex justify-between text-[10px] font-bold mb-1 uppercase tracking-widest text-[var(--color-text-muted)]">
+                                                <span>Original</span>
+                                                <span className="line-through text-red-400">₹{ticket.originalPrice}</span>
+                                            </div>
+                                            <div className="flex justify-between text-2xl font-black text-[var(--color-text-primary)] items-baseline">
+                                                <span className="text-[10px] uppercase text-[var(--color-text-muted)]">Market Price</span>
+                                                <span className="text-[var(--color-accent-primary)]">₹{ticket.resalePrice}</span>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={() => handleBuy(ticket)}
+                                            className="w-full neo-btn bg-black text-white py-3 uppercase text-sm font-black shadow-[4px_4px_0_#666] hover:bg-[var(--color-accent-primary)] active:shadow-none transition-all"
+                                        >
+                                            Secure Purchase
+                                        </button>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="col-span-full text-center py-20 border-4 border-dashed border-gray-200 rounded-3xl bg-gray-50/50">
+                                    <span className="text-4xl mb-4 block">🎫</span>
+                                    <p className="text-xl font-bold text-gray-400">No resale tickets available right now.</p>
+                                    <button onClick={() => setShowModal(true)} className="mt-4 text-[var(--color-accent-primary)] font-black uppercase hover:underline">List yours first</button>
                                 </div>
-                            ))
-                        ) : (
-                            <div className="col-span-full text-center py-20 border-4 border-dashed border-gray-200 rounded-3xl bg-gray-50/50">
-                                <span className="text-4xl mb-4 block">🎫</span>
-                                <p className="text-xl font-bold text-gray-400">No resale tickets available right now.</p>
-                                <button onClick={() => setShowModal(true)} className="mt-4 text-[var(--color-accent-primary)] font-black uppercase hover:underline">List yours first</button>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* List Modal */}
+                {showModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+                        <div className="w-full max-w-xl neo-modal-content bg-white border-4 border-black shadow-[20px_20px_0_black] relative overflow-hidden flex flex-col max-h-[90vh]">
+                            <div className="bg-black text-white p-6 flex justify-between items-center border-b-4 border-black">
+                                <h2 className="text-2xl font-black uppercase tracking-tighter">AI Verification Engine</h2>
+                                <button onClick={() => setShowModal(false)} className="text-3xl font-black hover:text-red-500">&times;</button>
                             </div>
-                        )}
+
+                            <div className="p-8 overflow-y-auto">
+                                {modalStep === 1 && (
+                                    <div className="text-center">
+                                        <div className="w-40 h-40 bg-gray-50 border-4 border-dashed border-gray-300 rounded-full flex items-center justify-center mx-auto mb-6 group hover:border-black cursor-pointer relative overflow-hidden transition-all">
+                                            <input type="file" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" />
+                                            <span className="text-5xl group-hover:scale-125 transition-transform duration-500">📥</span>
+                                        </div>
+                                        <h3 className="text-2xl font-black uppercase mb-2">Upload Ticket Media</h3>
+                                        <p className="text-sm font-medium text-gray-500 mb-8 max-w-xs mx-auto">Upload a clear photo or screenshot of your ticket QR. We'll scan it to verify authenticity.</p>
+                                        <label className="neo-btn inline-block bg-black text-white px-10 py-3 cursor-pointer shadow-[6px_6px_0_var(--color-accent-primary)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all uppercase font-black text-sm">
+                                            Browse Files
+                                            <input type="file" onChange={handleFileChange} className="hidden" accept="image/*" />
+                                        </label>
+                                    </div>
+                                )}
+
+                                {modalStep === 2 && (
+                                    <div className="text-center py-12">
+                                        <div className="relative w-48 h-48 mx-auto mb-10">
+                                            <div className="absolute inset-0 border-4 border-black rounded-xl overflow-hidden grayscale opacity-50">
+                                                {listingData.ticketImage && <img src={URL.createObjectURL(listingData.ticketImage)} alt="scanning" className="w-full h-full object-cover" />}
+                                            </div>
+                                            <div className="absolute top-0 left-0 w-full h-1 bg-green-500 shadow-[0_0_20px_green] animate-scan"></div>
+                                        </div>
+                                        <h3 className="text-3xl font-black uppercase mb-2 animate-pulse">Running Scan...</h3>
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Checking QR Code & Cloud Database</p>
+                                    </div>
+                                )}
+
+                                {modalStep === 3 && (
+                                    <form onSubmit={handleListingSubmit} className="space-y-6">
+                                        <div className={`p-4 border-2 flex items-center gap-4 ${listingData.verificationFlag === 'VERIFIED_GENUINE' ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+                                            <span className="text-3xl">{listingData.verificationFlag === 'VERIFIED_GENUINE' ? '🛡️' : '🔍'}</span>
+                                            <div>
+                                                <p className={`text-[10px] font-black uppercase ${listingData.verificationFlag === 'VERIFIED_GENUINE' ? 'text-green-700' : 'text-yellow-700'}`}>
+                                                    {listingData.verificationFlag === 'VERIFIED_GENUINE' ? 'Verified Official Tickify Pass' : 'AI Analysis Results'}
+                                                </p>
+                                                <p className="text-xs font-bold text-gray-600">{listingData.verificationFlag === 'VERIFIED_GENUINE' ? 'Genuine cloud-linked ticket detected.' : 'Please verify details below.'}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="col-span-1 md:col-span-2">
+                                                <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Event Entry</label>
+                                                <input type="text" value={listingData.eventTitle} readOnly className="w-full p-3 border-2 border-black font-black uppercase text-sm bg-gray-50 outline-none" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Pass Category</label>
+                                                <input type="text" value={listingData.ticketName} readOnly className="w-full p-3 border-2 border-black font-black uppercase text-sm bg-gray-50 outline-none" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Ticket Number</label>
+                                                <input type="text" value={listingData.ticketNumber} readOnly className="w-full p-3 border-2 border-black font-mono text-sm bg-gray-50 outline-none" />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-6 p-6 bg-black text-white border-4 border-black">
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Original (₹)</label>
+                                                <input type="text" value={listingData.originalPrice} readOnly className="w-full bg-transparent border-b-2 border-white/20 p-2 font-black text-2xl outline-none" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Resell For (₹)</label>
+                                                <input type="number" value={listingData.resalePrice} onChange={e => setListingData(p => ({ ...p, resalePrice: e.target.value }))} className="w-full bg-transparent border-b-2 border-[var(--color-accent-primary)] p-2 font-black text-2xl outline-none text-[var(--color-accent-primary)] animate-pulse" />
+                                            </div>
+                                        </div>
+
+                                        <button type="submit" disabled={isSubmitting} className="w-full neo-btn bg-black text-white py-4 font-black uppercase text-xl shadow-[8px_8px_0_var(--color-accent-primary)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[10px_10px_0_var(--color-accent-primary)] transition-all">
+                                            {isSubmitting ? 'SECURE LISTING...' : 'LIST TICKET NOW'}
+                                        </button>
+                                    </form>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 )}
-            </div>
 
-            {/* List Modal */}
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-                    <div className="w-full max-w-xl neo-modal-content bg-white border-4 border-black shadow-[20px_20px_0_black] relative overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="bg-black text-white p-6 flex justify-between items-center border-b-4 border-black">
-                            <h2 className="text-2xl font-black uppercase tracking-tighter">AI Verification Engine</h2>
-                            <button onClick={() => setShowModal(false)} className="text-3xl font-black hover:text-red-500">&times;</button>
-                        </div>
-
-                        <div className="p-8 overflow-y-auto">
-                            {modalStep === 1 && (
-                                <div className="text-center">
-                                    <div className="w-40 h-40 bg-gray-50 border-4 border-dashed border-gray-300 rounded-full flex items-center justify-center mx-auto mb-6 group hover:border-black cursor-pointer relative overflow-hidden transition-all">
-                                        <input type="file" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" />
-                                        <span className="text-5xl group-hover:scale-125 transition-transform duration-500">📥</span>
-                                    </div>
-                                    <h3 className="text-2xl font-black uppercase mb-2">Upload Ticket Media</h3>
-                                    <p className="text-sm font-medium text-gray-500 mb-8 max-w-xs mx-auto">Upload a clear photo or screenshot of your ticket QR. We'll scan it to verify authenticity.</p>
-                                    <label className="neo-btn inline-block bg-black text-white px-10 py-3 cursor-pointer shadow-[6px_6px_0_var(--color-accent-primary)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all uppercase font-black text-sm">
-                                        Browse Files
-                                        <input type="file" onChange={handleFileChange} className="hidden" accept="image/*" />
-                                    </label>
-                                </div>
-                            )}
-
-                            {modalStep === 2 && (
-                                <div className="text-center py-12">
-                                    <div className="relative w-48 h-48 mx-auto mb-10">
-                                        <div className="absolute inset-0 border-4 border-black rounded-xl overflow-hidden grayscale opacity-50">
-                                            {listingData.ticketImage && <img src={URL.createObjectURL(listingData.ticketImage)} alt="scanning" className="w-full h-full object-cover" />}
-                                        </div>
-                                        <div className="absolute top-0 left-0 w-full h-1 bg-green-500 shadow-[0_0_20px_green] animate-scan"></div>
-                                    </div>
-                                    <h3 className="text-3xl font-black uppercase mb-2 animate-pulse">Running Scan...</h3>
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Checking QR Code & Cloud Database</p>
-                                </div>
-                            )}
-
-                            {modalStep === 3 && (
-                                <form onSubmit={handleListingSubmit} className="space-y-6">
-                                    <div className={`p-4 border-2 flex items-center gap-4 ${listingData.verificationFlag === 'VERIFIED_GENUINE' ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
-                                        <span className="text-3xl">{listingData.verificationFlag === 'VERIFIED_GENUINE' ? '🛡️' : '🔍'}</span>
-                                        <div>
-                                            <p className={`text-[10px] font-black uppercase ${listingData.verificationFlag === 'VERIFIED_GENUINE' ? 'text-green-700' : 'text-yellow-700'}`}>
-                                                {listingData.verificationFlag === 'VERIFIED_GENUINE' ? 'Verified Official Tickify Pass' : 'AI Analysis Results'}
-                                            </p>
-                                            <p className="text-xs font-bold text-gray-600">{listingData.verificationFlag === 'VERIFIED_GENUINE' ? 'Genuine cloud-linked ticket detected.' : 'Please verify details below.'}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="col-span-1 md:col-span-2">
-                                            <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Event Entry</label>
-                                            <input type="text" value={listingData.eventTitle} readOnly className="w-full p-3 border-2 border-black font-black uppercase text-sm bg-gray-50 outline-none" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Pass Category</label>
-                                            <input type="text" value={listingData.ticketName} readOnly className="w-full p-3 border-2 border-black font-black uppercase text-sm bg-gray-50 outline-none" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Ticket Number</label>
-                                            <input type="text" value={listingData.ticketNumber} readOnly className="w-full p-3 border-2 border-black font-mono text-sm bg-gray-50 outline-none" />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-6 p-6 bg-black text-white border-4 border-black">
-                                        <div>
-                                            <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Original (₹)</label>
-                                            <input type="text" value={listingData.originalPrice} readOnly className="w-full bg-transparent border-b-2 border-white/20 p-2 font-black text-2xl outline-none" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Resell For (₹)</label>
-                                            <input type="number" value={listingData.resalePrice} onChange={e => setListingData(p => ({ ...p, resalePrice: e.target.value }))} className="w-full bg-transparent border-b-2 border-[var(--color-accent-primary)] p-2 font-black text-2xl outline-none text-[var(--color-accent-primary)] animate-pulse" />
-                                        </div>
-                                    </div>
-
-                                    <button type="submit" disabled={isSubmitting} className="w-full neo-btn bg-black text-white py-4 font-black uppercase text-xl shadow-[8px_8px_0_var(--color-accent-primary)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[10px_10px_0_var(--color-accent-primary)] transition-all">
-                                        {isSubmitting ? 'SECURE LISTING...' : 'LIST TICKET NOW'}
-                                    </button>
-                                </form>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <style>{`
+                <style>{`
                 @keyframes scan { 0% { top: 0%; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
                 .animate-scan { animation: scan 2s linear infinite; }
                 .animate-fade-in { animation: fadeIn 0.3s ease-out; }
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
             `}</style>
-        </div>
+            </div>
+        </>
     );
 };
 
 export default ResellMarketplace;
+

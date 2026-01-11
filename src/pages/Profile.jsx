@@ -5,6 +5,7 @@ import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { db, auth } from '../config/firebase';
 import toast from 'react-hot-toast';
+import SEOHead from '../components/SEOHead';
 
 const Profile = () => {
     const [activeTab, setActiveTab] = useState('info');
@@ -345,82 +346,90 @@ const Profile = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[var(--color-bg-primary)] pt-24 md:pt-36 pb-24">
-            <div className="container mx-auto px-4">
-                <h1 className="text-4xl md:text-6xl font-black mb-12 uppercase text-center text-[var(--color-text-primary)]">
-                    <span className="block dark:hidden" style={{ WebkitTextStroke: '2px black', color: 'white', textShadow: '4px 4px 0px #000' }}>My Profile</span>
-                    <span className="hidden dark:block drop-shadow-[4px_4px_0_var(--color-accent-primary)]">My Profile</span>
-                </h1>
+        <>
+            <SEOHead
+                title="My Profile"
+                description="Manage your Tickify account settings and preferences."
+                noIndex={true}
+                noFollow={true}
+            />
+            <div className="min-h-screen bg-[var(--color-bg-primary)] pt-24 md:pt-36 pb-24">
+                <div className="container mx-auto px-4">
+                    <h1 className="text-4xl md:text-6xl font-black mb-12 uppercase text-center text-[var(--color-text-primary)]">
+                        <span className="block dark:hidden" style={{ WebkitTextStroke: '2px black', color: 'white', textShadow: '4px 4px 0px #000' }}>My Profile</span>
+                        <span className="hidden dark:block drop-shadow-[4px_4px_0_var(--color-accent-primary)]">My Profile</span>
+                    </h1>
 
 
-                <div className="flex flex-col lg:flex-row gap-8 max-w-5xl mx-auto">
-                    {/* Sidebar */}
-                    <div className="w-full lg:w-1/4">
-                        <div className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-black shadow-[8px_8px_0_black]">
-                            <div className="flex flex-col items-center mb-6">
-                                <div className="w-24 h-24 rounded-full border-4 border-black bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-accent-secondary)] mb-3 overflow-hidden flex items-center justify-center">
-                                    {currentUser.photoURL ? (
-                                        <img src={currentUser.photoURL} alt="Avatar" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <span className="text-white font-black text-4xl">
-                                            {profileData.firstName?.charAt(0)?.toUpperCase() || profileData.email?.charAt(0)?.toUpperCase() || '?'}
-                                        </span>
-                                    )}
+                    <div className="flex flex-col lg:flex-row gap-8 max-w-5xl mx-auto">
+                        {/* Sidebar */}
+                        <div className="w-full lg:w-1/4">
+                            <div className="neo-card bg-[var(--color-bg-surface)] p-6 border-4 border-black shadow-[8px_8px_0_black]">
+                                <div className="flex flex-col items-center mb-6">
+                                    <div className="w-24 h-24 rounded-full border-4 border-black bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-accent-secondary)] mb-3 overflow-hidden flex items-center justify-center">
+                                        {currentUser.photoURL ? (
+                                            <img src={currentUser.photoURL} alt="Avatar" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <span className="text-white font-black text-4xl">
+                                                {profileData.firstName?.charAt(0)?.toUpperCase() || profileData.email?.charAt(0)?.toUpperCase() || '?'}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <h2 className="font-black text-xl text-[var(--color-text-primary)] uppercase text-center">
+                                        {profileData.displayName || profileData.email?.split('@')[0] || 'User'}
+                                    </h2>
+                                    <p className="text-xs font-bold text-[var(--color-text-secondary)]">Member since {getMemberSince()}</p>
+
+                                    {/* Email badge */}
+                                    <div className="mt-2 px-3 py-1 bg-[var(--color-success)]/20 border border-[var(--color-success)] rounded-full">
+                                        <span className="text-xs font-bold text-[var(--color-success)]">✓ Verified</span>
+                                    </div>
                                 </div>
-                                <h2 className="font-black text-xl text-[var(--color-text-primary)] uppercase text-center">
-                                    {profileData.displayName || profileData.email?.split('@')[0] || 'User'}
-                                </h2>
-                                <p className="text-xs font-bold text-[var(--color-text-secondary)]">Member since {getMemberSince()}</p>
 
-                                {/* Email badge */}
-                                <div className="mt-2 px-3 py-1 bg-[var(--color-success)]/20 border border-[var(--color-success)] rounded-full">
-                                    <span className="text-xs font-bold text-[var(--color-success)]">✓ Verified</span>
-                                </div>
-                            </div>
-
-                            <nav className="space-y-2">
-                                {[
-                                    { id: 'info', label: 'Personal Info', icon: '👤' },
-                                    { id: 'security', label: 'Security', icon: '🔒' },
-                                    { id: 'notifications', label: 'Notifications', icon: '🔔' },
-                                    { id: 'history', label: 'Order History', icon: '📜' },
-                                    { id: 'saved', label: 'Saved Events', icon: '❤️' },
-                                ].map((tab) => (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => { setActiveTab(tab.id); setMessage({ type: '', text: '' }); }}
-                                        className={`w-full text-left px-4 py-3 font-black uppercase text-sm border-2 border-black transition-all flex items-center gap-3
+                                <nav className="space-y-2">
+                                    {[
+                                        { id: 'info', label: 'Personal Info', icon: '👤' },
+                                        { id: 'security', label: 'Security', icon: '🔒' },
+                                        { id: 'notifications', label: 'Notifications', icon: '🔔' },
+                                        { id: 'history', label: 'Order History', icon: '📜' },
+                                        { id: 'saved', label: 'Saved Events', icon: '❤️' },
+                                    ].map((tab) => (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => { setActiveTab(tab.id); setMessage({ type: '', text: '' }); }}
+                                            className={`w-full text-left px-4 py-3 font-black uppercase text-sm border-2 border-black transition-all flex items-center gap-3
                                         ${activeTab === tab.id
-                                                ? 'bg-[var(--color-accent-primary)] text-white shadow-[4px_4px_0_black] translate-x-[-2px] translate-y-[-2px]'
-                                                : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-primary)]'}`}
-                                    >
-                                        <span>{tab.icon}</span> {tab.label}
-                                    </button>
-                                ))}
-                            </nav>
+                                                    ? 'bg-[var(--color-accent-primary)] text-white shadow-[4px_4px_0_black] translate-x-[-2px] translate-y-[-2px]'
+                                                    : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-primary)]'}`}
+                                        >
+                                            <span>{tab.icon}</span> {tab.label}
+                                        </button>
+                                    ))}
+                                </nav>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Content */}
-                    <div className="w-full lg:w-3/4">
-                        <div className="neo-card bg-[var(--color-bg-surface)] p-8 border-4 border-black shadow-[8px_8px_0_black] min-h-[500px]">
-                            <h3 className="text-2xl font-black text-[var(--color-text-primary)] mb-6 uppercase border-b-4 border-black pb-4">
-                                {activeTab.replace('-', ' ')}
-                            </h3>
-                            {renderContent()}
+                        {/* Content */}
+                        <div className="w-full lg:w-3/4">
+                            <div className="neo-card bg-[var(--color-bg-surface)] p-8 border-4 border-black shadow-[8px_8px_0_black] min-h-[500px]">
+                                <h3 className="text-2xl font-black text-[var(--color-text-primary)] mb-6 uppercase border-b-4 border-black pb-4">
+                                    {activeTab.replace('-', ' ')}
+                                </h3>
+                                {renderContent()}
 
-                            {/* Placeholder for unimplemented tabs */}
-                            {['notifications', 'saved'].includes(activeTab) && (
-                                <div className="text-center py-10">
-                                    <span className="text-4xl">🚧</span>
-                                    <p className="font-bold text-[var(--color-text-secondary)] mt-4">This section is under construction.</p>
-                                </div>
-                            )}
+                                {/* Placeholder for unimplemented tabs */}
+                                {['notifications', 'saved'].includes(activeTab) && (
+                                    <div className="text-center py-10">
+                                        <span className="text-4xl">🚧</span>
+                                        <p className="font-bold text-[var(--color-text-secondary)] mt-4">This section is under construction.</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 
