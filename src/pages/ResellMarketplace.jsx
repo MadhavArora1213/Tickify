@@ -314,17 +314,46 @@ const ResellMarketplace = () => {
             // Fallback event title
             if (!eventTitle) eventTitle = "UNKNOWN EVENT";
 
+            // ============================================
+            // EARLY DUPLICATE CHECK - Warn user immediately
+            // ============================================
+            const finalTicketNumber = qrVerifiedData?.items?.[0]?.ticketNumber || extractedTicketId || "";
+            let duplicateWarning = "";
+
+            if (finalTicketNumber) {
+                const normalizedTicketId = finalTicketNumber.trim().toUpperCase();
+
+                // Check if this ticket is already listed
+                const duplicateQ = query(
+                    collection(db, 'resell_tickets'),
+                    where('ticketNumber', '==', normalizedTicketId)
+                );
+                const duplicateSnap = await getDocs(duplicateQ);
+
+                if (!duplicateSnap.empty) {
+                    const existingTicket = duplicateSnap.docs[0].data();
+                    if (existingTicket.status === 'available') {
+                        duplicateWarning = `⚠️ This ticket (${normalizedTicketId}) is ALREADY listed for sale! You cannot list it again.`;
+                        toast.error(`This ticket is already listed for sale!`, { duration: 5000 });
+                    } else if (existingTicket.status === 'sold') {
+                        duplicateWarning = `⚠️ This ticket (${normalizedTicketId}) has ALREADY been sold! It cannot be listed again.`;
+                        toast.error(`This ticket has already been sold!`, { duration: 5000 });
+                    }
+                }
+            }
+
             setListingData(prev => ({
                 ...prev,
                 eventTitle: eventTitle,
                 eventId: eventId,
                 ticketName: qrVerifiedData?.items?.[0]?.name || foundType,
-                ticketNumber: qrVerifiedData?.items?.[0]?.ticketNumber || extractedTicketId || "",
+                ticketNumber: finalTicketNumber,
                 seatLabel: qrVerifiedData?.items?.[0]?.label || extractedSeat || "",
                 originalPrice: qrVerifiedData?.items?.[0]?.price || extractedPrice || "",
                 resalePrice: (qrVerifiedData?.items?.[0]?.price || extractedPrice) > 0 ? ((qrVerifiedData?.items?.[0]?.price || extractedPrice) * 0.9).toFixed(0) : "",
                 verificationFlag: qrVerifiedData ? "VERIFIED_GENUINE" : (eventId ? "AI_MATCHED" : "UNVERIFIED"),
-                originalBookingId: verifiedBookingId
+                originalBookingId: verifiedBookingId,
+                duplicateWarning: duplicateWarning // Store warning to display in form
             }));
 
         } catch (error) {
@@ -641,6 +670,18 @@ const ResellMarketplace = () => {
                                             </div>
                                         </div>
 
+                                        {/* Duplicate Warning Banner */}
+                                        {listingData.duplicateWarning && (
+                                            <div className="p-4 bg-red-100 border-4 border-red-500 text-red-800 font-bold text-sm animate-pulse">
+                                                <div className="flex items-center gap-3">
+                                                    <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                    </svg>
+                                                    <span>{listingData.duplicateWarning}</span>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         <div className="grid grid-cols-2 gap-6 p-6 bg-black text-white border-4 border-black">
                                             <div>
                                                 <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Original (₹)</label>
@@ -648,12 +689,19 @@ const ResellMarketplace = () => {
                                             </div>
                                             <div>
                                                 <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Resell For (₹)</label>
-                                                <input type="number" value={listingData.resalePrice} onChange={e => setListingData(p => ({ ...p, resalePrice: e.target.value }))} className="w-full bg-transparent border-b-2 border-[var(--color-accent-primary)] p-2 font-black text-2xl outline-none text-[var(--color-accent-primary)] animate-pulse" />
+                                                <input type="number" value={listingData.resalePrice} onChange={e => setListingData(p => ({ ...p, resalePrice: e.target.value }))} className="w-full bg-transparent border-b-2 border-[var(--color-accent-primary)] p-2 font-black text-2xl outline-none text-[var(--color-accent-primary)] animate-pulse" disabled={!!listingData.duplicateWarning} />
                                             </div>
                                         </div>
 
-                                        <button type="submit" disabled={isSubmitting} className="w-full neo-btn bg-black text-white py-4 font-black uppercase text-xl shadow-[8px_8px_0_var(--color-accent-primary)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[10px_10px_0_var(--color-accent-primary)] transition-all">
-                                            {isSubmitting ? 'SECURE LISTING...' : 'LIST TICKET NOW'}
+                                        <button
+                                            type="submit"
+                                            disabled={isSubmitting || !!listingData.duplicateWarning}
+                                            className={`w-full neo-btn py-4 font-black uppercase text-xl transition-all ${listingData.duplicateWarning
+                                                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed shadow-none'
+                                                    : 'bg-black text-white shadow-[8px_8px_0_var(--color-accent-primary)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[10px_10px_0_var(--color-accent-primary)]'
+                                                }`}
+                                        >
+                                            {listingData.duplicateWarning ? 'CANNOT LIST - ALREADY EXISTS' : (isSubmitting ? 'SECURE LISTING...' : 'LIST TICKET NOW')}
                                         </button>
                                     </form>
                                 )}
