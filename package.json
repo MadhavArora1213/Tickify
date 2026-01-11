@@ -55,6 +55,10 @@
     "vite": "npm:rolldown-vite@7.2.5"
   },
   "overrides": {
-    "vite": "npm:rolldown-vite@7.2.5"
+    "vite": "npm:rolldown-vite@7.2.5",
+    "react-helmet-async": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    }
   }
 }
