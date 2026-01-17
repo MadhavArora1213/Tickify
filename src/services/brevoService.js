@@ -24,7 +24,7 @@ export const generateOTP = () => {
  */
 export const sendOTPEmail = async (email, name = 'User') => {
     const otp = generateOTP();
-    
+
     // Store OTP with expiration (10 minutes)
     otpStore.set(email, {
         otp,
@@ -134,26 +134,26 @@ export const sendOTPEmail = async (email, name = 'User') => {
  */
 export const verifyOTP = (email, inputOtp) => {
     const stored = otpStore.get(email);
-    
+
     if (!stored) {
         return { success: false, message: 'OTP expired or not found. Please request a new one.' };
     }
-    
+
     if (Date.now() > stored.expiresAt) {
         otpStore.delete(email);
         return { success: false, message: 'OTP has expired. Please request a new one.' };
     }
-    
+
     if (stored.attempts >= 5) {
         otpStore.delete(email);
         return { success: false, message: 'Too many failed attempts. Please request a new OTP.' };
     }
-    
+
     if (stored.otp === inputOtp) {
         otpStore.delete(email);
         return { success: true, message: 'Email verified successfully!' };
     }
-    
+
     stored.attempts += 1;
     return { success: false, message: `Invalid OTP. ${5 - stored.attempts} attempts remaining.` };
 };
@@ -211,7 +211,7 @@ export const sendOrganizerApprovalEmail = async (email, name) => {
                             <p style="color: #F9FAFB; margin: 10px 0 0 0;"><strong>Password:</strong> (The password you set during registration)</p>
                         </div>
                          <p style="color: #D1D5DB; text-align: center;">
-                            <a href="http://localhost:5173/organizer/login" style="color: #10B981; font-weight: bold;">Login to Dashboard</a>
+                            <a href="https://tickify.co.in/organizer/login" style="color: #10B981; font-weight: bold;">Login to Dashboard</a>
                         </p>
                     </div>
                 </div>
@@ -243,7 +243,7 @@ export const sendEventApprovalEmail = async (email, name, eventTitle) => {
                         <p style="color: #D1D5DB; text-align: center;">Hello ${name},</p>
                         <p style="color: #D1D5DB; text-align: center;">Congratulations! Your event <strong>"${eventTitle}"</strong> has been approved and is now live on Tickify.</p>
                          <p style="color: #D1D5DB; text-align: center;">
-                            <a href="http://localhost:5173/events" style="color: #10B981; font-weight: bold;">View Live Events</a>
+                            <a href="https://tickify.co.in/events" style="color: #10B981; font-weight: bold;">View Live Events</a>
                         </p>
                     </div>
                 </div>
@@ -337,7 +337,7 @@ export const sendContactConfirmationEmail = async (email, name, topic) => {
                         </div>
                         
                         <p style="color: #D1D5DB; font-size: 14px; text-align: center; margin: 0 0 24px 0; line-height: 1.6;">
-                            Our support team is reviewing your request and will get back to you as soon as possible. In the meantime, you can check our <a href="http://localhost:5173/faq" style="color: #2563EB; text-decoration: none; font-weight: bold;">FAQ section</a> for quick answers.
+                            Our support team is reviewing your request and will get back to you as soon as possible. In the meantime, you can check our <a href="https://tickify.co.in/faq" style="color: #2563EB; text-decoration: none; font-weight: bold;">FAQ section</a> for quick answers.
                         </p>
                         
                         <div style="border-top: 2px dashed #374151; padding-top: 24px; margin-top: 24px;">
@@ -345,7 +345,7 @@ export const sendContactConfirmationEmail = async (email, name, topic) => {
                                 <strong>Need urgent help?</strong>
                             </p>
                             <p style="color: #6B7280; font-size: 12px; text-align: center; margin: 0;">
-                                📧 support@tickify.com &nbsp;|&nbsp; 📱 +91 1800-XXX-XXXX
+                                📧 support@tickify.co.in &nbsp;|&nbsp; 📱 +91 1800-XXX-XXXX
                             </p>
                         </div>
                     </div>
@@ -394,7 +394,7 @@ export const clearOTP = (email) => {
  */
 export const sendJobApplicationEmail = async (applicationData) => {
     const { name, email, phone, jobTitle, linkedIn, resumeUrl, coverLetter } = applicationData;
-    
+
     const emailData = {
         sender: {
             name: 'Tickify Careers',
@@ -468,7 +468,7 @@ export const sendJobApplicationEmail = async (applicationData) => {
             </html>
         `
     };
-    
+
     return sendEmail(emailData);
 };
 

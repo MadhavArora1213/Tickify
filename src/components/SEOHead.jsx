@@ -48,7 +48,7 @@ const SEOHead = ({
     children
 }) => {
     const siteName = 'Tickify';
-    const siteUrl = 'https://tickify.com';
+    const siteUrl = 'https://tickify.co.in';
     const defaultImage = `${siteUrl}/og-image.jpg`;
     const defaultDescription = 'Tickify - India\'s premier event ticketing platform. Discover concerts, festivals, conferences & more. Book tickets seamlessly with zero hidden fees.';
 

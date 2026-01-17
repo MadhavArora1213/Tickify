@@ -16,7 +16,7 @@ const About = () => {
                     'tickify story',
                     'tickify mission'
                 ]}
-                canonical="https://tickify.com/about"
+                canonical="https://tickify.co.in/about"
                 breadcrumbs={[
                     { name: 'Home', url: '/' },
                     { name: 'About Us' }

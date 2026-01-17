@@ -87,7 +87,7 @@ const Login = () => {
                 title="Login - Sign In to Tickify"
                 description="Sign in to your Tickify account to access your event tickets, manage bookings, and discover amazing events near you."
                 keywords={['tickify login', 'sign in', 'event tickets login', 'ticket account']}
-                canonical="https://tickify.com/login"
+                canonical="https://tickify.co.in/login"
                 breadcrumbs={[
                     { name: 'Home', url: '/' },
                     { name: 'Login' }

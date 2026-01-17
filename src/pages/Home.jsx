@@ -88,9 +88,9 @@ const Home = () => {
                     'event ticketing platform',
                     'buy tickets online india'
                 ]}
-                canonical="https://tickify.com/"
+                canonical="https://tickify.co.in/"
                 ogType="website"
-                ogImage="https://tickify.com/og-home.jpg"
+                ogImage="https://tickify.co.in/og-home.jpg"
                 ogImageAlt="Tickify - Your Gateway to Amazing Events"
             />
             <div className="flex flex-col gap-0">

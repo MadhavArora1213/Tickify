@@ -8,7 +8,7 @@ const Terms = () => {
                 title="Terms & Conditions"
                 description="Tickify Terms of Service. Read our terms and conditions for using the Tickify event ticketing platform. Includes information on purchases, refunds, and user responsibilities."
                 keywords={['tickify terms', 'terms of service', 'terms and conditions', 'user agreement', 'tickify policies']}
-                canonical="https://tickify.com/terms"
+                canonical="https://tickify.co.in/terms"
                 noIndex={false}
                 breadcrumbs={[
                     { name: 'Home', url: '/' },

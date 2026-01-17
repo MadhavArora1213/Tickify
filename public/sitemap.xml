@@ -5,7 +5,7 @@
   
   <!-- Homepage -->
   <url>
-    <loc>https://tickify.com/</loc>
+    <loc>https://tickify.co.in/</loc>
     <lastmod>2026-01-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
@@ -13,7 +13,7 @@
   
   <!-- Events Listing -->
   <url>
-    <loc>https://tickify.com/events</loc>
+    <loc>https://tickify.co.in/events</loc>
     <lastmod>2026-01-11</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.9</priority>
@@ -21,7 +21,7 @@
   
   <!-- Resell Marketplace -->
   <url>
-    <loc>https://tickify.com/resell</loc>
+    <loc>https://tickify.co.in/resell</loc>
     <lastmod>2026-01-11</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.8</priority>
@@ -29,7 +29,7 @@
   
   <!-- About Page -->
   <url>
-    <loc>https://tickify.com/about</loc>
+    <loc>https://tickify.co.in/about</loc>
     <lastmod>2026-01-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -37,7 +37,7 @@
   
   <!-- Contact Page -->
   <url>
-    <loc>https://tickify.com/contact</loc>
+    <loc>https://tickify.co.in/contact</loc>
     <lastmod>2026-01-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -45,7 +45,7 @@
   
   <!-- FAQ Page -->
   <url>
-    <loc>https://tickify.com/faq</loc>
+    <loc>https://tickify.co.in/faq</loc>
     <lastmod>2026-01-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -53,7 +53,7 @@
   
   <!-- Pricing Page -->
   <url>
-    <loc>https://tickify.com/pricing</loc>
+    <loc>https://tickify.co.in/pricing</loc>
     <lastmod>2026-01-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -61,7 +61,7 @@
   
   <!-- Terms & Conditions -->
   <url>
-    <loc>https://tickify.com/terms</loc>
+    <loc>https://tickify.co.in/terms</loc>
     <lastmod>2026-01-09</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
@@ -69,7 +69,7 @@
   
   <!-- Privacy Policy -->
   <url>
-    <loc>https://tickify.com/privacy</loc>
+    <loc>https://tickify.co.in/privacy</loc>
     <lastmod>2026-01-09</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
@@ -77,14 +77,14 @@
   
   <!-- User Authentication Pages -->
   <url>
-    <loc>https://tickify.com/login</loc>
+    <loc>https://tickify.co.in/login</loc>
     <lastmod>2026-01-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
-    <loc>https://tickify.com/signup</loc>
+    <loc>https://tickify.co.in/signup</loc>
     <lastmod>2026-01-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
@@ -92,7 +92,7 @@
   
   <!-- Organizer Registration -->
   <url>
-    <loc>https://tickify.com/organizer/register</loc>
+    <loc>https://tickify.co.in/organizer/register</loc>
     <lastmod>2026-01-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -105,12 +105,12 @@
     
     Example format for dynamic events:
     <url>
-      <loc>https://tickify.com/events/event-slug-or-id</loc>
+      <loc>https://tickify.co.in/events/event-slug-or-id</loc>
       <lastmod>2026-01-11</lastmod>
       <changefreq>weekly</changefreq>
       <priority>0.8</priority>
       <image:image>
-        <image:loc>https://tickify.com/events/event-image.jpg</image:loc>
+        <image:loc>https://tickify.co.in/events/event-image.jpg</image:loc>
         <image:title>Event Title</image:title>
       </image:image>
     </url>

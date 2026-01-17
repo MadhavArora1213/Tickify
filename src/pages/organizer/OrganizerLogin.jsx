@@ -113,7 +113,7 @@ const OrganizerLogin = () => {
                                 type="email"
                                 value={formData.email}
                                 onChange={handleChange}
-                                placeholder="organizer@tickify.com"
+                                placeholder="organizer@tickify.co.in"
                                 className="w-full neo-input bg-[var(--color-bg-secondary)] border-2 border-[var(--color-text-primary)] text-[var(--color-text-primary)] rounded-none px-4 py-4 font-bold focus:border-purple-500 focus:shadow-[4px_4px_0_#a855f7] focus:outline-none transition-all"
                             />
                         </div>

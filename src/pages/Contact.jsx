@@ -120,7 +120,7 @@ const Contact = () => {
                     'tickify email',
                     'event ticketing support india'
                 ]}
-                canonical="https://tickify.com/contact"
+                canonical="https://tickify.co.in/contact"
                 breadcrumbs={[
                     { name: 'Home', url: '/' },
                     { name: 'Contact Us' }

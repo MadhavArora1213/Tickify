@@ -1,5 +1,5 @@
 # Robots.txt for Tickify
-# https://tickify.com
+# https://tickify.co.in
 
 User-agent: *
 Allow: /
@@ -39,7 +39,7 @@ Disallow: /maintenance
 Crawl-delay: 1
 
 # Sitemap location
-Sitemap: https://tickify.com/sitemap.xml
+Sitemap: https://tickify.co.in/sitemap.xml
 
 # Google specific
 User-agent: Googlebot

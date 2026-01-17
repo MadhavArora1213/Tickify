@@ -122,9 +122,9 @@ const EventDetails = () => {
                         'live event',
                         'event booking india'
                     ].filter(Boolean)}
-                    canonical={`https://tickify.com/events/${id}`}
+                    canonical={`https://tickify.co.in/events/${id}`}
                     ogType="event"
-                    ogImage={event.image || 'https://tickify.com/og-event.jpg'}
+                    ogImage={event.image || 'https://tickify.co.in/og-event.jpg'}
                     ogImageAlt={`${event.title} - Event Banner`}
                     publishedTime={event.createdAt}
                     modifiedTime={event.updatedAt}

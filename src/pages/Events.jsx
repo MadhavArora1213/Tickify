@@ -152,7 +152,7 @@ const Events = () => {
                     'tech events',
                     locationFilter !== 'All' ? `events in ${locationFilter.toLowerCase()}` : 'events india'
                 ]}
-                canonical={`https://tickify.com/events${searchTerm ? `?q=${encodeURIComponent(searchTerm)}` : ''}`}
+                canonical={`https://tickify.co.in/events${searchTerm ? `?q=${encodeURIComponent(searchTerm)}` : ''}`}
                 ogType="website"
                 breadcrumbs={[
                     { name: 'Home', url: '/' },

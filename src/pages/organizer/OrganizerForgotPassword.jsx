@@ -116,7 +116,7 @@ const OrganizerForgotPassword = () => {
                                 </label>
                                 <input
                                     type="email"
-                                    placeholder="organizer@tickify.com"
+                                    placeholder="organizer@tickify.co.in"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required

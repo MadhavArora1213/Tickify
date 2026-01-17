@@ -8,7 +8,7 @@ const Privacy = () => {
                 title="Privacy Policy"
                 description="Tickify Privacy Policy. Learn how we collect, use, and protect your personal data. We are committed to safeguarding your privacy and ensuring transparent data practices."
                 keywords={['tickify privacy', 'privacy policy', 'data protection', 'user privacy', 'personal data']}
-                canonical="https://tickify.com/privacy"
+                canonical="https://tickify.co.in/privacy"
                 noIndex={false}
                 breadcrumbs={[
                     { name: 'Home', url: '/' },
