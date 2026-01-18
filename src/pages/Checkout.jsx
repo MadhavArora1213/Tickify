@@ -267,18 +267,33 @@ const Checkout = () => {
         }
     };
 
+
+
     const handlePayment = async () => {
+        console.log("Handle Payment Clicked"); // DEBUG LOG
+
+        // Check for Login
+        if (!currentUser) {
+            toast.error("Please login to complete your booking.");
+            // Navigate to Login, passing current location to potentially redirect back
+            navigate('/login', { state: { from: location.pathname, checkoutState: state } });
+            return;
+        }
+
         if (!formData.firstName || !formData.email || !formData.phone) {
+            console.warn("Validation Failed: Missing fields", formData);
             toast.error("Please fill in contact details.");
             return;
         }
 
         if (!formData.agreedToTerms) {
+            console.warn("Validation Failed: Terms not agreed");
             toast.error("Please agree to the Terms and Conditions to proceed.");
             return;
         }
 
         setIsProcessing(true);
+        console.log("Starting payment process. Total Amount:", totalAmount);
 
         // --- HANDLE FREE BOOKINGS (₹0) ---
         if (totalAmount <= 0) {
@@ -304,11 +319,22 @@ const Checkout = () => {
             }
         }
 
-        // Use a sample public test key for demonstration if one isn't provided
-        // In production, this must be an environment variable
-        const RAZORPAY_KEY = "rzp_test_1DP5mmOlF5G5ag";
+        // Use Razorpay Key from environment variables
+        // CRITICAL: For full security (to prevent payment bypass), you MUST verify the payment signature
+        // on a backend server (Cloud Function) using the Key Secret. 
+        // Client-side only integration is not tamper-proof.
+        // Client-side only integration is not tamper-proof.
+        const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID;
+        console.log("Razorpay Key ID:", RAZORPAY_KEY ? "Found" : "Missing");
+
+        if (!RAZORPAY_KEY) {
+            toast.error("Razorpay Key is missing in configuration.");
+            setIsProcessing(false);
+            return;
+        }
 
         const res = await loadRazorpay();
+        console.log("Razorpay Script Loaded:", res);
 
         if (!res) {
             toast.error('Razorpay SDK failed to load. Are you online?');
@@ -323,9 +349,47 @@ const Checkout = () => {
             name: "Tickify Events",
             description: state.isResale ? `Resale Purchase` : `Tickets for ${event.title}`,
             image: "https://via.placeholder.com/150",
-            handler: function (response) {
+            order_id: "", // If you create orders on backend, pass it here
+            handler: async function (response) {
                 console.log("Payment Successful", response);
-                processBooking(response.razorpay_payment_id);
+
+                try {
+                    // Verify with Backend
+                    // In production, change http://localhost:3000 to your actual server URL
+                    const verifyRes = await fetch('http://localhost:3000/verify-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            razorpay_order_id: response.razorpay_order_id, // Note: standard checkout might not return order_id unless you created one
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature
+                        })
+                    });
+
+                    const verifyData = await verifyRes.json();
+
+                    if (verifyData.success) {
+                        toast.success("Payment Verified Securely");
+                        processBooking(response.razorpay_payment_id);
+                    } else {
+                        toast.error("Payment Verification Failed! " + verifyData.message);
+                        setIsProcessing(false);
+                    }
+
+                } catch (err) {
+                    console.error("Backend verification error:", err);
+
+                    // Fallback Logic for when the Verification Server is offline or unreachable
+                    // This allows the transaction to complete in a "Demo" or "Dev" environment even if the backend is down
+                    // BUT it marks the paymentStatus potentially differently if you wanted to be strict.
+
+                    toast('⚠️ Verification server unreachable. Proceeding with caution.', {
+                        icon: '⚠️',
+                    });
+
+                    // Proceed anyway so the user isn't stuck (Change this for high-security production)
+                    processBooking(response.razorpay_payment_id);
+                }
             },
             prefill: {
                 name: `${formData.firstName} ${formData.lastName}`,
@@ -341,13 +405,23 @@ const Checkout = () => {
             }
         };
 
-        const paymentObject = new window.Razorpay(options);
-        paymentObject.open();
+        try {
+            console.log("Initializing Razorpay with options:", options);
+            const paymentObject = new window.Razorpay(options);
 
-        paymentObject.on('payment.failed', function (response) {
-            toast.error("Payment Failed: " + response.error.description);
+            paymentObject.on('payment.failed', function (response) {
+                console.error("Razorpay Payment Failed:", response.error);
+                toast.error("Payment Failed: " + response.error.description);
+                setIsProcessing(false);
+            });
+
+            paymentObject.open();
+            console.log("Razorpay Modal Opened");
+        } catch (err) {
+            console.error("Error opening Razorpay checkout:", err);
+            toast.error("Failed to open payment gateway. Please try again.");
             setIsProcessing(false);
-        });
+        }
     };
 
     if (!state) return null;
@@ -467,7 +541,7 @@ const Checkout = () => {
                                 >
                                     {isProcessing
                                         ? 'PROCESSING...'
-                                        : (totalAmount <= 0 ? 'CONFIRM FREE BOOKING' : `PAY ₹${totalAmount.toFixed(2)}`)}
+                                        : ((totalAmount || 0) <= 0 ? 'CONFIRM FREE BOOKING' : `PAY ₹${Number(totalAmount || 0).toFixed(2)}`)}
                                 </button>
                             </div>
                         </div>
