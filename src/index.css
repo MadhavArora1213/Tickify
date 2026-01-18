@@ -342,3 +342,27 @@ body {
 [data-theme="dark"] .text-black:not(.badge-accent):not(.ticket-print *):not(.neo-modal-content *) {
     color: var(--color-text-primary);
 }
+
+/* Dark Mode Background Overrides for Light Utilities */
+[data-theme="dark"] .bg-yellow-50,
+[data-theme="dark"] .bg-gray-50,
+[data-theme="dark"] .bg-blue-50,
+[data-theme="dark"] .bg-green-50,
+[data-theme="dark"] .bg-red-50,
+[data-theme="dark"] .bg-purple-50,
+[data-theme="dark"] .bg-pink-50,
+[data-theme="dark"] .bg-indigo-50,
+[data-theme="dark"] .bg-orange-50,
+[data-theme="dark"] .bg-teal-50,
+[data-theme="dark"] .bg-cyan-50 {
+    background-color: var(--color-bg-secondary) !important;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .bg-yellow-100,
+[data-theme="dark"] .bg-gray-100,
+[data-theme="dark"] .bg-blue-100,
+[data-theme="dark"] .bg-green-100,
+[data-theme="dark"] .bg-red-100 {
+    background-color: var(--color-bg-hover) !important;
+}

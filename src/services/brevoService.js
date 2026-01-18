@@ -472,6 +472,54 @@ export const sendJobApplicationEmail = async (applicationData) => {
     return sendEmail(emailData);
 };
 
+/**
+ * Send 'Newsletter Subscription Success' Email
+ * @param {string} email
+ */
+export const sendSubscriptionSuccessEmail = async (email) => {
+    const emailData = {
+        sender: { name: 'Tickify Newsletter', email: 'aroramadhav1312@gmail.com' },
+        to: [{ email, name: 'Subscriber' }],
+        subject: 'Welcome to Tickify Insider! 🎟️',
+        htmlContent: `
+            <!DOCTYPE html>
+            <html>
+            <body style="margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background-color: #111827;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+                    <div style="background-color: #1F2937; border: 4px solid #F59E0B; padding: 40px; box-shadow: 8px 8px 0 #D97706;">
+                        <h1 style="color: #F59E0B; text-align: center; text-transform: uppercase;">You're In!</h1>
+                        <p style="color: #D1D5DB; text-align: center; font-size: 1.1em;">Welcome to the inner circle.</p>
+                        
+                        <div style="text-align: center; margin: 30px 0;">
+                            <div style="display: inline-block; padding: 10px; background: #fff; border-radius: 50%;">
+                                🎫
+                            </div>
+                        </div>
+
+                        <p style="color: #D1D5DB; text-align: center;">
+                            Thanks for subscribing to the <strong>Tickify Newsletter</strong>. You'll now be the first to know about:
+                        </p>
+                        <ul style="color: #9CA3AF; margin: 20px auto; max-width: 300px; list-style-type: square;">
+                            <li>🔥 Early bird tickets</li>
+                            <li>🎁 Exclusive offers & giveaways</li>
+                            <li>📅 Upcoming mega-events</li>
+                        </ul>
+
+                         <p style="color: #D1D5DB; text-align: center; margin-top: 30px;">
+                            <a href="https://tickify.co.in/events" style="background-color: #F59E0B; color: #000; padding: 12px 24px; text-decoration: none; font-weight: bold; text-transform: uppercase; border: 2px solid #000; box-shadow: 4px 4px 0 #000;">Browse Events</a>
+                        </p>
+                    </div>
+                    <p style="text-align: center; color: #4B5563; font-size: 12px; margin-top: 20px;">
+                        You received this email because you signed up on Tickify.co.in.
+                    </p>
+                </div>
+            </body>
+            </html>
+        `
+    };
+    return sendEmail(emailData);
+};
+
 export default {
     sendOTPEmail,
     verifyOTP,
@@ -480,5 +528,6 @@ export default {
     sendEventApprovalEmail,
     sendEventRejectionEmail,
     sendOrganizerApprovalEmail,
-    sendJobApplicationEmail
+    sendJobApplicationEmail,
+    sendSubscriptionSuccessEmail
 };

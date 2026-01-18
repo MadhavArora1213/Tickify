@@ -36,7 +36,7 @@ jobs:
           
           # Only commit if there are changes
           if git diff --staged --quiet; then
-            console.log("No changes to commit")
+            echo "No changes to commit"
           else
             git commit -m "chore: update sitemap.xml [skip ci]"
             git push

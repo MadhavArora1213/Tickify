@@ -1,6 +1,60 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { collection, addDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { sendSubscriptionSuccessEmail } from '../services/brevoService';
+import toast from 'react-hot-toast';
 
 const Newsletter = () => {
+    const [email, setEmail] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleSubscribe = async (e) => {
+        e.preventDefault();
+
+        // Ensure email is strictly lowercase for consistency
+        const normalizedEmail = email.toLowerCase().trim();
+
+        if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+            toast.error("Please enter a valid email address.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // Check if already subscribed with the normalized email
+            const q = query(collection(db, "subscribers"), where("email", "==", normalizedEmail));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                toast.error("You are already subscribed!");
+                setLoading(false);
+                return;
+            }
+
+            // Add to Firestore (store as lowercase)
+            await addDoc(collection(db, "subscribers"), {
+                email: normalizedEmail,
+                subscribedAt: serverTimestamp(),
+                source: 'homepage_newsletter'
+            });
+
+            // Send Thank You Email
+            const emailResult = await sendSubscriptionSuccessEmail(normalizedEmail);
+            if (!emailResult.success) {
+                console.warn("Subscription email failed:", emailResult.message);
+            }
+
+            toast.success("Successfully subscribed! Check your inbox.");
+            setEmail('');
+
+        } catch (error) {
+            console.error("Subscription error:", error);
+            toast.error("Something went wrong. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <section className="py-20 bg-[var(--color-bg-primary)] border-t-4 border-black">
             <div className="container mx-auto px-4 text-center">
@@ -17,14 +71,21 @@ const Newsletter = () => {
                         Join 50,000+ subscribers and get exclusive access to presale tickets, artist meetups, and weekly event digests.
                     </p>
 
-                    <form className="relative z-10 flex flex-col md:flex-row gap-4 max-w-lg mx-auto">
+                    <form onSubmit={handleSubscribe} className="relative z-10 flex flex-col md:flex-row gap-4 max-w-lg mx-auto">
                         <input
                             type="email"
-                            placeholder="ENTER YOUR EMAIL"
-                            className="flex-1 bg-[var(--color-bg-secondary)] border-4 border-black rounded-xl px-6 py-4 outline-none focus:translate-x-[-4px] focus:translate-y-[-4px] focus:shadow-[6px_6px_0_black] transition-all font-bold uppercase placeholder-[var(--color-text-muted)] text-[var(--color-text-primary)]"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value.toLowerCase())}
+                            placeholder="enter your email"
+                            disabled={loading}
+                            className="flex-1 bg-[var(--color-bg-secondary)] border-4 border-black rounded-xl px-6 py-4 outline-none focus:translate-x-[-4px] focus:translate-y-[-4px] focus:shadow-[6px_6px_0_black] transition-all font-bold lowercase placeholder-[var(--color-text-muted)] text-[var(--color-text-primary)] disabled:opacity-50 placeholder:uppercase"
                         />
-                        <button className="bg-[var(--color-accent-primary)] text-white font-black uppercase text-xl py-4 px-8 rounded-xl border-4 border-black shadow-[6px_6px_0_black] hover:shadow-[8px_8px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all">
-                            Subscribe
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="bg-[var(--color-accent-primary)] text-white font-black uppercase text-xl py-4 px-8 rounded-xl border-4 border-black shadow-[6px_6px_0_black] hover:shadow-[8px_8px_0_black] hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {loading ? 'Wait...' : 'Subscribe'}
                         </button>
                     </form>
 
