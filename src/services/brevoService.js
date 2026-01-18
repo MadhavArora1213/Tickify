@@ -374,7 +374,12 @@ const sendEmail = async (data) => {
             headers: { 'accept': 'application/json', 'api-key': BREVO_API_KEY, 'content-type': 'application/json' },
             body: JSON.stringify(data)
         });
-        return response.ok ? { success: true } : { success: false, message: 'Failed to send email' };
+        if (response.ok) {
+            return { success: true };
+        } else {
+            const error = await response.json();
+            return { success: false, message: error.message || 'Failed to send email' };
+        }
     } catch (e) {
         return { success: false, message: e.message };
     }
